@@ -6,37 +6,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { getAssociates } from "@/components/lib/api";
 
 interface Associate {
   id: string;
   name: string;
 }
 
-const AssociateList: React.FC = () => {
+interface AssociateListProps {
+  onSelectAssociate: (id: string) => void;
+}
+
+const AssociateList: React.FC<AssociateListProps> = ({ onSelectAssociate }) => {
   const [associates, setAssociates] = useState<Associate[]>([]);
-  const [selectedAssociate, setSelectedAssociate] = useState<string | null>(
-    null
-  );
 
   useEffect(() => {
-    // TODO: Fetch associates from the API
-    // For now, we'll use dummy data
-    setAssociates([
-      { id: "1", name: "John Doe" },
-      { id: "2", name: "Jane Smith" },
-      { id: "3", name: "Bob Johnson" },
-    ]);
+    async function fetchAssociates() {
+      console.log("from inside fetchAssociates");
+      const data = await getAssociates();
+      setAssociates(data);
+    }
+    fetchAssociates();
   }, []);
-
-  const handleAssociateSelect = (value: string) => {
-    setSelectedAssociate(value);
-    // TODO: Fetch incidents for the selected associate
-  };
 
   return (
     <div className="mb-4">
       <h2 className="text-xl font-semibold mb-2">Select an Associate</h2>
-      <Select onValueChange={handleAssociateSelect}>
+      <Select onValueChange={onSelectAssociate}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select an associate" />
         </SelectTrigger>
@@ -48,9 +44,6 @@ const AssociateList: React.FC = () => {
           ))}
         </SelectContent>
       </Select>
-      {selectedAssociate && (
-        <p className="mt-2">Selected Associate ID: {selectedAssociate}</p>
-      )}
     </div>
   );
 };
