@@ -17,6 +17,9 @@ app.get("/api/incidents/:associateId", async (req, res) => {
   const { associateId } = req.params;
   const incidents = await prisma.incident.findMany({
     where: { associateId },
+    include: {
+      type: true, // include full details
+    },
     orderBy: { date: "desc" },
   });
   res.json(incidents);

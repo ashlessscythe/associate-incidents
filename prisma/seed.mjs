@@ -9,6 +9,13 @@ async function main() {
     { name: "D1", description: "Minor incident" },
     { name: "D2", description: "Moderate incident" },
     { name: "D3", description: "Severe incident" },
+    { name: "D4", description: "Critical incident" },
+    { name: "D5", description: "Extreme incident" },
+    { name: "D6", description: "Catastrophic incident" },
+    { name: "D7", description: "Unforeseen incident" },
+    { name: "D8", description: "Unpredictable incident" },
+    { name: "D9", description: "Unforeseen and unpredictable incident" },
+    { name: "D10", description: "Unforeseen and unpredictable incident" },
   ];
 
   for (const type of incidentTypes) {
@@ -23,6 +30,13 @@ async function main() {
     { id: "1", name: "John Doe" },
     { id: "2", name: "Jane Smith" },
     { id: "3", name: "Bob Johnson" },
+    { id: "4", name: "Alice Hoss" },
+    { id: "5", name: "Charlie Brown" },
+    { id: "6", name: "David Wilson" },
+    { id: "7", name: "Emily Thompson" },
+    { id: "8", name: "Michael Lee" },
+    { id: "9", name: "Sarah Parker" },
+    { id: "10", name: "Daniel Evans" },
   ];
 
   for (const associate of associates) {
