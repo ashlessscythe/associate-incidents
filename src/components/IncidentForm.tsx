@@ -71,7 +71,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           <SelectContent>
             {incidentTypes.map((incidentType) => (
               <SelectItem key={incidentType.id} value={incidentType.id}>
-                {incidentType.name}
+                {incidentType.name} - {incidentType.description}
               </SelectItem>
             ))}
           </SelectContent>
