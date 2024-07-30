@@ -14,17 +14,25 @@ datasource db {
 }
 
 model Associate {
-  id        String     @id @default(cuid())
+  id        String     @id @default(uuid())
   name      String
   incidents Incident[]
 }
 
+model IncidentType {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  incidents   Incident[]
+}
+
 model Incident {
-  id          String   @id @default(cuid())
-  associateId String
-  associate   Associate @relation(fields: [associateId], references: [id])
-  type        String   // D1, D2, D3
-  description String
-  date        DateTime
-  isVerbal    Boolean
+  id            String       @id @default(uuid())
+  associateId   String
+  associate     Associate    @relation(fields: [associateId], references: [id])
+  typeId        String       @default(uuid())
+  type          IncidentType @relation(fields: [typeId], references: [id])
+  description   String
+  date          DateTime
+  isVerbal      Boolean
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Select,
   SelectContent,
@@ -6,29 +6,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { getAssociates } from "@/components/lib/api";
+
+interface AssociateListProps {
+  associates: Associate[];
+  selectedAssociateId: string | null;
+  onSelectAssociate: (id: string) => void;
+}
 
 interface Associate {
   id: string;
   name: string;
 }
 
-interface AssociateListProps {
-  onSelectAssociate: (id: string) => void;
-}
-
-const AssociateList: React.FC<AssociateListProps> = ({ onSelectAssociate }) => {
-  const [associates, setAssociates] = useState<Associate[]>([]);
-
-  useEffect(() => {
-    async function fetchAssociates() {
-      console.log("from inside fetchAssociates");
-      const data = await getAssociates();
-      setAssociates(data);
-    }
-    fetchAssociates();
-  }, []);
-
+const AssociateList: React.FC<AssociateListProps> = ({
+  associates,
+  onSelectAssociate,
+}) => {
   return (
     <div className="mb-4">
       <h2 className="text-xl font-semibold mb-2">Select an Associate</h2>

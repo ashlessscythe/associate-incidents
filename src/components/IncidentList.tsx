@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,9 +8,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+interface IncidentType {
+  id: string;
+  name: string;
+  description: string;
+}
+
 interface Incident {
   id: string;
-  type: "D1" | "D2" | "D3";
+  typeId: string; // Changed from type to typeId
   description: string;
   date: string;
   isVerbal: boolean;
@@ -18,9 +24,19 @@ interface Incident {
 
 interface IncidentListProps {
   incidents: Incident[];
+  incidentTypes: IncidentType[];
 }
 
-const IncidentList: React.FC<IncidentListProps> = ({ incidents }) => {
+const IncidentList: React.FC<IncidentListProps> = ({
+  incidents,
+  incidentTypes,
+}) => {
+  // function to get type name from typeId
+  const getTypeName = (typeId: string) => {
+    const type = incidentTypes.find((t) => t.id === typeId);
+    return type?.name || "Unknown";
+  };
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-2">Incident List</h2>
@@ -36,7 +52,7 @@ const IncidentList: React.FC<IncidentListProps> = ({ incidents }) => {
         <TableBody>
           {incidents.map((incident) => (
             <TableRow key={incident.id}>
-              <TableCell>{incident.type}</TableCell>
+              <TableCell>{getTypeName(incident.typeId)}</TableCell>
               <TableCell>{incident.description}</TableCell>
               <TableCell>
                 {new Date(incident.date).toLocaleDateString()}

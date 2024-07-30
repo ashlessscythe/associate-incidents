@@ -8,28 +8,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { addIncident } from "./lib/api";
+
+interface IncidentType {
+  id: string;
+  name: string;
+  description: string;
+}
 
 interface IncidentFormProps {
+  incidentTypes: IncidentType[];
   associateId: string | null;
 }
 
-const IncidentForm: React.FC<IncidentFormProps> = ({ associateId }) => {
+const IncidentForm: React.FC<IncidentFormProps> = ({
+  incidentTypes,
+  associateId,
+}) => {
   const [type, setType] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [isVerbal, setIsVerbal] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!associateId) {
-      alert("Please select an associate first");
-      return;
+    if (!associateId) return;
+
+    setIsSubmitting(true);
+    try {
+      console.log("subbmitting: ", {
+        type,
+        description,
+        isVerbal,
+        associateId,
+      });
+      await addIncident({
+        typeId: type,
+        description,
+        isVerbal,
+        associateId,
+      });
+
+      // Reset form
+      setType("");
+      setDescription("");
+      setIsVerbal(false);
+    } catch (e) {
+      console.error("Error adding incident:", e.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    // TODO: Submit incident to API
-    console.log({ associateId, type, description, isVerbal, date: new Date() });
-    // Reset form
-    setType("");
-    setDescription("");
-    setIsVerbal(false);
   };
 
   return (
@@ -41,9 +69,11 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ associateId }) => {
             <SelectValue placeholder="Select incident type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="D1">D1</SelectItem>
-            <SelectItem value="D2">D2</SelectItem>
-            <SelectItem value="D3">D3</SelectItem>
+            {incidentTypes.map((incidentType) => (
+              <SelectItem key={incidentType.id} value={incidentType.id}>
+                {incidentType.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Input
@@ -61,8 +91,11 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ associateId }) => {
           />
           <span>Verbal</span>
         </label>
-        <Button type="submit" disabled={!associateId}>
-          Add Incident
+        <Button
+          type="submit"
+          disabled={!associateId || !type || !description || isSubmitting}
+        >
+          {isSubmitting ? "Adding..." : "Add Incident"}
         </Button>
       </div>
     </form>
