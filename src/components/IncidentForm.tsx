@@ -19,11 +19,17 @@ interface IncidentType {
 interface IncidentFormProps {
   incidentTypes: IncidentType[];
   associateId: string | null;
+  onAddIncident: (incidentData: {
+    typeId: string;
+    description: string;
+    isVerbal: boolean;
+  }) => Promise<void>;
 }
 
 const IncidentForm: React.FC<IncidentFormProps> = ({
   incidentTypes,
   associateId,
+  onAddIncident,
 }) => {
   const [type, setType] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -42,11 +48,10 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         isVerbal,
         associateId,
       });
-      await addIncident({
+      await onAddIncident({
         typeId: type,
         description,
         isVerbal,
-        associateId,
       });
 
       // Reset form

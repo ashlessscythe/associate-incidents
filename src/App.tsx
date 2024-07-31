@@ -3,6 +3,7 @@ import {
   getAssociates,
   getIncidents,
   getIncidentTypes,
+  addIncident,
 } from "@/components/lib/api";
 import Header from "@/components/Header";
 import AssociateList from "@/components/AssociateList";
@@ -13,7 +14,9 @@ function App() {
   const [associates, setAssociates] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [incidentTypes, setIncidentTypes] = useState([]);
-  const [selectedAssociateId, setSelectedAssociateId] = useState(null);
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,9 +29,6 @@ function App() {
         ]);
         setAssociates(associatesData);
         setIncidentTypes(typesData);
-        if (associatesData.length > 0) {
-          setSelectedAssociateId(associatesData[0].id);
-        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -40,22 +40,47 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const fetchIncidents = async () => {
-      if (selectedAssociateId) {
-        try {
-          const incidentsData = await getIncidents(selectedAssociateId);
-          setIncidents(incidentsData);
-        } catch (err) {
-          setError(err.message);
-        }
-      }
-    };
-
     fetchIncidents();
   }, [selectedAssociateId]);
 
-  const handleAssociateSelect = (associateId: React.SetStateAction<null>) => {
+  const fetchIncidents = async () => {
+    if (selectedAssociateId) {
+      try {
+        const incidentsData = await getIncidents(selectedAssociateId);
+        setIncidents(incidentsData);
+      } catch (err) {
+        setError(err.message);
+      }
+    } else {
+      setIncidents([]); // clear inc if no associate is selected
+    }
+  };
+
+  const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
+    if (!associateId) {
+      setIncidents([]); // clear inc if "Select Associate" is selected
+    }
+  };
+
+  const handleAddIncident = async (incidentData: {
+    typeId: string;
+    description: string;
+    isVerbal: boolean;
+  }) => {
+    if (selectedAssociateId) {
+      try {
+        await addIncident({
+          ...incidentData,
+          associateId: selectedAssociateId,
+        });
+        // fetch inc after adding
+        await fetchIncidents();
+      } catch (e) {
+        setError(e.message);
+        console.error("Error adding incident:", e.message);
+      }
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -73,6 +98,7 @@ function App() {
         <IncidentForm
           incidentTypes={incidentTypes}
           associateId={selectedAssociateId}
+          onAddIncident={handleAddIncident}
         />
         <IncidentList incidents={incidents} incidentTypes={incidentTypes} />
       </main>
