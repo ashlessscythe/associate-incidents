@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { addIncident } from "./lib/api";
 
 interface IncidentType {
   id: string;
@@ -35,8 +34,9 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
   const [description, setDescription] = useState<string>("");
   const [isVerbal, setIsVerbal] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!associateId) return;
 
@@ -58,8 +58,14 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
       setType("");
       setDescription("");
       setIsVerbal(false);
-    } catch (e) {
-      console.error("Error adding incident:", e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else if (typeof e === "string") {
+        setError(e);
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -102,6 +108,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         >
           {isSubmitting ? "Adding..." : "Add Incident"}
         </Button>
+        {error && <div className="error-message">{error}</div>}
       </div>
     </form>
   );

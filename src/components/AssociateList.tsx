@@ -7,15 +7,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface Associate {
+  id: string;
+  name: string;
+}
+
 interface AssociateListProps {
   associates: Associate[];
   selectedAssociateId: string | null;
   onSelectAssociate: (associateId: string | null) => void;
-}
-
-interface Associate {
-  id: string;
-  name: string;
 }
 
 const AssociateList: React.FC<AssociateListProps> = ({
@@ -23,18 +23,22 @@ const AssociateList: React.FC<AssociateListProps> = ({
   selectedAssociateId,
   onSelectAssociate,
 }) => {
+  const handleChange = (value: string) => {
+    onSelectAssociate(value === "SELECT_ASSOCIATE" ? null : value);
+  };
+
   return (
     <div className="mb-4">
       <h2 className="text-xl font-semibold mb-2">Select Associate</h2>
       <Select
-        onValueChange={onSelectAssociate}
-        value={selectedAssociateId === null ? undefined : selectedAssociateId}
+        onValueChange={handleChange}
+        value={selectedAssociateId || "SELECT_ASSOCIATE"}
       >
         <SelectTrigger>
           <SelectValue placeholder="Select an associate" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={null}>Select Associate</SelectItem>
+          <SelectItem value="SELECT_ASSOCIATE">Select Associate</SelectItem>
           {associates.map((associate) => (
             <SelectItem key={associate.id} value={associate.id}>
               {associate.name}
