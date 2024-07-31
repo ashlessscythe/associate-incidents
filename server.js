@@ -51,5 +51,54 @@ app.post("/api/incidents", async (req, res) => {
   }
 });
 
+// New routes for CRUD operations
+
+app.get("/api/incidents/single/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const incident = await prisma.incident.findUnique({
+      where: { id },
+      include: { type: true },
+    });
+    if (incident) {
+      res.json(incident);
+    } else {
+      res.status(404).json({ message: "Incident not found" });
+    }
+  } catch (err) {
+    console.error("Failed to fetch incident:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.put("/api/incidents/:id", async (req, res) => {
+  const { id } = req.params;
+  const { typeId, description, isVerbal } = req.body;
+  try {
+    const updatedIncident = await prisma.incident.update({
+      where: { id },
+      data: { typeId, description, isVerbal },
+      include: { type: true },
+    });
+    res.json(updatedIncident);
+  } catch (err) {
+    console.error("Failed to update incident:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.delete("/api/incidents/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.incident.delete({
+      where: { id },
+    });
+    res.json({ message: "Incident deleted successfully" });
+  } catch (err) {
+    console.error("Failed to delete incident:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
