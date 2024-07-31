@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getAssociates,
   getIncidents,
@@ -18,7 +18,7 @@ function App() {
     null
   );
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,8 +29,14 @@ function App() {
         ]);
         setAssociates(associatesData);
         setIncidentTypes(typesData);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else if (typeof err === "string") {
+          setError(err);
+        } else {
+          setError("An unknown error occurred");
+        }
       } finally {
         setLoading(false);
       }
@@ -48,8 +54,14 @@ function App() {
       try {
         const incidentsData = await getIncidents(selectedAssociateId);
         setIncidents(incidentsData);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else if (typeof err === "string") {
+          setError(err);
+        } else {
+          setError("An unknown error occurred");
+        }
       }
     } else {
       setIncidents([]); // clear inc if no associate is selected
@@ -76,9 +88,14 @@ function App() {
         });
         // fetch inc after adding
         await fetchIncidents();
-      } catch (e) {
-        setError(e.message);
-        console.error("Error adding incident:", e.message);
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          setError(e.message);
+        } else if (typeof e === "string") {
+          setError(e);
+        } else {
+          setError("An unknown error occurred");
+        }
       }
     }
   };
