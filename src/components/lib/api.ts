@@ -4,6 +4,31 @@ import axios from "axios";
 // removed api localhost
 // const API_URL = 'localhost:5000/api'
 
+const api = axios.create({
+  baseURL: '/api',
+})
+
+// set auth
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+};
+
+// login
+export const login = async (username: string, password: string) => {
+  const response = await api.post('/api/login', { username, password });
+  return response.data;
+};
+
+// register
+export const register = async (username: string, password: string) => {
+  const response = await api.post('/api/register', { username, password });
+  return response.data;
+};
+
 export async function getAssociates() {
   const response = await axios.get(`/api/associates`);
   return response.data;

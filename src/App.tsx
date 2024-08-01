@@ -9,8 +9,11 @@ import Header from "@/components/Header";
 import AssociateList from "@/components/AssociateList";
 import IncidentForm from "@/components/IncidentForm";
 import IncidentList from "@/components/IncidentList";
+import Login from '@/components/Login';
+import { setAuthToken } from "@/components/lib/api";
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [associates, setAssociates] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [incidentTypes, setIncidentTypes] = useState([]);
@@ -19,6 +22,32 @@ function App() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // auth
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setAuthToken(token);
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (token: string) => {
+    localStorage.setItem("token", token);
+    setAuthToken(token);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setAuthToken(null);
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,7 +134,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <Header />
+      <Header onLogout={handleLogout} />
       <main className="container mx-auto p-4">
         <AssociateList
           associates={associates}

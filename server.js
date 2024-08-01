@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from 'dotenv';
 import path from "path";
 import { fileURLToPath } from "url";
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,15 +28,66 @@ const corsOptions = {
 app.use(cors());
 app.use(express.json());
 
+// JWT AUTH Section
+const JWT_SECRET = process.env.JWT_SECRET || 'bobdoesntcareaboutbob';
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));
+
+// User registration
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+      },
+    });
+    res.json({ message: 'User created successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating user' });
+  }
+});
+
+// User login
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (user && await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1h' });
+      res.json({ token });
+    } else {
+      res.status(400).json({ error: 'Invalid credentials' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error logging in' });
+  }
+});
+
+// Middleware to verify JWT
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
+// end of JWT AUTH Section
 
 app.get("/api/associates", async (req, res) => {
   const associates = await prisma.associate.findMany();
   res.json(associates);
 });
 
-app.get("/api/incidents/:associateId", async (req, res) => {
+app.get("/api/incidents/:associateId", authenticateToken, async (req, res) => {
   const { associateId } = req.params;
   const incidents = await prisma.incident.findMany({
     where: { associateId },
@@ -51,7 +104,7 @@ app.get("/api/incident-types", async (req, res) => {
   res.json(incidentTypes);
 });
 
-app.post("/api/incidents", async (req, res) => {
+app.post("/api/incidents", authenticateToken, async (req, res) => {
   const { typeId, description, isVerbal, associateId } = req.body;
 
   try {

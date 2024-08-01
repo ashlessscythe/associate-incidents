@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onLogout: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onLogout }) => {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -57,6 +61,7 @@ const Header: React.FC = () => {
             </ul>
           </nav>
         </div>
+        <button onClick={onLogout}>Logout</button>
         <div className="flex items-center">
           <Button
             variant="ghost"
