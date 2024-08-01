@@ -1,12 +1,23 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
+import dotenv from 'dotenv';
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'dist')));
 
 app.get("/api/associates", async (req, res) => {
   const associates = await prisma.associate.findMany();
@@ -98,6 +109,13 @@ app.delete("/api/incidents/:id", async (req, res) => {
     console.error("Failed to delete incident:", err);
     res.status(500).json({ message: "Server error" });
   }
+});
+
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 5000;
