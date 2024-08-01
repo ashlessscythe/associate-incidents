@@ -13,6 +13,16 @@ dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
 
+// Configure CORS
+const corsOptions = {
+  origin: true, // This allows all origins. In production, you might want to be more specific.
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+
 app.use(cors());
 app.use(express.json());
 

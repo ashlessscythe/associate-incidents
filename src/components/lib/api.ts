@@ -1,20 +1,21 @@
 // src/lib/api.ts
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+// removed api localhost
+// const API_URL = 'localhost:5000/api'
 
 export async function getAssociates() {
-  const response = await axios.get(`${API_URL}/associates`);
+  const response = await axios.get(`/api/associates`);
   return response.data;
 }
 
 export async function getIncidents(associateId: string) {
-  const response = await axios.get(`${API_URL}/incidents/${associateId}`);
+  const response = await axios.get(`/api/incidents/${associateId}`);
   return response.data;
 }
 
 export async function getIncidentTypes() {
-  const response = await axios.get(`${API_URL}/incident-types`);
+  const response = await axios.get(`/api/incident-types`);
   return response.data;
 }
 
@@ -24,14 +25,14 @@ export async function addIncident(incidentData: {
   isVerbal: boolean;
   associateId: string;
 }) {
-  const response = await axios.post(`${API_URL}/incidents`, incidentData);
+  const response = await axios.post(`/api/incidents`, incidentData);
   return response.data;
 }
 
 // New functions for CRUD operations
 
 export async function getIncident(id: string) {
-  const response = await axios.get(`${API_URL}/incidents/single/${id}`);
+  const response = await axios.get(`/api/incidents/single/${id}`);
   return response.data;
 }
 
@@ -43,11 +44,11 @@ export async function updateIncident(
     isVerbal?: boolean;
   }
 ) {
-  const response = await axios.put(`${API_URL}/incidents/${id}`, incidentData);
+  const response = await axios.put(`/api/incidents/${id}`, incidentData);
   return response.data;
 }
 
 export async function deleteIncident(id: string) {
-  const response = await axios.delete(`${API_URL}/incidents/${id}`);
+  const response = await axios.delete(`/api/incidents/${id}`);
   return response.data;
 }
