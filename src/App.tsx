@@ -9,6 +9,24 @@ import Header from "@/components/Header";
 import AssociateList from "@/components/AssociateList";
 import IncidentForm from "@/components/IncidentForm";
 import IncidentList from "@/components/IncidentList";
+import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { setAuthToken } from '@/components/lib/api';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute'; // Adjust the import path as needed
+
+function AuthWrapper({ children }) {
+  const { getToken } = useAuth();
+  
+  useEffect(() => {
+    const updateToken = async () => {
+      const token = await getToken();
+      setAuthToken(token);
+    };
+    updateToken();
+  }, [getToken]);
+
+  return <>{children}</>
+}
 
 function App() {
   const [associates, setAssociates] = useState([]);
@@ -64,14 +82,14 @@ function App() {
         }
       }
     } else {
-      setIncidents([]); // clear inc if no associate is selected
+      setIncidents([]); // clear incidents if no associate is selected
     }
   };
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
     if (!associateId) {
-      setIncidents([]); // clear inc if "Select Associate" is selected
+      setIncidents([]); // clear incidents if "Select Associate" is selected
     }
   };
 
@@ -86,7 +104,7 @@ function App() {
           ...incidentData,
           associateId: selectedAssociateId,
         });
-        // fetch inc after adding
+        // fetch incidents after adding
         await fetchIncidents();
       } catch (e: unknown) {
         if (e instanceof Error) {
@@ -104,22 +122,38 @@ function App() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <Header />
-      <main className="container mx-auto p-4">
-        <AssociateList
-          associates={associates}
-          selectedAssociateId={selectedAssociateId}
-          onSelectAssociate={handleAssociateSelect}
-        />
-        <IncidentForm
-          incidentTypes={incidentTypes}
-          associateId={selectedAssociateId}
-          onAddIncident={handleAddIncident}
-        />
-        <IncidentList incidents={incidents} incidentTypes={incidentTypes} />
-      </main>
-    </div>
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+      <Router>
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+          <Header />
+          <main className="container mx-auto p-4">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <AssociateList
+                        associates={associates}
+                        selectedAssociateId={selectedAssociateId}
+                        onSelectAssociate={handleAssociateSelect}
+                      />
+                      <IncidentForm
+                        incidentTypes={incidentTypes}
+                        associateId={selectedAssociateId}
+                        onAddIncident={handleAddIncident}
+                      />
+                      <IncidentList incidents={incidents} incidentTypes={incidentTypes} />
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Add other routes here */}
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </ClerkProvider>
   );
 }
 

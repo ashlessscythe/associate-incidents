@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
+import { ClerkExpressRequireAuth } from '@clerk/clerk-sdk-node';
 import dotenv from 'dotenv';
 import path from "path";
 import { fileURLToPath } from "url";
@@ -23,8 +24,11 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// middleware
+app.use(ClerkExpressRequireAuth());
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, 'dist')));

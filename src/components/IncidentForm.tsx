@@ -42,12 +42,6 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
 
     setIsSubmitting(true);
     try {
-      console.log("subbmitting: ", {
-        type,
-        description,
-        isVerbal,
-        associateId,
-      });
       await onAddIncident({
         typeId: type,
         description,

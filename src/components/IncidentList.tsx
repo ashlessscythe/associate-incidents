@@ -14,15 +14,9 @@ interface IncidentType {
   description: string;
 }
 
-interface IncidentType {
-  id: string;
-  name: string;
-  description: string;
-}
-
 interface Incident {
   id: string;
-  type: IncidentType; // Changed from typeId to type
+  type: IncidentType; // Ensure this matches how incidents are structured
   description: string;
   date: string;
   isVerbal: boolean;
