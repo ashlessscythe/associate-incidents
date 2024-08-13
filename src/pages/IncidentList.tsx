@@ -12,6 +12,7 @@ interface IncidentType {
   id: string;
   name: string;
   description: string;
+  points: number;
 }
 
 interface IncidentType {
@@ -34,6 +35,12 @@ interface IncidentListProps {
 }
 
 const IncidentList: React.FC<IncidentListProps> = ({ incidents }) => {
+  // calculate total points
+  const totalPoints = incidents.reduce(
+    (sum, incident) => sum + incident.type.points,
+    0
+  );
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-2">Incident List</h2>
@@ -45,6 +52,7 @@ const IncidentList: React.FC<IncidentListProps> = ({ incidents }) => {
             <TableHead>Description</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Verbal</TableHead>
+            <TableHead>Points</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -57,12 +65,17 @@ const IncidentList: React.FC<IncidentListProps> = ({ incidents }) => {
                 {new Date(incident.date).toLocaleDateString()}
               </TableCell>
               <TableCell>{incident.isVerbal ? "Yes" : "No"}</TableCell>
+              <TableCell>{incident.type.points}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      {incidents.length === 0 && (
-        <p className="text-center text-gray-500 mt-4">No incidents recorded.</p>
+      {incidents.length === 0 ? (
+        <p className="text-center text-gray-500 mt-4">No incidents recorded</p>
+      ) : (
+        <p className="text-right font-semibold mt-2">
+          Total Points: {totalPoints}
+        </p>
       )}
     </div>
   );

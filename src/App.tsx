@@ -6,9 +6,9 @@ import {
   addIncident,
 } from "@/components/lib/api";
 import Header from "@/components/Header";
-import AssociateList from "@/components/AssociateList";
-import IncidentForm from "@/components/IncidentForm";
-import IncidentList from "@/components/IncidentList";
+import AssociateList from "@/pages/AssociateList";
+import IncidentForm from "@/pages/IncidentForm";
+import IncidentList from "@/pages/IncidentList";
 
 function App() {
   const [associates, setAssociates] = useState([]);

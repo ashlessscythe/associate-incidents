@@ -9,11 +9,6 @@ export async function getAssociates() {
   return response.data;
 }
 
-export async function getIncidents(associateId: string) {
-  const response = await axios.get(`/api/incidents/${associateId}`);
-  return response.data;
-}
-
 export async function getIncidentTypes() {
   const response = await axios.get(`/api/incident-types`);
   return response.data;
@@ -30,6 +25,11 @@ export async function addIncident(incidentData: {
 }
 
 // New functions for CRUD operations
+
+export async function getIncidents(associateId: string) {
+  const response = await axios.get(`/api/incidents/${associateId}`);
+  return response.data;
+}
 
 export async function getIncident(id: string) {
   const response = await axios.get(`/api/incidents/single/${id}`);
