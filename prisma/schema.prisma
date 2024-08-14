@@ -14,7 +14,6 @@ model Associate {
   id                  String                @id @default(uuid())
   name                String
   currentPoints       Float                 @default(0)
-  currentNotification String                @default("None")
   occurrences         AttendanceOccurrence[]
 }
 
@@ -33,6 +32,7 @@ model AttendanceOccurrence {
   typeId          String
   type            OccurrenceType @relation(fields: [typeId], references: [id])
   date            DateTime
+  notes           String         @default("")
   pointsAtTime    Float
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

@@ -67,24 +67,38 @@ app.get("/api/attendance-occurrences/:associateId", async (req, res) => {
 // Add a new attendance occurrence
 app.post("/api/attendance-occurrences", async (req, res) => {
   try {
-    const { associateId, typeId, date } = req.body;
+    const { associateId, typeId, date, notes } = req.body;
     const occurrenceType = await prisma.occurrenceType.findUnique({
       where: { id: typeId },
     });
-    console.log("occurrenceType:", occurrenceType);
     const newOccurrence = await prisma.attendanceOccurrence.create({
       data: {
         associateId,
         typeId,
         date: new Date(date),
+        notes,
         pointsAtTime: occurrenceType.points,
       },
       include: { type: true },
     });
 
+    console.log("new occurrence", newOccurrence);
+
     res.json(newOccurrence);
   } catch (error) {
     res.status(500).json({ error: "Error adding attendance occurrence" });
+  }
+});
+
+// delete occurrence by id
+app.delete("/api/attendance-occurrences/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Deleting occurenceid: " + id);
+    await prisma.attendanceOccurrence.delete({ where: { id } });
+    res.json({ message: "Attendance occurrence deleted" });
+  } catch (error) {
+    res.status(500).json({ error: "Error deleting attendance occurrence" });
   }
 });
 

@@ -7,7 +7,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getAssociatePointsAndNotification } from "@/components/lib/api";
+import { deleteOccurrence } from "@/components/lib/api";
 
 interface OccurrenceType {
   id: string;
@@ -21,19 +24,41 @@ interface Occurrence {
   type: OccurrenceType;
   date: Date;
   pointsAtTime: number;
+  notes: string;
 }
 
 interface OccurrenceListProps {
   occurrences: Occurrence[];
   associateId: string | null;
+  onDelete: (occurrenceId: string) => void;
 }
 
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
   occurrences,
   associateId,
+  onDelete,
 }) => {
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
+
+  const handleDelete = async (occurrenceId: string) => {
+    const isConfirmed = window.confirm("Are you sure you want to delete?");
+
+    if (!isConfirmed) {
+      return; // do nothing
+    }
+    try {
+      await deleteOccurrence(occurrenceId);
+      onDelete(occurrenceId);
+    } catch (err) {
+      console.error("Error deleting occurrence:", err);
+      if (err instanceof Error) {
+        alert(`Failed to delete occurrence: ${err.message}`);
+      } else {
+        alert("An unknown error occurred while deleting the occurrence");
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchPointsAndNotification = async () => {
@@ -68,6 +93,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             <TableHead>Type</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Date</TableHead>
+            <TableHead>Notes</TableHead>
             <TableHead>Points</TableHead>
           </TableRow>
         </TableHeader>
@@ -85,6 +111,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                 <TableCell>
                   {new Date(occurrence.date).toLocaleDateString()}
                 </TableCell>
+                <TableCell>{occurrence.notes}</TableCell>
                 <TableCell>
                   {occurrence.type.points}
                   {isOld && (
@@ -92,6 +119,16 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                       (rolled out)
                     </span>
                   )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleDelete(occurrence.id)}
+                    aria-label="Delete occurrence"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             );

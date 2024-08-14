@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
 
 interface OccurrenceType {
   id: string;
@@ -22,6 +23,7 @@ interface OccurrenceFormProps {
   onAddOccurrence: (occurrenceData: {
     typeId: string;
     date: Date;
+    notes: string;
   }) => Promise<void>;
 }
 
@@ -33,6 +35,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
   const [typeId, setTypeId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,6 +53,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
       await onAddOccurrence({
         typeId,
         date: new Date(date),
+        notes,
       });
 
       // Reset form
@@ -57,6 +61,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
       if (dateInputRef.current) {
         dateInputRef.current.value = "";
       }
+      setNotes("");
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -92,6 +97,11 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
           ref={dateInputRef}
           defaultValue={new Date().toISOString().split("T")[0]}
           max={new Date().toISOString().split("T")[0]} // Prevents future dates
+        />
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Enter notes (optional)"
         />
         <Button
           type="submit"

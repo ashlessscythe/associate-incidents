@@ -8,7 +8,6 @@ export interface Associate {
   id: string;
   name: string;
   currentPoints: number;
-  currentNotification: string;
 }
 
 export interface OccurrenceType {
@@ -25,6 +24,7 @@ export interface Occurrence {
   type: OccurrenceType;
   date: Date;
   pointsAtTime: number;
+  notes: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,12 +52,20 @@ export const addOccurrence = async (occurrenceData: {
   associateId: string;
   typeId: string;
   date: Date;
+  notes: string;
 }): Promise<Occurrence> => {
   const response = await api.post<Occurrence>(
     "/attendance-occurrences",
     occurrenceData
   );
   return response.data;
+};
+
+// delete occurrence by id
+export const deleteOccurrence = async (occurrenceId: string): Promise<void> => {
+  // console.log("API deleteOccurrence: ", occurrenceId);
+  const res = await api.delete(`/attendance-occurrences/${occurrenceId}`);
+  return res.data;
 };
 
 export const updateAssociatePoints = async (

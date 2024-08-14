@@ -70,6 +70,7 @@ function App() {
   const handleAddOccurrence = async (occurrenceData: {
     typeId: string;
     date: Date;
+    notes: string;
   }) => {
     if (selectedAssociateId) {
       try {
@@ -85,6 +86,12 @@ function App() {
         setError(e instanceof Error ? e.message : "An unknown error occurred");
       }
     }
+  };
+
+  const handleDelete = (occurrenceId: string) => {
+    setOccurrences(
+      occurrences.filter((occurrence) => occurrence.id !== occurrenceId)
+    );
   };
 
   if (loading) return <div>Loading...</div>;
@@ -106,6 +113,7 @@ function App() {
         />
         <OccurrenceList
           occurrences={occurrences}
+          onDelete={handleDelete}
           associateId={selectedAssociateId}
         />
       </main>
