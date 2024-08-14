@@ -15,6 +15,7 @@ model Associate {
   name                String
   currentPoints       Float                 @default(0)
   occurrences         AttendanceOccurrence[]
+  correctiveActions   CorrectiveAction[]
 }
 
 model OccurrenceType {
@@ -36,4 +37,31 @@ model AttendanceOccurrence {
   pointsAtTime    Float
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+}
+
+// new CA models
+model Rule {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String
+  type        RuleType
+  actions     CorrectiveAction[]
+}
+
+enum RuleType {
+  SAFETY
+  WORK
+}
+
+model CorrectiveAction {
+  id          String    @id @default(uuid())
+  associateId String
+  associate   Associate @relation(fields: [associateId], references: [id])
+  ruleId      String
+  rule        Rule      @relation(fields: [ruleId], references: [id])
+  level       Int       // 1 to 4, representing the notification level
+  description String
+  date        DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

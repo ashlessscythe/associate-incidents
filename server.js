@@ -29,6 +29,8 @@ app.use(express.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "dist")));
 
+// Associate STUFFS
+
 // Get all associates
 app.get("/api/associates", async (req, res) => {
   try {
@@ -139,6 +141,63 @@ app.get("/api/associates/:id/points-and-notification", async (req, res) => {
     res
       .status(500)
       .json({ error: "Error calculating points and notification level" });
+  }
+});
+
+// CA stuffs
+// Get all rules
+app.get("/api/rules", async (req, res) => {
+  try {
+    const rules = await prisma.rule.findMany();
+    res.json(rules);
+  } catch (error) {
+    console.error("Error fetching rules:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get corrective actions for an associate
+app.get("/api/correctiveActions", async (req, res) => {
+  const { associateId } = req.query;
+  if (!associateId) {
+    return res.status(400).json({ error: "Associate ID is required" });
+  }
+
+  try {
+    const correctiveActions = await prisma.correctiveAction.findMany({
+      where: { associateId: associateId },
+      include: { rule: true },
+      orderBy: { date: "desc" },
+    });
+    res.json(correctiveActions);
+  } catch (error) {
+    console.error("Error fetching corrective actions:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Add a new corrective action
+app.post("/api/correctiveActions", async (req, res) => {
+  const { associateId, ruleId, description, level } = req.body;
+  if (!associateId || !ruleId || !description || !level) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const newCorrectiveAction = await prisma.correctiveAction.create({
+      data: {
+        associateId,
+        ruleId,
+        description,
+        level,
+        date: new Date(),
+      },
+      include: { rule: true },
+    });
+    res.status(201).json(newCorrectiveAction);
+  } catch (error) {
+    console.error("Error creating corrective action:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

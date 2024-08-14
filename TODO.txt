@@ -1,3 +1,2 @@
-- fix date picker
-- add delete functionality
-- 
+- add seed data for CA's
+- routing buttons (home, page, etc)
