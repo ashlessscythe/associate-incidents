@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import {
@@ -31,27 +31,32 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
   onAddOccurrence,
 }) => {
   const [typeId, setTypeId] = useState<string>("");
-  const [date, setDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!associateId) return;
+    if (!associateId || !dateInputRef.current) return;
+
+    const date = dateInputRef.current.value;
+    if (!date) {
+      setError("Please select a date");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await onAddOccurrence({
         typeId,
-        date: new Date(date) || new Date(),
+        date: new Date(date),
       });
 
       // Reset form
       setTypeId("");
-      setDate(date);
+      if (dateInputRef.current) {
+        dateInputRef.current.value = "";
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -84,16 +89,17 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
         </Select>
         <Input
           type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
+          ref={dateInputRef}
+          defaultValue={new Date().toISOString().split("T")[0]}
+          max={new Date().toISOString().split("T")[0]} // Prevents future dates
         />
         <Button
           type="submit"
-          disabled={!associateId || !typeId || !date || isSubmitting}
+          disabled={!associateId || !typeId || isSubmitting}
         >
           {isSubmitting ? "Adding..." : "Add Occurrence"}
         </Button>
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="text-red-500">{error}</div>}
       </div>
     </form>
   );

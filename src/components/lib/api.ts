@@ -68,3 +68,12 @@ export const updateAssociatePoints = async (
   );
   return response.data;
 };
+
+export const getAssociatePointsAndNotification = async (
+  associateId: string
+): Promise<{ points: number; notificationLevel: string }> => {
+  const response = await axios.get(
+    `/api/associates/${associateId}/points-and-notification`
+  );
+  return response.data;
+};

@@ -71,7 +71,7 @@ app.post("/api/attendance-occurrences", async (req, res) => {
     const occurrenceType = await prisma.occurrenceType.findUnique({
       where: { id: typeId },
     });
-
+    console.log("occurrenceType:", occurrenceType);
     const newOccurrence = await prisma.attendanceOccurrence.create({
       data: {
         associateId,
@@ -82,59 +82,51 @@ app.post("/api/attendance-occurrences", async (req, res) => {
       include: { type: true },
     });
 
-    // Update associate's points
-    await updateAssociatePoints(associateId);
-
     res.json(newOccurrence);
   } catch (error) {
     res.status(500).json({ error: "Error adding attendance occurrence" });
   }
 });
 
-// Update associate's points and notification level
-app.put("/api/associates/:associateId/update-points", async (req, res) => {
+// New route for getting associate points and notification
+app.get("/api/associates/:id/points-and-notification", async (req, res) => {
   try {
-    const { associateId } = req.params;
-    const updatedAssociate = await updateAssociatePoints(associateId);
-    res.json(updatedAssociate);
+    const { id } = req.params;
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const relevantOccurrences = await prisma.attendanceOccurrence.findMany({
+      where: {
+        associateId: id,
+        date: {
+          gte: oneYearAgo,
+        },
+      },
+      include: {
+        type: true,
+      },
+    });
+
+    const totalPoints = relevantOccurrences.reduce(
+      (sum, occ) => sum + occ.type.points,
+      0
+    );
+
+    let notificationLevel = "None";
+    if (totalPoints >= 10) notificationLevel = "Termination";
+    else if (totalPoints >= 9) notificationLevel = "Final Written";
+    else if (totalPoints >= 8) notificationLevel = "2nd Written";
+    else if (totalPoints >= 6) notificationLevel = "1st Written";
+    else if (totalPoints >= 4) notificationLevel = "Verbal";
+
+    res.json({ points: totalPoints, notificationLevel });
   } catch (error) {
-    res.status(500).json({ error: "Error updating associate points" });
+    console.error("Error calculating points:", error);
+    res
+      .status(500)
+      .json({ error: "Error calculating points and notification level" });
   }
 });
-
-// Helper function to update associate's points and notification level
-async function updateAssociatePoints(associateId) {
-  const twelveMonthsAgo = new Date();
-  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
-  const occurrences = await prisma.attendanceOccurrence.findMany({
-    where: {
-      associateId,
-      date: { gte: twelveMonthsAgo },
-    },
-    include: { type: true },
-  });
-
-  const totalPoints = occurrences.reduce(
-    (sum, occ) => sum + occ.type.points,
-    0
-  );
-
-  let notificationLevel = "None";
-  if (totalPoints >= 10) notificationLevel = "Termination";
-  else if (totalPoints >= 9) notificationLevel = "Final Written";
-  else if (totalPoints >= 8) notificationLevel = "2nd Written";
-  else if (totalPoints >= 6) notificationLevel = "1st Written";
-  else if (totalPoints >= 4) notificationLevel = "Verbal";
-
-  return prisma.associate.update({
-    where: { id: associateId },
-    data: {
-      currentPoints: totalPoints,
-      currentNotification: notificationLevel,
-    },
-  });
-}
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

@@ -104,7 +104,10 @@ function App() {
           associateId={selectedAssociateId}
           onAddOccurrence={handleAddOccurrence}
         />
-        <OccurrenceList occurrences={occurrences} />
+        <OccurrenceList
+          occurrences={occurrences}
+          associateId={selectedAssociateId}
+        />
       </main>
     </div>
   );
