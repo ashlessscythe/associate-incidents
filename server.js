@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -16,116 +16,130 @@ const prisma = new PrismaClient();
 // Configure CORS
 const corsOptions = {
   origin: true, // This allows all origins. In production, you might want to be more specific.
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors());
 app.use(express.json());
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, "dist")));
 
+// Get all associates
 app.get("/api/associates", async (req, res) => {
-  const associates = await prisma.associate.findMany();
-  res.json(associates);
-});
-
-app.get("/api/incidents/:associateId", async (req, res) => {
-  const { associateId } = req.params;
-  const incidents = await prisma.incident.findMany({
-    where: { associateId },
-    include: {
-      type: true, // include full details
-    },
-    orderBy: { date: "desc" },
-  });
-  res.json(incidents);
-});
-
-app.get("/api/incident-types", async (req, res) => {
-  const incidentTypes = await prisma.incidentType.findMany();
-  res.json(incidentTypes);
-});
-
-app.post("/api/incidents", async (req, res) => {
-  const { typeId, description, isVerbal, associateId } = req.body;
-
   try {
-    const newIncident = await prisma.incident.create({
+    const associates = await prisma.associate.findMany();
+    res.json(associates);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching associates" });
+  }
+});
+
+// Get all occurrence types
+app.get("/api/occurrence-types", async (req, res) => {
+  try {
+    const occurrenceTypes = await prisma.occurrenceType.findMany();
+    res.json(occurrenceTypes);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching occurrence types" });
+  }
+});
+
+// Get attendance occurrences for a specific associate
+app.get("/api/attendance-occurrences/:associateId", async (req, res) => {
+  try {
+    const { associateId } = req.params;
+    const occurrences = await prisma.attendanceOccurrence.findMany({
+      where: { associateId },
+      include: { type: true },
+      orderBy: { date: "desc" },
+    });
+    res.json(occurrences);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching attendance occurrences" });
+  }
+});
+
+// Add a new attendance occurrence
+app.post("/api/attendance-occurrences", async (req, res) => {
+  try {
+    const { associateId, typeId, date } = req.body;
+    const occurrenceType = await prisma.occurrenceType.findUnique({
+      where: { id: typeId },
+    });
+
+    const newOccurrence = await prisma.attendanceOccurrence.create({
       data: {
-        typeId,
-        description,
-        isVerbal,
         associateId,
-        date: new Date(),
+        typeId,
+        date: new Date(date),
+        pointsAtTime: occurrenceType.points,
       },
-    });
-
-    res.json(newIncident);
-  } catch (err) {
-    console.error("failed to create incident:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// New routes for CRUD operations
-
-app.get("/api/incidents/single/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const incident = await prisma.incident.findUnique({
-      where: { id },
       include: { type: true },
     });
-    if (incident) {
-      res.json(incident);
-    } else {
-      res.status(404).json({ message: "Incident not found" });
-    }
-  } catch (err) {
-    console.error("Failed to fetch incident:", err);
-    res.status(500).json({ message: "Server error" });
+
+    // Update associate's points
+    await updateAssociatePoints(associateId);
+
+    res.json(newOccurrence);
+  } catch (error) {
+    res.status(500).json({ error: "Error adding attendance occurrence" });
   }
 });
 
-app.put("/api/incidents/:id", async (req, res) => {
-  const { id } = req.params;
-  const { typeId, description, isVerbal } = req.body;
+// Update associate's points and notification level
+app.put("/api/associates/:associateId/update-points", async (req, res) => {
   try {
-    const updatedIncident = await prisma.incident.update({
-      where: { id },
-      data: { typeId, description, isVerbal },
-      include: { type: true },
-    });
-    res.json(updatedIncident);
-  } catch (err) {
-    console.error("Failed to update incident:", err);
-    res.status(500).json({ message: "Server error" });
+    const { associateId } = req.params;
+    const updatedAssociate = await updateAssociatePoints(associateId);
+    res.json(updatedAssociate);
+  } catch (error) {
+    res.status(500).json({ error: "Error updating associate points" });
   }
 });
 
-app.delete("/api/incidents/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await prisma.incident.delete({
-      where: { id },
-    });
-    res.json({ message: "Incident deleted successfully" });
-  } catch (err) {
-    console.error("Failed to delete incident:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+// Helper function to update associate's points and notification level
+async function updateAssociatePoints(associateId) {
+  const twelveMonthsAgo = new Date();
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
+  const occurrences = await prisma.attendanceOccurrence.findMany({
+    where: {
+      associateId,
+      date: { gte: twelveMonthsAgo },
+    },
+    include: { type: true },
+  });
+
+  const totalPoints = occurrences.reduce(
+    (sum, occ) => sum + occ.type.points,
+    0
+  );
+
+  let notificationLevel = "None";
+  if (totalPoints >= 10) notificationLevel = "Termination";
+  else if (totalPoints >= 9) notificationLevel = "Final Written";
+  else if (totalPoints >= 8) notificationLevel = "2nd Written";
+  else if (totalPoints >= 6) notificationLevel = "1st Written";
+  else if (totalPoints >= 4) notificationLevel = "Verbal";
+
+  return prisma.associate.update({
+    where: { id: associateId },
+    data: {
+      currentPoints: totalPoints,
+      currentNotification: notificationLevel,
+    },
+  });
+}
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 const PORT = process.env.PORT || 5000;

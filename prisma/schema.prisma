@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,26 +11,29 @@ datasource db {
 }
 
 model Associate {
-  id        String     @id @default(uuid())
-  name      String
-  incidents Incident[]
+  id                  String                @id @default(uuid())
+  name                String
+  currentPoints       Float                 @default(0)
+  currentNotification String                @default("None")
+  occurrences         AttendanceOccurrence[]
 }
 
-model IncidentType {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  points      Int        @default(0)
-  description String?
-  incidents   Incident[]
+model OccurrenceType {
+  id          String                 @id @default(uuid())
+  code        String                 @unique
+  description String
+  points      Float
+  occurrences AttendanceOccurrence[]
 }
 
-model Incident {
-  id            String       @id @default(uuid())
-  associateId   String
-  associate     Associate    @relation(fields: [associateId], references: [id])
-  typeId        String       @default(uuid())
-  type          IncidentType @relation(fields: [typeId], references: [id])
-  description   String
-  date          DateTime
-  isVerbal      Boolean
+model AttendanceOccurrence {
+  id              String         @id @default(uuid())
+  associateId     String
+  associate       Associate      @relation(fields: [associateId], references: [id])
+  typeId          String
+  type            OccurrenceType @relation(fields: [typeId], references: [id])
+  date            DateTime
+  pointsAtTime    Float
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }

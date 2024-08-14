@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import {
+  Associate,
+  OccurrenceType,
+  Occurrence,
   getAssociates,
-  getIncidents,
-  getIncidentTypes,
-  addIncident,
+  getOccurrences,
+  getOccurrenceTypes,
+  addOccurrence,
 } from "@/components/lib/api";
 import Header from "@/components/Header";
 import AssociateList from "@/pages/AssociateList";
-import IncidentForm from "@/pages/IncidentForm";
-import IncidentList from "@/pages/IncidentList";
+import OccurrenceForm from "@/pages/OccurrenceForm";
+import OccurrenceList from "@/pages/OccurrenceList";
 
 function App() {
-  const [associates, setAssociates] = useState([]);
-  const [incidents, setIncidents] = useState([]);
-  const [incidentTypes, setIncidentTypes] = useState([]);
+  const [associates, setAssociates] = useState<Associate[]>([]);
+  const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
+  const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
@@ -25,18 +28,14 @@ function App() {
       try {
         const [associatesData, typesData] = await Promise.all([
           getAssociates(),
-          getIncidentTypes(),
+          getOccurrenceTypes(),
         ]);
         setAssociates(associatesData);
-        setIncidentTypes(typesData);
+        setOccurrenceTypes(typesData);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else if (typeof err === "string") {
-          setError(err);
-        } else {
-          setError("An unknown error occurred");
-        }
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
       } finally {
         setLoading(false);
       }
@@ -46,56 +45,44 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetchIncidents();
+    fetchOccurrences();
   }, [selectedAssociateId]);
 
-  const fetchIncidents = async () => {
+  const fetchOccurrences = async () => {
     if (selectedAssociateId) {
       try {
-        const incidentsData = await getIncidents(selectedAssociateId);
-        setIncidents(incidentsData);
+        const occurrencesData = await getOccurrences(selectedAssociateId);
+        setOccurrences(occurrencesData);
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else if (typeof err === "string") {
-          setError(err);
-        } else {
-          setError("An unknown error occurred");
-        }
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
       }
     } else {
-      setIncidents([]); // clear inc if no associate is selected
+      setOccurrences([]);
     }
   };
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
-    if (!associateId) {
-      setIncidents([]); // clear inc if "Select Associate" is selected
-    }
   };
 
-  const handleAddIncident = async (incidentData: {
+  const handleAddOccurrence = async (occurrenceData: {
     typeId: string;
-    description: string;
-    isVerbal: boolean;
+    date: Date;
   }) => {
     if (selectedAssociateId) {
       try {
-        await addIncident({
-          ...incidentData,
+        await addOccurrence({
+          ...occurrenceData,
           associateId: selectedAssociateId,
         });
-        // fetch inc after adding
-        await fetchIncidents();
+        await fetchOccurrences();
+        // Refresh associate data to update current points and notification
+        const updatedAssociates = await getAssociates();
+        setAssociates(updatedAssociates);
       } catch (e: unknown) {
-        if (e instanceof Error) {
-          setError(e.message);
-        } else if (typeof e === "string") {
-          setError(e);
-        } else {
-          setError("An unknown error occurred");
-        }
+        setError(e instanceof Error ? e.message : "An unknown error occurred");
       }
     }
   };
@@ -112,12 +99,12 @@ function App() {
           selectedAssociateId={selectedAssociateId}
           onSelectAssociate={handleAssociateSelect}
         />
-        <IncidentForm
-          incidentTypes={incidentTypes}
+        <OccurrenceForm
+          occurrenceTypes={occurrenceTypes}
           associateId={selectedAssociateId}
-          onAddIncident={handleAddIncident}
+          onAddOccurrence={handleAddOccurrence}
         />
-        <IncidentList incidents={incidents} incidentTypes={incidentTypes} />
+        <OccurrenceList occurrences={occurrences} />
       </main>
     </div>
   );

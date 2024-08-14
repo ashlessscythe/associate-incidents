@@ -1,54 +1,70 @@
-// src/lib/api.ts
 import axios from "axios";
 
-// removed api localhost
-// const API_URL = 'localhost:5000/api'
+const api = axios.create({
+  baseURL: "/api",
+});
 
-export async function getAssociates() {
-  const response = await axios.get(`/api/associates`);
-  return response.data;
+export interface Associate {
+  id: string;
+  name: string;
+  currentPoints: number;
+  currentNotification: string;
 }
 
-export async function getIncidentTypes() {
-  const response = await axios.get(`/api/incident-types`);
-  return response.data;
-}
-
-export async function addIncident(incidentData: {
-  typeId: string;
+export interface OccurrenceType {
+  id: string;
+  code: string;
   description: string;
-  isVerbal: boolean;
+  points: number;
+}
+
+export interface Occurrence {
+  id: string;
   associateId: string;
-}) {
-  const response = await axios.post(`/api/incidents`, incidentData);
-  return response.data;
+  typeId: string;
+  type: OccurrenceType;
+  date: Date;
+  pointsAtTime: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// New functions for CRUD operations
-
-export async function getIncidents(associateId: string) {
-  const response = await axios.get(`/api/incidents/${associateId}`);
+export const getAssociates = async (): Promise<Associate[]> => {
+  const response = await api.get<Associate[]>("/associates");
   return response.data;
-}
+};
 
-export async function getIncident(id: string) {
-  const response = await axios.get(`/api/incidents/single/${id}`);
+export const getOccurrenceTypes = async (): Promise<OccurrenceType[]> => {
+  const response = await api.get<OccurrenceType[]>("/occurrence-types");
   return response.data;
-}
+};
 
-export async function updateIncident(
-  id: string,
-  incidentData: {
-    typeId?: string;
-    description?: string;
-    isVerbal?: boolean;
-  }
-) {
-  const response = await axios.put(`/api/incidents/${id}`, incidentData);
+export const getOccurrences = async (
+  associateId: string
+): Promise<Occurrence[]> => {
+  const response = await api.get<Occurrence[]>(
+    `/attendance-occurrences/${associateId}`
+  );
   return response.data;
-}
+};
 
-export async function deleteIncident(id: string) {
-  const response = await axios.delete(`/api/incidents/${id}`);
+export const addOccurrence = async (occurrenceData: {
+  associateId: string;
+  typeId: string;
+  date: Date;
+}): Promise<Occurrence> => {
+  const response = await api.post<Occurrence>(
+    "/attendance-occurrences",
+    occurrenceData
+  );
   return response.data;
-}
+};
+
+export const updateAssociatePoints = async (
+  associateId: string
+): Promise<Associate> => {
+  const response = await api.put<Associate>(
+    `/associates/${associateId}/update-points`
+  );
+  return response.data;
+};

@@ -1,0 +1,3 @@
+- fix date picker
+- add delete functionality
+- 

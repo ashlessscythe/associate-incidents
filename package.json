@@ -15,7 +15,8 @@
     "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
-    "@prisma/client": "^5.17.0",
+    "@faker-js/faker": "^8.4.1",
+    "@prisma/client": "^5.18.0",
     "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "axios": "^1.7.2",
