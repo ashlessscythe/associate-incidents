@@ -100,7 +100,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <Header />
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto p-4 max-w-[95%]">
         <AssociateList
           associates={associates}
           selectedAssociateId={selectedAssociateId}
