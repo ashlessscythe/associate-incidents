@@ -7,6 +7,7 @@ import {
   addCorrectiveAction,
   Rule,
   CorrectiveAction,
+  deleteCorrectiveAction,
 } from "@/components/lib/api";
 import AssociateList from "@/pages/AssociateList";
 import CAForm from "./CAForm";
@@ -18,9 +19,7 @@ function CAPage() {
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
   >([]);
-  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
-    null
-  );
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +71,7 @@ function CAPage() {
     ruleId: string;
     description: string;
     level: number;
+    date: Date;
   }) => {
     if (selectedAssociateId) {
       try {
@@ -85,6 +85,27 @@ function CAPage() {
       }
     }
   };
+
+  const handleDeleteCA = async (id: string) => {
+    const isConfirmed = window.confirm("Are you sure you want to delete?");
+
+    if (!isConfirmed) {
+      return; // do nothing
+    }
+    try {
+      await deleteCorrectiveAction(id);
+      // Update your state to remove the deleted corrective action
+      setCorrectiveActions(prevCAs => prevCAs.filter(ca => ca.id !== id));
+    } catch (error) {
+      console.error("Failed to delete corrective action:", error);
+      // Handle error (e.g., show an error message to the user)
+      if (error instanceof Error) {
+        alert(`Failed to delete CA: ${error.message}`);
+      } else {
+        alert("An unknown error occured while deleting the CA");
+      }
+    }
+  }
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -101,7 +122,7 @@ function CAPage() {
         associateId={selectedAssociateId}
         onAddCorrectiveAction={handleAddCorrectiveAction}
       />
-      <CAList correctiveActions={correctiveActions} rules={rules} />
+      <CAList correctiveActions={correctiveActions} rules={rules} onDeleteCA={handleDeleteCA} />
     </div>
   );
 }

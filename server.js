@@ -157,28 +157,23 @@ app.get("/api/rules", async (req, res) => {
 });
 
 // Get corrective actions for an associate
-app.get("/api/correctiveActions", async (req, res) => {
-  const { associateId } = req.query;
-  if (!associateId) {
-    return res.status(400).json({ error: "Associate ID is required" });
-  }
-
+app.get('/api/corrective-actions/:associateId', async (req, res) => {
+  const { associateId } = req.params;
   try {
+    // Validate associateId here if necessary
     const correctiveActions = await prisma.correctiveAction.findMany({
-      where: { associateId: associateId },
-      include: { rule: true },
-      orderBy: { date: "desc" },
+      where: { associateId: associateId }
     });
     res.json(correctiveActions);
   } catch (error) {
-    console.error("Error fetching corrective actions:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Error fetching corrective actions:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
 // Add a new corrective action
-app.post("/api/correctiveActions", async (req, res) => {
-  const { associateId, ruleId, description, level } = req.body;
+app.post("/api/corrective-actions", async (req, res) => {
+  const { associateId, ruleId, description, level, date } = req.body;
   if (!associateId || !ruleId || !description || !level) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -190,7 +185,7 @@ app.post("/api/correctiveActions", async (req, res) => {
         ruleId,
         description,
         level,
-        date: new Date(),
+        date,
       },
       include: { rule: true },
     });
@@ -198,6 +193,20 @@ app.post("/api/correctiveActions", async (req, res) => {
   } catch (error) {
     console.error("Error creating corrective action:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// delete CA
+app.delete("/api/corrective-actions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.correctiveAction.delete({
+      where: { id },
+    });
+    res.status(204).end();
+  } catch (error) {
+    console.error("Error deleting corrective action:", error);
+    res.status(500).json({ error: "Failed to delete corrective action" });
   }
 });
 

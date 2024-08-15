@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import {
   Select,
@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Textarea } from "../components/ui/textarea";
+import { Input } from "../components/ui/input";
 import { Rule } from "@/components/lib/api";
 
 interface CAFormProps {
@@ -17,7 +18,8 @@ interface CAFormProps {
     ruleId: string;
     description: string;
     level: number;
-  }) => void;
+    date: Date;
+  }) => Promise<void>;
 }
 
 const CAForm: React.FC<CAFormProps> = ({
@@ -30,24 +32,33 @@ const CAForm: React.FC<CAFormProps> = ({
   const [level, setLevel] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!associateId || !ruleId) return;
+    if (!associateId || !ruleId || !dateInputRef.current) return;
+
+    const date = dateInputRef.current.value;
+    if (!date) {
+      setError("Please select a date");
+      return;
+    }
 
     setIsSubmitting(true);
-    setError(null);
-
     try {
       await onAddCorrectiveAction({
         ruleId,
         description,
         level: Number(level),
+        date: new Date(date),
       });
       // Reset form
       setRuleId("");
       setDescription("");
       setLevel("1");
+      if (dateInputRef.current) {
+        dateInputRef.current.value = "";
+      }
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -81,6 +92,12 @@ const CAForm: React.FC<CAFormProps> = ({
             ))}
           </SelectContent>
         </Select>
+        <Input 
+          type="date"
+          ref={dateInputRef}
+          defaultValue={new Date().toISOString().split('T')[0]}
+          max={new Date().toISOString().split('T')[0]} // prevent future dates
+        />
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}

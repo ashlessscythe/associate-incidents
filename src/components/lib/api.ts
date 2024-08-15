@@ -66,7 +66,6 @@ export const addOccurrence = async (occurrenceData: {
 
 // delete occurrence by id
 export const deleteOccurrence = async (occurrenceId: string): Promise<void> => {
-  // console.log("API deleteOccurrence: ", occurrenceId);
   const res = await api.delete(`/attendance-occurrences/${occurrenceId}`);
   return res.data;
 };
@@ -105,38 +104,33 @@ export type CorrectiveAction = {
   rule: Rule;
   level: number;
   description: string;
-  date: string;
+  date: Date;
 };
 
 export async function getRules(): Promise<Rule[]> {
-  const response = await fetch("/api/rules");
-  if (!response.ok) {
-    throw new Error("Failed to fetch rules");
-  }
-  return response.json();
+  const res = await api.get<Rule[]>('/rules');
+  return res.data;
 }
 
 export async function getCorrectiveActions(
-  associateId: string | null
+  associateId: string
 ): Promise<CorrectiveAction[]> {
   if (!associateId) {
     return []; // Return an empty array if no associate is selected
   }
-  const response = await fetch(
-    `/api/correctiveActions?associateId=${associateId}`
-  );
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(
-      "Error fetching corrective actions:",
-      response.status,
-      errorText
-    );
-    throw new Error(
-      `Failed to fetch corrective actions: ${response.status} ${errorText}`
-    );
+  try {
+    const res = await api.get<CorrectiveAction[]>(`/corrective-actions/${associateId}`);
+    // Ensure the response is an array
+    if (Array.isArray(res.data)) {
+      return res.data;
+    } else {
+      console.error('Expected an array of CorrectiveActions, but got:', res.data);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error fetching corrective actions:', error);
+    return [];
   }
-  return response.json();
 }
 
 export async function addCorrectiveAction(data: {
@@ -144,16 +138,17 @@ export async function addCorrectiveAction(data: {
   ruleId: string;
   description: string;
   level: number;
+  date: Date;
 }): Promise<CorrectiveAction> {
-  const response = await fetch("/api/correctiveActions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add corrective action");
-  }
-  return response.json();
+  const res = await api.post<CorrectiveAction>("/corrective-actions", data);
+  return res.data
 }
+
+// delete 
+export const deleteCorrectiveAction = async (id: string): Promise<void> => {
+  await api.delete(`/corrective-actions/${id}`);
+};
+
+
+
+
