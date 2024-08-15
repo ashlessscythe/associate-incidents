@@ -163,6 +163,7 @@ app.get("/api/corrective-actions/:associateId", async (req, res) => {
     // Validate associateId here if necessary
     const correctiveActions = await prisma.correctiveAction.findMany({
       where: { associateId: associateId },
+      orderBy: { date: "desc" },
     });
     res.json(correctiveActions);
   } catch (error) {
@@ -209,6 +210,85 @@ app.delete("/api/corrective-actions/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting corrective action:", error);
     res.status(500).json({ error: "Failed to delete corrective action" });
+  }
+});
+
+// associate stuffs
+app.get("/api/associates-data", async (req, res) => {
+  try {
+    const associatesData = await prisma.associate.findMany({
+      select: {
+        id: true,
+        name: true,
+        occurrences: {
+          select: {
+            type: {
+              select: {
+                points: true,
+              },
+            },
+          },
+        },
+        correctiveActions: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    const formattedData = associatesData.map((associate) => ({
+      name: associate.name,
+      currentPoints: associate.occurrences.reduce(
+        (sum, occurrence) => sum + occurrence.type.points,
+        0
+      ),
+      totalOccurrences: associate.occurrences.length,
+      totalCA: associate.correctiveActions.length,
+    }));
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Error fetching associates data:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching associates data" });
+  }
+});
+
+// get Corrective Action (CA) by type
+app.get("/api/ca-by-type", async (req, res) => {
+  try {
+    const caByTypeData = await prisma.associate.findMany({
+      select: {
+        name: true,
+        correctiveActions: {
+          select: {
+            rule: {
+              select: {
+                type: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const formattedData = caByTypeData.map((associate) => {
+      const result = { name: associate.name };
+      associate.correctiveActions.forEach((ca) => {
+        const type = ca.rule.type;
+        result[type] = (result[type] || 0) + 1;
+      });
+      return result;
+    });
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Error fetching CA by type data:", error);
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching CA by type data" });
   }
 });
 
