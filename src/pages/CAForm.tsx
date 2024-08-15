@@ -1,4 +1,13 @@
 import React, { useState } from "react";
+import { Button } from "../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import { Textarea } from "../components/ui/textarea";
 import { Rule } from "@/components/lib/api";
 
 interface CAFormProps {
@@ -18,15 +27,37 @@ const CAForm: React.FC<CAFormProps> = ({
 }) => {
   const [ruleId, setRuleId] = useState("");
   const [description, setDescription] = useState("");
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState("1");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (associateId && ruleId) {
-      onAddCorrectiveAction({ ruleId, description, level });
+    if (!associateId || !ruleId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      await onAddCorrectiveAction({
+        ruleId,
+        description,
+        level: Number(level),
+      });
+      // Reset form
       setRuleId("");
       setDescription("");
-      setLevel(1);
+      setLevel("1");
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else if (typeof e === "string") {
+        setError(e);
+      } else {
+        setError("An unknown error occurred");
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -36,70 +67,41 @@ const CAForm: React.FC<CAFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label
-          htmlFor="rule"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Rule Violated
-        </label>
-        <select
-          id="rule"
-          value={ruleId}
-          onChange={(e) => setRuleId(e.target.value)}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-          required
-        >
-          <option value="">Select a rule</option>
-          {rules.map((rule) => (
-            <option key={rule.id} value={rule.id}>
-              {rule.type} - {rule.code}: {rule.description}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label
-          htmlFor="description"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Description
-        </label>
-        <textarea
-          id="description"
+      <h2 className="text-xl font-semibold mb-2">Add Corrective Action</h2>
+      <div className="space-y-4">
+        <Select onValueChange={setRuleId} value={ruleId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a rule" />
+          </SelectTrigger>
+          <SelectContent>
+            {rules.map((rule) => (
+              <SelectItem key={rule.id} value={rule.id}>
+                {rule.type} - {rule.code}: {rule.description}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          rows={3}
-          required
+          placeholder="Enter description"
         />
+        <Select onValueChange={setLevel} value={level}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select notification level" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">1 - Documented Verbal Warning</SelectItem>
+            <SelectItem value="2">2 - Written Warning</SelectItem>
+            <SelectItem value="3">3 - Final Written Warning</SelectItem>
+            <SelectItem value="4">4 - Termination</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button type="submit" disabled={!ruleId || isSubmitting}>
+          {isSubmitting ? "Adding..." : "Add Corrective Action"}
+        </Button>
+        {error && <div className="text-red-500">{error}</div>}
       </div>
-      <div>
-        <label
-          htmlFor="level"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Notification Level
-        </label>
-        <select
-          id="level"
-          value={level}
-          onChange={(e) => setLevel(Number(e.target.value))}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-          required
-        >
-          <option value={1}>1 - Documented Verbal Warning</option>
-          <option value={2}>2 - Written Warning</option>
-          <option value={3}>3 - Final Written Warning</option>
-          <option value={4}>4 - Termination</option>
-        </select>
-      </div>
-      <button
-        type="submit"
-        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-      >
-        Add Corrective Action
-      </button>
     </form>
   );
 };
