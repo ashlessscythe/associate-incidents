@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
-const Header: React.FC = () => {
+type PageType = "attendance" | "ca" | "associates" | "reports" | null;
+
+interface HeaderProps {
+  currentPage: PageType;
+  onPageSelect: (page: PageType) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check for user's preference in localStorage or system preference
     const isDarkMode =
       localStorage.getItem("darkMode") === "true" ||
       (!("darkMode" in localStorage) &&
@@ -26,33 +33,74 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white mr-4">
-            Discipline Tracker
+            Employee Management System
           </h1>
           <nav>
             <ul className="flex space-x-4">
               <li>
-                <a
-                  href="#"
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                <Link
+                  to="/"
+                  className={`px-4 py-2 rounded ${
+                    currentPage === null
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+                  onClick={() => onPageSelect(null)}
                 >
                   Home
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                <Link
+                  to="/attendance"
+                  className={`px-4 py-2 rounded ${
+                    currentPage === "attendance"
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+                  onClick={() => onPageSelect("attendance")}
+                >
+                  Attendance Tracking
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/ca"
+                  className={`px-4 py-2 rounded ${
+                    currentPage === "ca"
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+                  onClick={() => onPageSelect("ca")}
+                >
+                  Corrective Action
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/associates"
+                  className={`px-4 py-2 rounded ${
+                    currentPage === "associates"
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+                  onClick={() => onPageSelect("associates")}
                 >
                   Associates
-                </a>
+                </Link>
               </li>
               <li>
-                <a
-                  href="#"
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                <Link
+                  to="/reports"
+                  className={`px-4 py-2 rounded ${
+                    currentPage === "reports"
+                      ? "bg-blue-500 text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                  }`}
+                  onClick={() => onPageSelect("reports")}
                 >
                   Reports
-                </a>
+                </Link>
               </li>
             </ul>
           </nav>
