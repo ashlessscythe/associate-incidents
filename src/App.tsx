@@ -1,10 +1,5 @@
 import { useState } from "react";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import AttendancePage from "./pages/AttendancePage";
 import CAPage from "./pages/CAPage";
 import Header from "@/components/Header";
@@ -44,7 +39,6 @@ function App() {
             <Route path="/ca" element={<CAPage />} />
             <Route path="/associates" element={<AssociatesPage />} />
             <Route path="/reports" element={<ReportsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
       </div>

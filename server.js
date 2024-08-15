@@ -215,12 +215,21 @@ app.delete("/api/corrective-actions/:id", async (req, res) => {
 
 // associate stuffs
 app.get("/api/associates-data", async (req, res) => {
+  const months = parseInt(req.query.months) || 12; // Default to 12 months if not specified
+  const cutoffDate = new Date();
+  cutoffDate.setMonth(cutoffDate.getMonth() - months);
+
   try {
     const associatesData = await prisma.associate.findMany({
       select: {
         id: true,
         name: true,
         occurrences: {
+          where: {
+            date: {
+              gte: cutoffDate,
+            },
+          },
           select: {
             type: {
               select: {
@@ -259,16 +268,26 @@ app.get("/api/associates-data", async (req, res) => {
 // get Corrective Action (CA) by type
 app.get("/api/ca-by-type", async (req, res) => {
   try {
+    const months = parseInt(req.query.months) || 12; // Default to 12 months if not specified
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - months);
+
     const caByTypeData = await prisma.associate.findMany({
       select: {
         name: true,
         correctiveActions: {
+          where: {
+            date: {
+              gte: cutoffDate,
+            },
+          },
           select: {
             rule: {
               select: {
                 type: true,
               },
             },
+            date: true,
           },
         },
       },

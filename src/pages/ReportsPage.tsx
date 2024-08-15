@@ -73,7 +73,6 @@ const ReportsPage: React.FC = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Current Points</TableHead>
-              <TableHead>Total Occurrences</TableHead>
               <TableHead>Total CA</TableHead>
             </TableRow>
           </TableHeader>
@@ -82,7 +81,6 @@ const ReportsPage: React.FC = () => {
               <TableRow key={index}>
                 <TableCell>{associate.name}</TableCell>
                 <TableCell>{associate.currentPoints.toFixed(2)}</TableCell>
-                <TableCell>{associate.totalOccurrences}</TableCell>
                 <TableCell>{associate.totalCA}</TableCell>
               </TableRow>
             ))}

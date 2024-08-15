@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -12,6 +12,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
   const [darkMode, setDarkMode] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const isDarkMode =
@@ -28,97 +29,118 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
     localStorage.setItem("darkMode", (!darkMode).toString());
   };
 
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const NavLinks = () => (
+    <>
+      <Link
+        to="/"
+        className={`px-4 py-2 rounded ${
+          currentPage === null
+            ? "bg-blue-500 text-white"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        }`}
+        onClick={() => onPageSelect(null)}
+      >
+        Home
+      </Link>
+      <Link
+        to="/attendance"
+        className={`px-4 py-2 rounded ${
+          currentPage === "attendance"
+            ? "bg-blue-500 text-white"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        }`}
+        onClick={() => onPageSelect("attendance")}
+      >
+        Attendance Tracking
+      </Link>
+      <Link
+        to="/ca"
+        className={`px-4 py-2 rounded ${
+          currentPage === "ca"
+            ? "bg-blue-500 text-white"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        }`}
+        onClick={() => onPageSelect("ca")}
+      >
+        Corrective Action
+      </Link>
+      <Link
+        to="/associates"
+        className={`px-4 py-2 rounded ${
+          currentPage === "associates"
+            ? "bg-blue-500 text-white"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        }`}
+        onClick={() => onPageSelect("associates")}
+      >
+        Associates
+      </Link>
+      <Link
+        to="/reports"
+        className={`px-4 py-2 rounded ${
+          currentPage === "reports"
+            ? "bg-blue-500 text-white"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        }`}
+        onClick={() => onPageSelect("reports")}
+      >
+        Reports
+      </Link>
+    </>
+  );
+
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mr-4">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
             Employee Management System
           </h1>
-          <nav>
-            <ul className="flex space-x-4">
-              <li>
-                <Link
-                  to="/"
-                  className={`px-4 py-2 rounded ${
-                    currentPage === null
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  }`}
-                  onClick={() => onPageSelect(null)}
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/attendance"
-                  className={`px-4 py-2 rounded ${
-                    currentPage === "attendance"
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  }`}
-                  onClick={() => onPageSelect("attendance")}
-                >
-                  Attendance Tracking
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/ca"
-                  className={`px-4 py-2 rounded ${
-                    currentPage === "ca"
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  }`}
-                  onClick={() => onPageSelect("ca")}
-                >
-                  Corrective Action
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/associates"
-                  className={`px-4 py-2 rounded ${
-                    currentPage === "associates"
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  }`}
-                  onClick={() => onPageSelect("associates")}
-                >
-                  Associates
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/reports"
-                  className={`px-4 py-2 rounded ${
-                    currentPage === "reports"
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-                  }`}
-                  onClick={() => onPageSelect("reports")}
-                >
-                  Reports
-                </Link>
-              </li>
+          <div className="flex items-center">
+            <nav className="hidden md:block">
+              <ul className="flex space-x-4">
+                <NavLinks />
+              </ul>
+            </nav>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle Dark Mode"
+              onClick={toggleDarkMode}
+              className="ml-4"
+            >
+              {darkMode ? (
+                <Sun className="h-[1.2rem] w-[1.2rem]" />
+              ) : (
+                <Moon className="h-[1.2rem] w-[1.2rem]" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle Menu"
+              onClick={toggleMenu}
+              className="md:hidden ml-2"
+            >
+              {isMenuOpen ? (
+                <X className="h-[1.2rem] w-[1.2rem]" />
+              ) : (
+                <Menu className="h-[1.2rem] w-[1.2rem]" />
+              )}
+            </Button>
+          </div>
+        </div>
+        {isMenuOpen && (
+          <nav className="mt-4 md:hidden">
+            <ul className="flex flex-col space-y-2">
+              <NavLinks />
             </ul>
           </nav>
-        </div>
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle Dark Mode"
-            onClick={toggleDarkMode}
-          >
-            {darkMode ? (
-              <Sun className="h-[1.2rem] w-[1.2rem]" />
-            ) : (
-              <Moon className="h-[1.2rem] w-[1.2rem]" />
-            )}
-          </Button>
-        </div>
+        )}
       </div>
     </header>
   );

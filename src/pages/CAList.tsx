@@ -20,6 +20,21 @@ const CAList: React.FC<CAListProps> = ({
       : "Unknown Rule";
   };
 
+  const getLevelDescription = (level: number) => {
+    switch (level) {
+      case 1:
+        return "1 - Documented Verbal Warning";
+      case 2:
+        return "2 - Written Warning";
+      case 3:
+        return "3 - Final Written Warning";
+      case 4:
+        return "4 - Termination";
+      default:
+        return `${level} - Unknown Level`;
+    }
+  };
+
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -55,7 +70,7 @@ const CAList: React.FC<CAListProps> = ({
                     <p className="font-semibold">
                       {getRuleDescription(ca.ruleId)}
                     </p>
-                    <p>Level: {ca.level}</p>
+                    <p>Level: {getLevelDescription(ca.level)}</p>
                     <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
                     <p>Description: {ca.description}</p>
                   </div>

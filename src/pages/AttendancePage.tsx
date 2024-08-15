@@ -8,7 +8,7 @@ import {
   getOccurrenceTypes,
   addOccurrence,
 } from "@/components/lib/api";
-import AssociateList from "@/pages/AssociateList";
+import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";
 
@@ -99,10 +99,10 @@ function AttendancePage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <main className="container mx-auto p-4 max-w-[95%]">
-        <AssociateList
+        <AssociateSelect
           associates={associates}
           selectedAssociateId={selectedAssociateId}
-          onSelectAssociate={handleAssociateSelect}
+          onAssociateSelect={handleAssociateSelect}
         />
         <OccurrenceForm
           occurrenceTypes={occurrenceTypes}

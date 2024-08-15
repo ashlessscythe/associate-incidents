@@ -9,7 +9,7 @@ import {
   CorrectiveAction,
   deleteCorrectiveAction,
 } from "@/components/lib/api";
-import AssociateList from "@/pages/AssociateList";
+import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "./CAForm";
 import CAList from "./CAList";
 
@@ -19,7 +19,9 @@ function CAPage() {
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
   >([]);
-  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,7 +97,7 @@ function CAPage() {
     try {
       await deleteCorrectiveAction(id);
       // Update your state to remove the deleted corrective action
-      setCorrectiveActions(prevCAs => prevCAs.filter(ca => ca.id !== id));
+      setCorrectiveActions((prevCAs) => prevCAs.filter((ca) => ca.id !== id));
     } catch (error) {
       console.error("Failed to delete corrective action:", error);
       // Handle error (e.g., show an error message to the user)
@@ -105,24 +107,28 @@ function CAPage() {
         alert("An unknown error occured while deleting the CA");
       }
     }
-  }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
-      <AssociateList
+      <AssociateSelect
         associates={associates}
         selectedAssociateId={selectedAssociateId}
-        onSelectAssociate={handleAssociateSelect}
+        onAssociateSelect={handleAssociateSelect}
       />
       <CAForm
         rules={rules}
         associateId={selectedAssociateId}
         onAddCorrectiveAction={handleAddCorrectiveAction}
       />
-      <CAList correctiveActions={correctiveActions} rules={rules} onDeleteCA={handleDeleteCA} />
+      <CAList
+        correctiveActions={correctiveActions}
+        rules={rules}
+        onDeleteCA={handleDeleteCA}
+      />
     </div>
   );
 }

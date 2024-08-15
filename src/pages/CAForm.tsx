@@ -7,8 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import { Textarea } from "../components/ui/textarea";
-import { Input } from "../components/ui/input";
+import GroupedRuleSelect from "@/components/GroupedRuleSelect";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Rule } from "@/components/lib/api";
 
 interface CAFormProps {
@@ -80,18 +81,11 @@ const CAForm: React.FC<CAFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-xl font-semibold mb-2">Add Corrective Action</h2>
       <div className="space-y-4">
-        <Select onValueChange={setRuleId} value={ruleId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a rule" />
-          </SelectTrigger>
-          <SelectContent>
-            {rules.map((rule) => (
-              <SelectItem key={rule.id} value={rule.id}>
-                {rule.type} - {rule.code}: {rule.description}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <GroupedRuleSelect
+          rules={rules}
+          ruleId={ruleId}
+          setRuleId={setRuleId}
+        />
         <Input
           type="date"
           ref={dateInputRef}
