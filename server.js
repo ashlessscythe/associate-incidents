@@ -84,7 +84,7 @@ app.post("/api/attendance-occurrences", async (req, res) => {
       include: { type: true },
     });
 
-    console.log("new occurrence", newOccurrence);
+    // console.log("new occurrence", newOccurrence);
 
     res.json(newOccurrence);
   } catch (error) {
@@ -157,17 +157,19 @@ app.get("/api/rules", async (req, res) => {
 });
 
 // Get corrective actions for an associate
-app.get('/api/corrective-actions/:associateId', async (req, res) => {
+app.get("/api/corrective-actions/:associateId", async (req, res) => {
   const { associateId } = req.params;
   try {
     // Validate associateId here if necessary
     const correctiveActions = await prisma.correctiveAction.findMany({
-      where: { associateId: associateId }
+      where: { associateId: associateId },
     });
     res.json(correctiveActions);
   } catch (error) {
-    console.error('Error fetching corrective actions:', error);
-    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    console.error("Error fetching corrective actions:", error);
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: error.message });
   }
 });
 

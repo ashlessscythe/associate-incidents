@@ -1,6 +1,6 @@
 import React from "react";
 import { CorrectiveAction, Rule } from "@/components/lib/api";
-import { Trash2 } from 'lucide-react';
+import { Trash2 } from "lucide-react";
 
 interface CAListProps {
   correctiveActions: CorrectiveAction[];
@@ -8,10 +8,16 @@ interface CAListProps {
   onDeleteCA: (id: string) => Promise<void>;
 }
 
-const CAList: React.FC<CAListProps> = ({ correctiveActions, rules, onDeleteCA }) => {
+const CAList: React.FC<CAListProps> = ({
+  correctiveActions,
+  rules,
+  onDeleteCA,
+}) => {
   const getRuleDescription = (ruleId: string) => {
     const rule = rules.find((r) => r.id === ruleId);
-    return rule ? `${rule.type} - ${rule.code}: ${rule.description}` : "Unknown Rule";
+    return rule
+      ? `${rule.type} - ${rule.code}: ${rule.description}`
+      : "Unknown Rule";
   };
 
   return (
@@ -22,12 +28,17 @@ const CAList: React.FC<CAListProps> = ({ correctiveActions, rules, onDeleteCA })
       ) : (
         <ul className="space-y-4">
           {correctiveActions.map((ca) => (
-            <li key={ca.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <li
+              key={ca.id}
+              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
+            >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold">{getRuleDescription(ca.ruleId)}</p>
+                  <p className="font-semibold">
+                    {getRuleDescription(ca.ruleId)}
+                  </p>
                   <p>Level: {ca.level}</p>
-                  <p>Date: {new Date(ca.date).toLocaleDateString()}</p>
+                  <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
                   <p>Description: {ca.description}</p>
                 </div>
                 <button

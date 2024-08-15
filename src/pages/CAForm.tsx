@@ -92,11 +92,11 @@ const CAForm: React.FC<CAFormProps> = ({
             ))}
           </SelectContent>
         </Select>
-        <Input 
+        <Input
           type="date"
           ref={dateInputRef}
-          defaultValue={new Date().toISOString().split('T')[0]}
-          max={new Date().toISOString().split('T')[0]} // prevent future dates
+          defaultValue={new Date().toISOString().split("T")[0]}
+          max={new Date().toISOString().split("T")[0]} // prevent future dates
         />
         <Textarea
           value={description}

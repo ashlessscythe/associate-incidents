@@ -109,7 +109,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                 <TableCell>{occurrence.type.code}</TableCell>
                 <TableCell>{occurrence.type.description}</TableCell>
                 <TableCell>
-                  {new Date(occurrence.date).toLocaleDateString()}
+                  {new Date(occurrence.date).toISOString().split("T")[0]}
                 </TableCell>
                 <TableCell>{occurrence.notes}</TableCell>
                 <TableCell>
