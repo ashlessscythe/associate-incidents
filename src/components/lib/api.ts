@@ -22,7 +22,6 @@ export interface OccurrenceType {
 
 export interface Occurrence {
   id: string;
-  associateId: string;
   typeId: string;
   type: OccurrenceType;
   date: Date;
@@ -62,6 +61,26 @@ export const addOccurrence = async (occurrenceData: {
     occurrenceData
   );
   return response.data;
+};
+
+export const updateOccurrence = async (
+  occurrenceId: string,
+  occurrenceData: {
+    typeId?: string;
+    date?: Date;
+    notes?: string;
+  }
+): Promise<Occurrence> => {
+  try {
+    const response = await api.put<Occurrence>(
+      `/attendance-occurrences/${occurrenceId}`,
+      occurrenceData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating occurrence:", error);
+    throw error; // Re-throw the error for the calling function to handle
+  }
 };
 
 // delete occurrence by id

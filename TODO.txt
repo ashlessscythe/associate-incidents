@@ -1,2 +1,2 @@
-- add seed data for CA's
-- routing buttons (home, page, etc)
+- add toggles to CA report
+- add associates page with add and edit

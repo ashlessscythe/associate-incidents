@@ -7,10 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAssociatePointsAndNotification } from "@/components/lib/api";
-import { deleteOccurrence } from "@/components/lib/api";
+import { getAssociatePointsAndNotification, deleteOccurrence, updateOccurrence } from "@/components/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface OccurrenceType {
   id: string;
@@ -31,21 +34,27 @@ interface OccurrenceListProps {
   occurrences: Occurrence[];
   associateId: string | null;
   onDelete: (occurrenceId: string) => void;
+  onUpdate: (occurenceId: string) => void;
+  occurrenceTypes: OccurrenceType[];
 }
 
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
   occurrences,
   associateId,
+  onUpdate,
   onDelete,
+  occurrenceTypes,
 }) => {
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
+  const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(null);
+
 
   const handleDelete = async (occurrenceId: string) => {
     const isConfirmed = window.confirm("Are you sure you want to delete?");
 
     if (!isConfirmed) {
-      return; // do nothing
+      return;
     }
     try {
       await deleteOccurrence(occurrenceId);
@@ -56,6 +65,32 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         alert(`Failed to delete occurrence: ${err.message}`);
       } else {
         alert("An unknown error occurred while deleting the occurrence");
+      }
+    }
+  };
+
+  const handleUpdateOccurrence = async (
+    occurrenceId: string,
+    occurrenceData: {
+      typeId?: string;
+      date?: Date;
+      notes?: string;
+    }
+  ) => {
+    try {
+      await updateOccurrence(occurrenceId, occurrenceData);
+    
+      // Instead of fetching occurrences here, we'll call the onUpdate prop
+      if (associateId) {
+        onUpdate(associateId);
+      }
+    
+      // alert("Occurrence updated successfully");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(`Failed to update occurrence: ${err.message}`);
+      } else {
+        alert("An unknown error occurred while updating occurrence");
       }
     }
   };
@@ -95,6 +130,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             <TableHead>Date</TableHead>
             <TableHead>Notes</TableHead>
             <TableHead>Points</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -129,6 +165,14 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setEditingOccurrence(occurrence)}
+                    aria-label="Edit occurrence"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             );
@@ -148,6 +192,83 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             Current Notification Level: {notificationLevel}
           </p>
         </div>
+      )}
+
+      {editingOccurrence && (
+        <Dialog open={!!editingOccurrence} onOpenChange={() => setEditingOccurrence(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Occurrence</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleUpdateOccurrence(editingOccurrence.id, {
+                typeId: editingOccurrence.type.id,
+                date: editingOccurrence.date,
+                notes: editingOccurrence.notes
+              });
+              setEditingOccurrence(null);
+            }}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="type" className="text-right">
+                    Type
+                  </Label>
+                  <Select
+                    value={editingOccurrence.type.id}
+                    onValueChange={(value) => setEditingOccurrence({
+                      ...editingOccurrence,
+                      type: occurrenceTypes.find(type => type.id === value) || editingOccurrence.type
+                    })}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {occurrenceTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="date" className="text-right">
+                    Date
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={new Date(editingOccurrence.date).toISOString().split('T')[0]}
+                    onChange={(e) => setEditingOccurrence({
+                      ...editingOccurrence,
+                      date: new Date(e.target.value)
+                    })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="notes" className="text-right">
+                    Notes
+                  </Label>
+                  <Input
+                    id="notes"
+                    value={editingOccurrence.notes}
+                    onChange={(e) => setEditingOccurrence({
+                      ...editingOccurrence,
+                      notes: e.target.value
+                    })}
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Save changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

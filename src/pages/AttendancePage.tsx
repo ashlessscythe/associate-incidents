@@ -87,6 +87,11 @@ function AttendancePage() {
     }
   };
 
+  const handleUpdate = async (associateId: string) => {
+    const updatedOccurrences = await getOccurrences(associateId);
+    setOccurrences(updatedOccurrences);
+  };
+
   const handleDelete = (occurrenceId: string) => {
     setOccurrences(
       occurrences.filter((occurrence) => occurrence.id !== occurrenceId)
@@ -111,8 +116,10 @@ function AttendancePage() {
         />
         <OccurrenceList
           occurrences={occurrences}
-          onDelete={handleDelete}
           associateId={selectedAssociateId}
+          onDelete={handleDelete}
+          onUpdate={handleUpdate}
+          occurrenceTypes={occurrenceTypes}
         />
       </main>
     </div>

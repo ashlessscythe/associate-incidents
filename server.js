@@ -92,6 +92,28 @@ app.post("/api/attendance-occurrences", async (req, res) => {
   }
 });
 
+// edit
+app.put('/api/attendance-occurrences/:id', async (req, res) => {
+  const { id } = req.params;
+  const { typeId, date, notes } = req.body;
+
+  try {
+    const updatedOccurrence = await prisma.attendanceOccurrence.update({
+      where: { id },
+      data: {
+        typeId,
+        date,
+        notes,
+      },
+    });
+
+    res.json(updatedOccurrence);
+  } catch (error) {
+    console.error('Error updating occurrence:', error);
+    res.status(500).json({ error: 'Failed to update occurrence' });
+  }
+});
+
 // delete occurrence by id
 app.delete("/api/attendance-occurrences/:id", async (req, res) => {
   try {
