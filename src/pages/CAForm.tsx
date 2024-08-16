@@ -102,6 +102,7 @@ const CAForm: React.FC<CAFormProps> = ({
             <SelectValue placeholder="Select notification level" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="0">0 - Coaching Conversation</SelectItem>
             <SelectItem value="1">1 - Documented Verbal Warning</SelectItem>
             <SelectItem value="2">2 - Written Warning</SelectItem>
             <SelectItem value="3">3 - Final Written Warning</SelectItem>

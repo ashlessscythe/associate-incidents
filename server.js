@@ -93,7 +93,7 @@ app.post("/api/attendance-occurrences", async (req, res) => {
 });
 
 // edit
-app.put('/api/attendance-occurrences/:id', async (req, res) => {
+app.put("/api/attendance-occurrences/:id", async (req, res) => {
   const { id } = req.params;
   const { typeId, date, notes } = req.body;
 
@@ -109,8 +109,8 @@ app.put('/api/attendance-occurrences/:id', async (req, res) => {
 
     res.json(updatedOccurrence);
   } catch (error) {
-    console.error('Error updating occurrence:', error);
-    res.status(500).json({ error: 'Failed to update occurrence' });
+    console.error("Error updating occurrence:", error);
+    res.status(500).json({ error: "Failed to update occurrence" });
   }
 });
 
@@ -218,6 +218,34 @@ app.post("/api/corrective-actions", async (req, res) => {
   } catch (error) {
     console.error("Error creating corrective action:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// update CA
+app.put("/api/corrective-actions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ruleId, description, level, date } = req.body;
+
+    if (!ruleId || !description || !level) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const updatedCorrectiveAction = await prisma.correctiveAction.update({
+      where: { id },
+      data: {
+        ruleId,
+        description,
+        level,
+        date,
+      },
+      include: { rule: true },
+    });
+
+    res.json(updatedCorrectiveAction);
+  } catch (err) {
+    console.error("Error updating corrective action:", err);
+    res.status(500).json({ error: "Failed to update corrective action" });
   }
 });
 

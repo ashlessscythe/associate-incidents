@@ -168,6 +168,20 @@ export async function addCorrectiveAction(data: {
   return res.data;
 }
 
+// update
+export const updateCorrectiveAction = async (
+  id: string,
+  data: {
+    ruleId: string;
+    description: string;
+    level: number;
+    date: Date;
+  }
+) => {
+  const response = await axios.put(`/api/corrective-actions/${id}`, data);
+  return response.data;
+};
+
 // delete
 export const deleteCorrectiveAction = async (id: string): Promise<void> => {
   await api.delete(`/corrective-actions/${id}`);

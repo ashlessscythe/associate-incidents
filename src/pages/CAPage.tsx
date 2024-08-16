@@ -5,6 +5,7 @@ import {
   getRules,
   getCorrectiveActions,
   addCorrectiveAction,
+  updateCorrectiveAction,
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
@@ -12,6 +13,7 @@ import {
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "./CAForm";
 import CAList from "./CAList";
+import CAEditModal from "@/components/CAEditModal";
 
 function CAPage() {
   const [associates, setAssociates] = useState<Associate[]>([]);
@@ -19,6 +21,7 @@ function CAPage() {
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
   >([]);
+  const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
@@ -62,6 +65,25 @@ function CAPage() {
       }
     } else {
       setCorrectiveActions([]);
+    }
+  };
+
+  const handleEditCA = (ca: CorrectiveAction) => {
+    setEditingCA(ca);
+  };
+
+  const handleUpdateCA = async (updatedCA: CorrectiveAction) => {
+    try {
+      await updateCorrectiveAction(updatedCA.id, updatedCA);
+      await fetchCorrectiveActions();
+      setEditingCA(null);
+    } catch (error) {
+      console.error("Failed to update corrective action:", error);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unknown error occurred while updating the CA");
+      }
     }
   };
 
@@ -128,7 +150,16 @@ function CAPage() {
         correctiveActions={correctiveActions}
         rules={rules}
         onDeleteCA={handleDeleteCA}
+        onEditCA={handleEditCA}
       />
+      {editingCA && (
+        <CAEditModal
+          ca={editingCA}
+          rules={rules}
+          onUpdate={handleUpdateCA}
+          onClose={() => setEditingCA(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,16 +1,19 @@
 import React from "react";
 import { CorrectiveAction, Rule } from "@/components/lib/api";
-import { Trash2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface CAListProps {
   correctiveActions: CorrectiveAction[];
   rules: Rule[];
+  onEditCA: (ca: CorrectiveAction) => void;
   onDeleteCA: (id: string) => Promise<void>;
 }
 
 const CAList: React.FC<CAListProps> = ({
   correctiveActions,
   rules,
+  onEditCA,
   onDeleteCA,
 }) => {
   const getRuleDescription = (ruleId: string) => {
@@ -22,6 +25,8 @@ const CAList: React.FC<CAListProps> = ({
 
   const getLevelDescription = (level: number) => {
     switch (level) {
+      case 0:
+        return "0 - Coaching Conversation";
       case 1:
         return "1 - Documented Verbal Warning";
       case 2:
@@ -74,13 +79,23 @@ const CAList: React.FC<CAListProps> = ({
                     <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
                     <p>Description: {ca.description}</p>
                   </div>
-                  <button
-                    onClick={() => onDeleteCA(ca.id)}
-                    className="text-red-500 hover:text-red-700"
-                    aria-label="Delete corrective action"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => onEditCA(ca)}
+                      className="text-blue-500 hover:text-blue-700"
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <Edit2 size={20} />
+                    </Button>
+                    <Button
+                      onClick={() => onDeleteCA(ca.id)}
+                      className="text-red-500 hover:text-red-700"
+                      aria-label="Delete corrective action"
+                    >
+                      <Trash2 size={20} />
+                    </Button>
+                  </div>
                 </div>
               </li>
             );
