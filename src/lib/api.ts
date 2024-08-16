@@ -31,11 +31,26 @@ export interface Occurrence {
   updatedAt: string;
 }
 
+// Associate stuffs
 export const getAssociates = async (): Promise<Associate[]> => {
   const response = await api.get<Associate[]>("/associates");
   return response.data;
 };
 
+// get associate by id
+export const getAssociateById = async (
+  id: string
+): Promise<Associate | null> => {
+  const response = await api.get<Associate>(`/associates/${id}`);
+  return response.data;
+};
+
+export async function addAssociate(name: string, currentPoints: number = 0) {
+  const res = await api.post<Associate>("/associates", { name, currentPoints });
+  return res.data;
+}
+
+// occurence stuffs
 export const getOccurrenceTypes = async (): Promise<OccurrenceType[]> => {
   const response = await api.get<OccurrenceType[]>("/occurrence-types");
   return response.data;
@@ -120,7 +135,7 @@ export type CorrectiveAction = {
   id: string;
   associateId: string;
   ruleId: string;
-  rule: Rule;
+  rule: Rule[];
   level: number;
   description: string;
   date: Date;

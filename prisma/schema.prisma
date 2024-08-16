@@ -60,7 +60,7 @@ model CorrectiveAction {
   ruleId      String
   rule        Rule      @relation(fields: [ruleId], references: [id])
   level       Int       // 1 to 4, representing the notification level
-  description String
+  description String    @default("")
   date        DateTime
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

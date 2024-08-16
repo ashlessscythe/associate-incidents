@@ -1,5 +1,5 @@
 import React from "react";
-import { CorrectiveAction, Rule } from "@/components/lib/api";
+import { CorrectiveAction, Rule } from "@/lib/api";
 import { Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

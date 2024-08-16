@@ -7,7 +7,7 @@ import {
   getOccurrences,
   getOccurrenceTypes,
   addOccurrence,
-} from "@/components/lib/api";
+} from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";

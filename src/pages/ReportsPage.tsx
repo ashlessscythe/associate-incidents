@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { getAssociatesData, getCAByType } from "../components/lib/api";
+import { getAssociatesData, getCAByType } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Table,

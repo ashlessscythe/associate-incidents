@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Rule } from "@/components/lib/api";
+import { Rule } from "@/lib/api";
 
 interface GroupedRuleSelectProps {
   rules: Rule[];

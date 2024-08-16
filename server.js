@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,35 @@ app.get("/api/associates", async (req, res) => {
     res.json(associates);
   } catch (error) {
     res.status(500).json({ error: "Error fetching associates" });
+  }
+});
+
+// get associate by id
+app.get("/api/associates/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const associate = await prisma.associate.findUnique({
+      where: { id },
+    });
+    if (!associate) {
+      return res.status(404).json({ error: "Associate not found" });
+    }
+    res.json(associate);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching associate" });
+  }
+});
+
+// add associate
+app.post("/api/associates", async (req, res) => {
+  try {
+    const { name, currentPoints } = req.body;
+    const associate = await prisma.associate.create({
+      data: { name, currentPoints },
+    });
+    res.status(201).json(associate);
+  } catch (error) {
+    res.status(400).json({ error: "Invalid request payload" });
   }
 });
 

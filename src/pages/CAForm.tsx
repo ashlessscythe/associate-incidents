@@ -10,7 +10,7 @@ import {
 import GroupedRuleSelect from "@/components/GroupedRuleSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Rule } from "@/components/lib/api";
+import { Rule } from "@/lib/api";
 
 interface CAFormProps {
   rules: Rule[];
@@ -49,7 +49,7 @@ const CAForm: React.FC<CAFormProps> = ({
     try {
       await onAddCorrectiveAction({
         ruleId,
-        description,
+        description: description || "No description",
         level: Number(level),
         date: new Date(date),
       });

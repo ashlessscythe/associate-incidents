@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CorrectiveAction, Rule } from "@/components/lib/api";
+import { CorrectiveAction, Rule } from "@/lib/api";
 import GroupedRuleSelect from "@/components/GroupedRuleSelect";
 
 interface CAEditModalProps {

@@ -9,7 +9,7 @@ import {
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
-} from "@/components/lib/api";
+} from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "./CAForm";
 import CAList from "./CAList";
