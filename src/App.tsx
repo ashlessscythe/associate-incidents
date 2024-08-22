@@ -7,11 +7,9 @@ import {
 } from "react-router-dom";
 import {
   AuthorizerProvider,
-  Authorizer,
   useAuthorizer,
 } from "@authorizerdev/authorizer-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import LoginModal from "@/components/LoginModal";
 import AttendancePage from "./pages/AttendancePage";
 import CAPage from "./pages/CAPage";
 import Header from "@/components/Header";
@@ -22,19 +20,21 @@ import "@/components/authorizer-custom.css";
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
 
 const Profile = () => {
-  const { user, logout } = useAuthorizer();
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
-  };
+  const { user } = useAuthorizer();
   if (user) {
     return (
       <div>
         <p className="mb-2">Logged in as: {user.email}</p>
-        <Button onClick={handleLogout}>Log out</Button>
+        <p>Please select a module from the options above to get started.</p>
+      </div>
+    );
+  } else {
+    return (
+      <div>
+        <p>
+          Please log in to access the platform. If you don't have an account,
+          you can create one.
+        </p>
       </div>
     );
   }
@@ -51,10 +51,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const { loading, user } = useAuthorizer();
+  const { loading, user, logout } = useAuthorizer();
 
   const handlePageSelect = (page: PageType) => {
     setCurrentPage(page);
+  };
+
+  const handleLogOut = async () => {
+    try {
+      await logout();
+      setCurrentPage(null);
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   useEffect(() => {
@@ -73,6 +82,7 @@ function AppContent() {
           onPageSelect={handlePageSelect}
           user={user}
           onLoginClick={() => setIsLoginOpen(true)}
+          onLogOut={() => handleLogOut()}
         />
         <main className="container mx-auto p-4">
           <Routes>
@@ -81,15 +91,8 @@ function AppContent() {
               element={
                 <div className="text-center mt-10">
                   <h2 className="text-2xl font-bold mb-4">
-                    Welcome to the Employee Management System
+                    Welcome to the Incident Tracker
                   </h2>
-                  <p>
-                    Please select a module from the options above to get
-                    started.
-                  </p>
-                  {!user && (
-                    <Button onClick={() => setIsLoginOpen(true)}>Log In</Button>
-                  )}
                   <Profile />
                 </div>
               }
@@ -129,13 +132,7 @@ function AppContent() {
           </Routes>
         </main>
       </div>
-      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-          <div className="authorizer-root">
-            <Authorizer />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </Router>
   );
 }

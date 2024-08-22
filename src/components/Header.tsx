@@ -11,6 +11,7 @@ interface HeaderProps {
   onPageSelect: (page: PageType) => void;
   user: any;
   onLoginClick: () => void;
+  onLogOut: () => Promise<void>;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -115,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Employee Management System
+            Incident Tracker
           </h1>
           <div className="flex items-center">
             <nav className="hidden md:block">
@@ -128,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
               size="icon"
               aria-label="Toggle Dark Mode"
               onClick={toggleDarkMode}
-              className="ml-4"
+              className="ml-4 mr-2"
             >
               {darkMode ? (
                 <Sun className="h-[1.2rem] w-[1.2rem]" />

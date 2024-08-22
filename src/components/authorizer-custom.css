@@ -1,45 +1,39 @@
-.authorizer-root {
-  /* Remove any font-family specification to inherit from app */
-  font-family: inherit !important;
-  /* Inherit text color from app */
-  color: inherit !important;
-  /* Inherit background color from app */
-  background-color: inherit !important;
-}
-
-.authorizer-root * {
-  /* Ensure all child elements inherit font */
-  font-family: inherit !important;
-}
-
-.authorizer-root input,
-.authorizer-root button {
-  /* Inherit font styles for inputs and buttons */
-  font: inherit !important;
-  /* Remove any border radius to match your app style */
-  border-radius: inherit !important;
-}
-
-.authorizer-root input {
-  /* Inherit background and text color for inputs */
-  background-color: inherit !important;
-  color: inherit !important;
-}
-
-.authorizer-root button {
-  /* Use your app's primary color for buttons */
-  background-color: var(--primary-color, #3b82f6) !important;
-  color: white !important;
-}
-
-.authorizer-root a {
-  /* Use your app's link color */
-  color: var(--link-color, #3b82f6) !important;
-}
-
-/* Ensure dark mode compatibility */
-.dark .authorizer-root input,
+/* authorizer-custom.css */
 .dark .authorizer-root {
-  color: inherit !important;
-  background-color: inherit !important;
+  --authorizer-primary-color: #3b82f6; /* Tailwind blue-500 */
+  --authorizer-primary-disabled-color: #60a5fa; /* Tailwind blue-400 */
+  --authorizer-gray-color: #9ca3af; /* Tailwind gray-400 */
+  --authorizer-white-color: #1f2937; /* Tailwind gray-800 */
+  --authorizer-danger-color: #ef4444; /* Tailwind red-500 */
+  --authorizer-success-color: #10b981; /* Tailwind green-500 */
+  --authorizer-text-color: #f3f4f6; /* Tailwind gray-100 */
+}
+
+.dark .authorizer-root input,
+.dark .authorizer-root select {
+  background-color: #374151; /* Tailwind gray-700 */
+  color: #f3f4f6; /* Tailwind gray-100 */
+  border-color: #4b5563; /* Tailwind gray-600 */
+}
+
+.dark .authorizer-root input::placeholder {
+  color: #9ca3af; /* Tailwind gray-400 */
+}
+
+.dark .authorizer-root label,
+.dark .authorizer-root p {
+  color: #f3f4f6; /* Tailwind gray-100 */
+}
+
+.dark .authorizer-root button {
+  background-color: #3b82f6; /* Tailwind blue-500 */
+  color: #ffffff;
+}
+
+.dark .authorizer-root button:hover {
+  background-color: #2563eb; /* Tailwind blue-600 */
+}
+
+.dark .authorizer-root .checkbox-container {
+  color: #f3f4f6; /* Tailwind gray-100 */
 }
