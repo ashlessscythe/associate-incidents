@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button } from "../components/ui/button";
 import {
   Select,
@@ -7,9 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
-import GroupedRuleSelect from "@/components/GroupedRuleSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Rule } from "@/lib/api";
 
 interface CAFormProps {
@@ -28,12 +29,31 @@ const CAForm: React.FC<CAFormProps> = ({
   associateId,
   onAddCorrectiveAction,
 }) => {
+  const [ruleType, setRuleType] = useState<"SAFETY" | "WORK" | null>(null);
   const [ruleId, setRuleId] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const [ruleTypes, setRuleTypes] = useState<("SAFETY" | "WORK")[]>([]);
+  const [filteredRules, setFilteredRules] = useState<Rule[]>([]);
+
+  useEffect(() => {
+    // Extract unique rule types from the rules
+    const types = Array.from(new Set(rules.map((rule) => rule.type)));
+    setRuleTypes(types as ("SAFETY" | "WORK")[]);
+  }, [rules]);
+
+  useEffect(() => {
+    if (ruleType) {
+      setFilteredRules(rules.filter((rule) => rule.type === ruleType));
+    } else {
+      setFilteredRules([]);
+    }
+    setRuleId(""); // Reset rule selection when type changes
+  }, [ruleType, rules]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,11 +101,34 @@ const CAForm: React.FC<CAFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-xl font-semibold mb-2">Add Corrective Action</h2>
       <div className="space-y-4">
-        <GroupedRuleSelect
-          rules={rules}
-          ruleId={ruleId}
-          setRuleId={setRuleId}
-        />
+        <RadioGroup
+          onValueChange={(value: string) =>
+            setRuleType(value as "SAFETY" | "WORK")
+          }
+          value={ruleType || undefined}
+        >
+          <div className="flex space-x-2">
+            {ruleTypes.map((type) => (
+              <div key={type} className="flex items-center space-x-2">
+                <RadioGroupItem value={type} id={type} />
+                <Label htmlFor={type}>{type}</Label>
+              </div>
+            ))}
+          </div>
+        </RadioGroup>
+
+        <Select onValueChange={setRuleId} value={ruleId} disabled={!ruleType}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a rule" />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredRules.map((rule) => (
+              <SelectItem key={rule.id} value={rule.id}>
+                {rule.code} - {rule.description}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Input
           type="date"
           ref={dateInputRef}
