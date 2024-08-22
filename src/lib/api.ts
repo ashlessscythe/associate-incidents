@@ -1,8 +1,37 @@
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 
-const api = axios.create({
+function generateApiKey(): string {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const currentTime = new Date().getTime();
+  let result = "";
+
+  for (let i = 0; i < 15; i++) {
+    const randomIndex = (currentTime + i) % characters.length;
+    result += characters.charAt(randomIndex);
+  }
+
+  return result;
+}
+
+const api: AxiosInstance = axios.create({
   baseURL: "/api",
 });
+
+// Add a request interceptor
+api.interceptors.request.use(
+  (config) => {
+    const apiKey = generateApiKey();
+
+    // Modify the url to include the API key
+    config.url = `/${apiKey}${config.url}`;
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Attendance stuff
 
@@ -117,7 +146,7 @@ export const getAssociatePointsAndNotification = async (
   associateId: string
 ): Promise<{ points: number; notificationLevel: string }> => {
   const response = await axios.get(
-    `/api/associates/${associateId}/points-and-notification`
+    `/associates/${associateId}/points-and-notification`
   );
   return response.data;
 };
@@ -193,7 +222,7 @@ export const updateCorrectiveAction = async (
     date: Date;
   }
 ) => {
-  const response = await axios.put(`/api/corrective-actions/${id}`, data);
+  const response = await axios.put(`/corrective-actions/${id}`, data);
   return response.data;
 };
 

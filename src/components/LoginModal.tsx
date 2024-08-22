@@ -32,14 +32,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const response = await authorizerRef.login({ email, password });
-      console.log("Login response:", response); // Log the entire response
 
       if (response.errors && response.errors.length > 0) {
         setError(
           response.errors[0].message || "An error occurred during login"
         );
       } else if (response.data) {
-        console.log("Login successful, user data:", response.data); // Log the user data
         setTimeout(() => {
           onClose();
           window.location.reload();

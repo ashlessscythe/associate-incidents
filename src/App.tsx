@@ -80,8 +80,6 @@ function AppContent() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { loading, user, logout } = useAuthorizer();
 
-  console.log("AppContent rendered. User:", user, "Loading:", loading);
-
   const handlePageSelect = (page: PageType) => {
     setCurrentPage(page);
   };

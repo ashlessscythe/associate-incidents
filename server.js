@@ -4,7 +4,6 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-import { randomUUID } from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +28,24 @@ app.use(express.json());
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "dist")));
+
+// Middleware to validate API key
+const validateApiKey = (req, res, next) => {
+  const urlParts = req.url.split("/");
+  const apiKey = urlParts[1]; // The API key should now be the second part of the URL
+
+  // Check if the API key is valid (you can implement your own validation logic here)
+  if (apiKey && apiKey.length === 4) {
+    // Remove the API key from the URL so that your route handlers don't need to change
+    req.url = "/" + urlParts.slice(2).join("/");
+    next();
+  } else {
+    res.status(401).json({ error: "Invalid API key" });
+  }
+};
+
+// Apply the validateApiKey middleware to all /api routes
+app.use("/api", validateApiKey);
 
 // Associate STUFFS
 
@@ -148,7 +165,6 @@ app.put("/api/attendance-occurrences/:id", async (req, res) => {
 app.delete("/api/attendance-occurrences/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Deleting occurenceid: " + id);
     await prisma.attendanceOccurrence.delete({ where: { id } });
     res.json({ message: "Attendance occurrence deleted" });
   } catch (error) {
