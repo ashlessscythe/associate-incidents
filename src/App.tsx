@@ -15,6 +15,7 @@ import CAPage from "./pages/CAPage";
 import Header from "@/components/Header";
 import AssociatesPage from "@/pages/AssociatesPage";
 import ReportsPage from "@/pages/ReportsPage";
+import PendingPage from "@/pages/PendingPage";
 import "@/components/authorizer-custom.css";
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
@@ -41,10 +42,36 @@ const Profile = () => {
   return null;
 };
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles: string[];
+}) => {
   const { user, loading } = useAuthorizer();
+
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/" />;
+
+  if (!user.roles) {
+    console.error("User has no roles or roles not found");
+    return;
+  }
+
+  // Check if the user has at least one of the allowed roles
+  const userHasRole = user.roles.some((role: string) =>
+    allowedRoles.includes(role)
+  );
+
+  if (!userHasRole) {
+    return user.roles.includes("pending") ? (
+      <Navigate to="/pending" />
+    ) : (
+      <Navigate to="/" />
+    );
+  }
+
   return <>{children}</>;
 };
 
@@ -52,6 +79,8 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { loading, user, logout } = useAuthorizer();
+
+  console.log("AppContent rendered. User:", user, "Loading:", loading);
 
   const handlePageSelect = (page: PageType) => {
     setCurrentPage(page);
@@ -61,6 +90,7 @@ function AppContent() {
     try {
       await logout();
       setCurrentPage(null);
+      setIsLoginOpen(false);
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -98,9 +128,17 @@ function AppContent() {
               }
             />
             <Route
+              path="/pending"
+              element={
+                <ProtectedRoute allowedRoles={["pending"]}>
+                  <PendingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/attendance"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
                   <AttendancePage />
                 </ProtectedRoute>
               }
@@ -108,7 +146,7 @@ function AppContent() {
             <Route
               path="/ca"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
                   <CAPage />
                 </ProtectedRoute>
               }
@@ -116,7 +154,7 @@ function AppContent() {
             <Route
               path="/associates"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
                   <AssociatesPage />
                 </ProtectedRoute>
               }
@@ -124,7 +162,7 @@ function AppContent() {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
                   <ReportsPage />
                 </ProtectedRoute>
               }

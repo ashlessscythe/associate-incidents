@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center">
             <nav className="hidden md:block">
               <ul className="flex space-x-4">
-                <NavLinks />
+                {user && user.role !== "pending" && <NavLinks />}
               </ul>
             </nav>
             <Button

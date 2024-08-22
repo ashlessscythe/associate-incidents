@@ -24,8 +24,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { loading, setLoading, setToken, setUser, authorizerRef } =
-    useAuthorizer();
+  const { loading, setLoading, authorizerRef } = useAuthorizer();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,26 +32,35 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const response = await authorizerRef.login({ email, password });
-      if (response.errors) {
-        setError(response.errors[0].message);
+      console.log("Login response:", response); // Log the entire response
+
+      if (response.errors && response.errors.length > 0) {
+        setError(
+          response.errors[0].message || "An error occurred during login"
+        );
       } else if (response.data) {
-        onClose();
+        console.log("Login successful, user data:", response.data); // Log the user data
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 500);
+      } else {
+        console.log("Unexpected response structure:", response);
+        setError("An unexpected error occurred");
       }
     } catch (err) {
+      console.error("Login error:", err); // Log the full error
       setError("An unexpected error occurred");
-      console.error("Login failed:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignup = (response: any) => {
-    if (response.data) {
-      setToken(response.data.token);
-      setUser(response.data.user);
-      onClose();
-    } else if (response.errors) {
+  const handleSignup = async (response: any) => {
+    if (response.errors) {
       setError(response.errors[0].message);
+    } else if (response.data) {
+      onClose();
     }
   };
 
