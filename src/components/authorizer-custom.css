@@ -1,0 +1,45 @@
+.authorizer-root {
+  /* Remove any font-family specification to inherit from app */
+  font-family: inherit !important;
+  /* Inherit text color from app */
+  color: inherit !important;
+  /* Inherit background color from app */
+  background-color: inherit !important;
+}
+
+.authorizer-root * {
+  /* Ensure all child elements inherit font */
+  font-family: inherit !important;
+}
+
+.authorizer-root input,
+.authorizer-root button {
+  /* Inherit font styles for inputs and buttons */
+  font: inherit !important;
+  /* Remove any border radius to match your app style */
+  border-radius: inherit !important;
+}
+
+.authorizer-root input {
+  /* Inherit background and text color for inputs */
+  background-color: inherit !important;
+  color: inherit !important;
+}
+
+.authorizer-root button {
+  /* Use your app's primary color for buttons */
+  background-color: var(--primary-color, #3b82f6) !important;
+  color: white !important;
+}
+
+.authorizer-root a {
+  /* Use your app's link color */
+  color: var(--link-color, #3b82f6) !important;
+}
+
+/* Ensure dark mode compatibility */
+.dark .authorizer-root input,
+.dark .authorizer-root {
+  color: inherit !important;
+  background-color: inherit !important;
+}

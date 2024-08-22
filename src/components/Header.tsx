@@ -2,15 +2,24 @@ import React, { useState, useEffect } from "react";
 import { Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
 
 interface HeaderProps {
   currentPage: PageType;
   onPageSelect: (page: PageType) => void;
+  user: any;
+  onLoginClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
+const Header: React.FC<HeaderProps> = ({
+  currentPage,
+  onPageSelect,
+  user,
+  onLoginClick,
+}) => {
+  const { logout } = useAuthorizer();
   const [darkMode, setDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -31,6 +40,14 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   const NavLinks = () => (
@@ -119,6 +136,15 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageSelect }) => {
                 <Moon className="h-[1.2rem] w-[1.2rem]" />
               )}
             </Button>
+            {user ? (
+              <Button onClick={handleLogout} variant="outline">
+                Log out
+              </Button>
+            ) : (
+              <Button onClick={onLoginClick} variant="outline">
+                Log in
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
