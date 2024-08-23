@@ -5,7 +5,8 @@ const symbols = "!$*_";
 
 // Function to generate API key
 function generateApiKey(): string {
-  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
 
   // Generate 14 random alphanumeric characters
@@ -20,7 +21,10 @@ function generateApiKey(): string {
 
   // Insert the symbol at a random position in the string
   const insertPosition = Math.floor(Math.random() * result.length);
-  result = result.slice(0, insertPosition) + randomSymbol + result.slice(insertPosition);
+  result =
+    result.slice(0, insertPosition) +
+    randomSymbol +
+    result.slice(insertPosition);
 
   return result;
 }
@@ -153,13 +157,23 @@ export const updateAssociatePoints = async (
   return response.data;
 };
 
+interface AssociateInfo {
+  points: number;
+  notificationLevel: string;
+}
+
 export const getAssociatePointsAndNotification = async (
   associateId: string
-): Promise<{ points: number; notificationLevel: string }> => {
-  const response = await axios.get(
-    `/associates/${associateId}/points-and-notification`
-  );
-  return response.data;
+): Promise<AssociateInfo> => {
+  try {
+    const response = await api.get<AssociateInfo>(
+      `/associates/${associateId}/points-and-notification`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching points and notification level:", error);
+    throw error; // Rethrow the error to handle it in the useEffect
+  }
 };
 
 // Corrective Actions stuff
