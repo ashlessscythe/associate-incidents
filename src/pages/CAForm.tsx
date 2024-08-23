@@ -121,9 +121,16 @@ const CAForm: React.FC<CAFormProps> = ({
           <SelectTrigger>
             <SelectValue placeholder="Select a rule" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent
+            className="max-w-full left-0 right-0"
+            style={{ maxWidth: "100vw", overflow: "auto" }}
+          >
             {filteredRules.map((rule) => (
-              <SelectItem key={rule.id} value={rule.id}>
+              <SelectItem
+                className="whitespace-normal break-words"
+                key={rule.id}
+                value={rule.id}
+              >
                 {rule.code} - {rule.description}
               </SelectItem>
             ))}
