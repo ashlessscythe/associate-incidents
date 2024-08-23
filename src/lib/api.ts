@@ -1,21 +1,32 @@
 import axios, { AxiosInstance } from "axios";
 
+// Updated symbol pool to avoid URL-encoding issues
+const symbols = "!$*_";
+
+// Function to generate API key
 function generateApiKey(): string {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const currentTime = new Date().getTime();
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
 
-  for (let i = 0; i < 15; i++) {
-    const randomIndex = (currentTime + i) % characters.length;
+  // Generate 14 random alphanumeric characters
+  for (let i = 0; i < 14; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
     result += characters.charAt(randomIndex);
   }
+
+  // Add one random symbol from the safe pool
+  const randomSymbolIndex = Math.floor(Math.random() * symbols.length);
+  const randomSymbol = symbols.charAt(randomSymbolIndex);
+
+  // Insert the symbol at a random position in the string
+  const insertPosition = Math.floor(Math.random() * result.length);
+  result = result.slice(0, insertPosition) + randomSymbol + result.slice(insertPosition);
 
   return result;
 }
 
 const api: AxiosInstance = axios.create({
-  baseURL: "/api",
+  baseURL: "/zapi",
 });
 
 // Add a request interceptor

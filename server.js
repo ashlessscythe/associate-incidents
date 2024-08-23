@@ -29,13 +29,15 @@ app.use(express.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "dist")));
 
-// Middleware to validate API key
+// validate
 const validateApiKey = (req, res, next) => {
   const urlParts = req.url.split("/");
   const apiKey = urlParts[1]; // The API key should now be the second part of the URL
 
-  // Check if the API key is valid (you can implement your own validation logic here)
-  if (apiKey && apiKey.length === 4) {
+  // Updated validation regex
+  const validPattern = /^(?=.*[!$^*_])[A-Za-z0-9!$^*\-_.~]{15}$/;
+
+  if (apiKey && validPattern.test(apiKey)) {
     // Remove the API key from the URL so that your route handlers don't need to change
     req.url = "/" + urlParts.slice(2).join("/");
     next();
@@ -45,12 +47,12 @@ const validateApiKey = (req, res, next) => {
 };
 
 // Apply the validateApiKey middleware to all /api routes
-app.use("/api", validateApiKey);
+app.use("/zapi", validateApiKey);
 
 // Associate STUFFS
 
 // Get all associates
-app.get("/api/associates", async (req, res) => {
+app.get("/zapi/associates", async (req, res) => {
   try {
     const associates = await prisma.associate.findMany();
     res.json(associates);
@@ -60,7 +62,7 @@ app.get("/api/associates", async (req, res) => {
 });
 
 // get associate by id
-app.get("/api/associates/:id", async (req, res) => {
+app.get("/zapi/associates/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const associate = await prisma.associate.findUnique({
@@ -76,7 +78,7 @@ app.get("/api/associates/:id", async (req, res) => {
 });
 
 // add associate
-app.post("/api/associates", async (req, res) => {
+app.post("/zapi/associates", async (req, res) => {
   try {
     const { name, currentPoints } = req.body;
     const associate = await prisma.associate.create({
@@ -89,7 +91,7 @@ app.post("/api/associates", async (req, res) => {
 });
 
 // Get all occurrence types
-app.get("/api/occurrence-types", async (req, res) => {
+app.get("/zapi/occurrence-types", async (req, res) => {
   try {
     const occurrenceTypes = await prisma.occurrenceType.findMany();
     res.json(occurrenceTypes);
@@ -99,7 +101,7 @@ app.get("/api/occurrence-types", async (req, res) => {
 });
 
 // Get attendance occurrences for a specific associate
-app.get("/api/attendance-occurrences/:associateId", async (req, res) => {
+app.get("/zapi/attendance-occurrences/:associateId", async (req, res) => {
   try {
     const { associateId } = req.params;
     const occurrences = await prisma.attendanceOccurrence.findMany({
@@ -114,7 +116,7 @@ app.get("/api/attendance-occurrences/:associateId", async (req, res) => {
 });
 
 // Add a new attendance occurrence
-app.post("/api/attendance-occurrences", async (req, res) => {
+app.post("/zapi/attendance-occurrences", async (req, res) => {
   try {
     const { associateId, typeId, date, notes } = req.body;
     const occurrenceType = await prisma.occurrenceType.findUnique({
@@ -140,7 +142,7 @@ app.post("/api/attendance-occurrences", async (req, res) => {
 });
 
 // edit
-app.put("/api/attendance-occurrences/:id", async (req, res) => {
+app.put("/zapi/attendance-occurrences/:id", async (req, res) => {
   const { id } = req.params;
   const { typeId, date, notes } = req.body;
 
@@ -162,7 +164,7 @@ app.put("/api/attendance-occurrences/:id", async (req, res) => {
 });
 
 // delete occurrence by id
-app.delete("/api/attendance-occurrences/:id", async (req, res) => {
+app.delete("/zapi/attendance-occurrences/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.attendanceOccurrence.delete({ where: { id } });
@@ -173,7 +175,7 @@ app.delete("/api/attendance-occurrences/:id", async (req, res) => {
 });
 
 // New route for getting associate points and notification
-app.get("/api/associates/:id/points-and-notification", async (req, res) => {
+app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
   try {
     const { id } = req.params;
     const oneYearAgo = new Date();
@@ -214,7 +216,7 @@ app.get("/api/associates/:id/points-and-notification", async (req, res) => {
 
 // CA stuffs
 // Get all rules
-app.get("/api/rules", async (req, res) => {
+app.get("/zapi/rules", async (req, res) => {
   try {
     const rules = await prisma.rule.findMany();
     res.json(rules);
@@ -225,7 +227,7 @@ app.get("/api/rules", async (req, res) => {
 });
 
 // Get corrective actions for an associate
-app.get("/api/corrective-actions/:associateId", async (req, res) => {
+app.get("/zapi/corrective-actions/:associateId", async (req, res) => {
   const { associateId } = req.params;
   try {
     // Validate associateId here if necessary
@@ -243,7 +245,7 @@ app.get("/api/corrective-actions/:associateId", async (req, res) => {
 });
 
 // Add a new corrective action
-app.post("/api/corrective-actions", async (req, res) => {
+app.post("/zapi/corrective-actions", async (req, res) => {
   const { associateId, ruleId, description, level, date } = req.body;
   if (!associateId || !ruleId || !description || !level) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -268,7 +270,7 @@ app.post("/api/corrective-actions", async (req, res) => {
 });
 
 // update CA
-app.put("/api/corrective-actions/:id", async (req, res) => {
+app.put("/zapi/corrective-actions/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { ruleId, description, level, date } = req.body;
@@ -296,7 +298,7 @@ app.put("/api/corrective-actions/:id", async (req, res) => {
 });
 
 // delete CA
-app.delete("/api/corrective-actions/:id", async (req, res) => {
+app.delete("/zapi/corrective-actions/:id", async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.correctiveAction.delete({
@@ -310,7 +312,7 @@ app.delete("/api/corrective-actions/:id", async (req, res) => {
 });
 
 // associate stuffs
-app.get("/api/associates-data", async (req, res) => {
+app.get("/zapi/associates-data", async (req, res) => {
   const months = parseInt(req.query.months) || 12; // Default to 12 months if not specified
   const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - months);
@@ -362,7 +364,7 @@ app.get("/api/associates-data", async (req, res) => {
 });
 
 // get Corrective Action (CA) by type
-app.get("/api/ca-by-type", async (req, res) => {
+app.get("/zapi/ca-by-type", async (req, res) => {
   try {
     const months = parseInt(req.query.months) || 12; // Default to 12 months if not specified
     const cutoffDate = new Date();
