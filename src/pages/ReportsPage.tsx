@@ -1,48 +1,25 @@
 import React, { useState } from "react";
-import { getAssociatesData, getCAByType } from "../lib/api";
+import { getCAByType, getAssociatesData } from "../lib/api";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table";
+import CAByTypeRow from "@/components/CAByTypeRow";
+import { CorrectiveAction } from "../lib/api";
 
 interface AssociateData {
+  id: string;
   name: string;
   currentPoints: number;
   totalOccurrences: number;
   totalCA: number;
 }
 
-interface CAByTypeData {
-  name: string;
-  SAFETY: number;
-  WORK: number; // expand these as needed
-  [key: string]: string | number; // allow for future rule types
-}
-
 const ReportsPage: React.FC = () => {
+  const [caByTypeData, setCAByTypeData] = useState<any[]>([]);
   const [associatesData, setAssociatesData] = useState<AssociateData[]>([]);
-  const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const handleFetchAssociatesData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getAssociatesData();
-      setAssociatesData(data);
-    } catch (err) {
-      setError("Failed to fetch associates data");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [activeReport, setActiveReport] = useState<"points" | "ca" | null>(
+    null
+  );
 
   const handleFetchCAByType = async () => {
     setLoading(true);
@@ -50,7 +27,7 @@ const ReportsPage: React.FC = () => {
     try {
       const data = await getCAByType();
       setCAByTypeData(data);
-      setAssociatesData([]);
+      setActiveReport("ca");
     } catch (err) {
       setError("Failed to fetch CA by type data");
       console.error(err);
@@ -59,80 +36,117 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleClearTable = () => {
-    setAssociatesData([]);
+  const handleFetchAssociatesData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getAssociatesData();
+      setAssociatesData(data);
+      setActiveReport("points");
+    } catch (err) {
+      setError("Failed to fetch associates data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearReport = () => {
     setCAByTypeData([]);
+    setAssociatesData([]);
+    setActiveReport(null);
     setError(null);
   };
 
-  const renderTable = () => {
-    if (associatesData.length > 0) {
-      return (
-        <Table className="mt-4 ml-4">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Current Points</TableHead>
-              <TableHead>Total CA</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {associatesData.map((associate, index) => (
-              <TableRow key={index}>
-                <TableCell>{associate.name}</TableCell>
-                <TableCell>{associate.currentPoints.toFixed(2)}</TableCell>
-                <TableCell>{associate.totalCA}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      );
-    } else if (caByTypeData.length > 0) {
-      const ruleTypes = Object.keys(caByTypeData[0]).filter(
-        (key) => key !== "name"
-      );
-      return (
-        <Table className="mt-4 ml-4">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              {ruleTypes.map((type) => (
-                <TableHead key={type}>Total {type} CA</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {caByTypeData.map((associate, index) => (
-              <TableRow key={index}>
-                <TableCell>{associate.name}</TableCell>
-                {ruleTypes.map((type) => (
-                  <TableCell key={type}>{associate[type]}</TableCell>
+  const handleEditCA = async (ca: CorrectiveAction) => {
+    // Implement edit functionality
+    console.log("Edit CA:", ca);
+  };
+
+  const handleDeleteCA = async (id: string) => {
+    // Implement delete functionality
+    console.log("Delete CA:", id);
+  };
+
+  const renderActiveReport = () => {
+    switch (activeReport) {
+      case "points":
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-4/5 mx-auto bg-white dark:bg-gray-800 border-collapse shadow-md rounded-lg">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-gray-700">
+                  <th className="px-4 py-2 text-left border-b dark:border-gray-600">
+                    Name
+                  </th>
+                  <th className="px-4 py-2 text-right border-b dark:border-gray-600">
+                    Current Points
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {associatesData.map((associate, index) => (
+                  <tr
+                    key={associate.id}
+                    className={`
+                      ${
+                        index % 2 === 0
+                          ? "bg-gray-50 dark:bg-gray-800"
+                          : "bg-white dark:bg-gray-900"
+                      }
+                      hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 ease-in-out
+                    `}
+                  >
+                    <td className="border-b dark:border-gray-700 px-4 py-2">
+                      {associate.name}
+                    </td>
+                    <td className="border-b dark:border-gray-700 px-4 py-2 text-right">
+                      {associate.currentPoints.toFixed(2)}
+                    </td>
+                  </tr>
                 ))}
-              </TableRow>
+              </tbody>
+            </table>
+          </div>
+        );
+      case "ca":
+        return (
+          <ul className="space-y-4">
+            {caByTypeData.map((associate, index) => (
+              <CAByTypeRow
+                key={index}
+                associate={associate}
+                onEditCA={handleEditCA}
+                onDeleteCA={handleDeleteCA}
+              />
             ))}
-          </TableBody>
-        </Table>
-      );
+          </ul>
+        );
+      default:
+        return null;
     }
-    return null;
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Associates</h1>
+      <h1 className="text-2xl font-bold mb-4">Reports</h1>
       <div className="flex justify-start space-x-4 mb-4">
         <Button onClick={handleFetchAssociatesData} disabled={loading}>
-          {loading ? "Loading..." : "Run Associate Totals Report"}
+          {loading && activeReport === "points"
+            ? "Loading..."
+            : "Run Associate Totals Report"}
         </Button>
         <Button onClick={handleFetchCAByType} disabled={loading}>
-          {loading ? "Loading..." : "Run CA by Type Report"}
+          {loading && activeReport === "ca"
+            ? "Loading..."
+            : "Run CA by Type Report"}
         </Button>
-        <Button onClick={handleClearTable} variant="outline">
-          Clear Table
+        <Button onClick={handleClearReport} variant="outline">
+          Clear Report
         </Button>
       </div>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {renderTable()}
+      {error && <p className="text-red-500 mt-2 mb-4">{error}</p>}
+      {renderActiveReport()}
     </div>
   );
 };

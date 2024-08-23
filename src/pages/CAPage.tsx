@@ -151,6 +151,7 @@ function CAPage() {
         rules={rules}
         onDeleteCA={handleDeleteCA}
         onEditCA={handleEditCA}
+        isReadOnly={false}
       />
       {editingCA && (
         <CAEditModal

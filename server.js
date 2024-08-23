@@ -369,9 +369,9 @@ app.get("/zapi/ca-by-type", async (req, res) => {
     const months = parseInt(req.query.months) || 12; // Default to 12 months if not specified
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
-
     const caByTypeData = await prisma.associate.findMany({
       select: {
+        id: true,
         name: true,
         correctiveActions: {
           where: {
@@ -380,27 +380,24 @@ app.get("/zapi/ca-by-type", async (req, res) => {
             },
           },
           select: {
+            id: true,
+            ruleId: true,
+            date: true,
+            level: true,
+            description: true,
             rule: {
               select: {
+                id: true,
                 type: true,
+                code: true,
+                description: true,
               },
             },
-            date: true,
           },
         },
       },
     });
-
-    const formattedData = caByTypeData.map((associate) => {
-      const result = { name: associate.name };
-      associate.correctiveActions.forEach((ca) => {
-        const type = ca.rule.type;
-        result[type] = (result[type] || 0) + 1;
-      });
-      return result;
-    });
-
-    res.json(formattedData);
+    res.json(caByTypeData);
   } catch (error) {
     console.error("Error fetching CA by type data:", error);
     res

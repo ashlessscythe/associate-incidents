@@ -182,8 +182,13 @@ export type Rule = {
   id: string;
   code: string;
   description: string;
-  type: "SAFETY" | "WORK";
+  type: RuleType;
 };
+
+export enum RuleType {
+  SAFETY = "SAFETY",
+  WORK = "WORK",
+}
 
 export type CorrectiveAction = {
   id: string;

@@ -8,6 +8,7 @@ interface CAListProps {
   rules: Rule[];
   onEditCA: (ca: CorrectiveAction) => void;
   onDeleteCA: (id: string) => Promise<void>;
+  isReadOnly: boolean;
 }
 
 const CAList: React.FC<CAListProps> = ({
