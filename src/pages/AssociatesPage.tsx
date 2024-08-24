@@ -38,7 +38,7 @@ const AssociatesPage: React.FC = () => {
     }
   };
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('ediitor') || false
+  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor') || false
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
