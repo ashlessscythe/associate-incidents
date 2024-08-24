@@ -112,7 +112,7 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md">
+    <header className="bg-white dark:bg-gray-800 shadow-md z-10">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -129,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
               size="icon"
               aria-label="Toggle Dark Mode"
               onClick={toggleDarkMode}
-              className="ml-4 mr-2"
+              className="ml-4 mr-4"
             >
               {darkMode ? (
                 <Sun className="h-[1.2rem] w-[1.2rem]" />
