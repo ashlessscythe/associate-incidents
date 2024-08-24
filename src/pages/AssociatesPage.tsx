@@ -5,12 +5,14 @@ import NewAssociateModal from "@/components/NewAssociateModal";
 import { addAssociate, getAssociatesData } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Associate } from "@/types/associate";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 const AssociatesPage: React.FC = () => {
   const [associates, setAssociates] = useState<Associate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showTable, setShowTable] = useState(false);
+  const { user } = useAuthorizer();
 
   useEffect(() => {
     fetchAssociates();
@@ -36,6 +38,8 @@ const AssociatesPage: React.FC = () => {
     }
   };
 
+  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('ediitor') || false
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -43,7 +47,10 @@ const AssociatesPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Associates</h1>
       <div className="flex justify-between mb-4">
-        <NewAssociateModal onAddAssociate={handleAddAssociate} />
+        <NewAssociateModal
+          onAddAssociate={handleAddAssociate} 
+          hasEditorRole={hasEditorRole}
+        />
         <Button onClick={() => setShowTable(!showTable)}>
           {showTable ? "Show List View" : "Show All Associates"}
         </Button>

@@ -2,6 +2,7 @@ import React from "react";
 import { CorrectiveAction, Rule } from "@/lib/api";
 import { Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 interface CAListProps {
   correctiveActions: CorrectiveAction[];
@@ -17,12 +18,15 @@ const CAList: React.FC<CAListProps> = ({
   onEditCA,
   onDeleteCA,
 }) => {
+  const { user } = useAuthorizer();
   const getRuleDescription = (ruleId: string) => {
     const rule = rules.find((r) => r.id === ruleId);
     return rule
       ? `${rule.type} - ${rule.code}: ${rule.description}`
       : "Unknown Rule";
   };
+
+  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor')
 
   const getLevelDescription = (level: number) => {
     switch (level) {
@@ -81,21 +85,27 @@ const CAList: React.FC<CAListProps> = ({
                     <p>Description: {ca.description}</p>
                   </div>
                   <div className="flex space-x-2">
-                    <Button
-                      onClick={() => onEditCA(ca)}
-                      className="text-blue-500 hover:text-blue-700"
-                      variant="ghost"
-                      size="icon"
-                    >
-                      <Edit2 size={20} />
-                    </Button>
-                    <Button
-                      onClick={() => onDeleteCA(ca.id)}
-                      className="text-red-500 hover:text-red-700"
-                      aria-label="Delete corrective action"
-                    >
-                      <Trash2 size={20} />
-                    </Button>
+                    {hasEditorRole ? (
+                      <>
+                      <Button
+                        onClick={() => onEditCA(ca)}
+                        className="text-blue-500 hover:text-blue-700"
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <Edit2 size={20} />
+                      </Button>
+                      <Button
+                        onClick={() => onDeleteCA(ca.id)}
+                        className="text-red-500 hover:text-red-700"
+                        aria-label="Delete corrective action"
+                      >
+                        <Trash2 size={20} />
+                      </Button>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">No actioons available</span>
+                    )}
                   </div>
                 </div>
               </li>

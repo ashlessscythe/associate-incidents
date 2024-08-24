@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 interface OccurrenceType {
   id: string;
@@ -61,11 +62,14 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   onDelete,
   occurrenceTypes,
 }) => {
+  const { user } = useAuthorizer();
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
     null
   );
+
+  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor')
 
   const handleDelete = async (occurrenceId: string) => {
     const isConfirmed = window.confirm("Are you sure you want to delete?");
@@ -174,22 +178,28 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleDelete(occurrence.id)}
-                    aria-label="Delete occurrence"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setEditingOccurrence(occurrence)}
-                    aria-label="Edit occurrence"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  {hasEditorRole ? (
+                    <>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDelete(occurrence.id)}
+                        aria-label="Delete occurrence"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setEditingOccurrence(occurrence)}
+                        aria-label="Edit occurrence"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">No actions available</span>
+                  )}
                 </TableCell>
               </TableRow>
             );

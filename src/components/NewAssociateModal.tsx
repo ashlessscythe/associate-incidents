@@ -12,10 +12,12 @@ import { Label } from "@/components/ui/label";
 
 interface NewAssociateModalProps {
   onAddAssociate: (name: string) => void;
+  hasEditorRole: boolean | false;
 }
 
 const NewAssociateModal: React.FC<NewAssociateModalProps> = ({
   onAddAssociate,
+  hasEditorRole,
 }) => {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
@@ -30,7 +32,7 @@ const NewAssociateModal: React.FC<NewAssociateModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Add New Associate</Button>
+        <Button disabled={!hasEditorRole}>{hasEditorRole ? "Add New Associate" : "Add New Associate (requires editor role)"}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -52,7 +54,7 @@ const NewAssociateModal: React.FC<NewAssociateModalProps> = ({
             </div>
           </div>
           <div className="flex justify-end">
-            <Button type="submit">Add Associate</Button>
+            <Button disabled={hasEditorRole} type="submit">{hasEditorRole ? "Add Associate (requires editor role)" : "Add New Associate"}</Button>
           </div>
         </form>
       </DialogContent>
