@@ -252,7 +252,7 @@ export const updateCorrectiveAction = async (
     date: Date;
   }
 ) => {
-  const response = await axios.put(`/corrective-actions/${id}`, data);
+  const response = await api.put(`/corrective-actions/${id}`, data);
   return response.data;
 };
 
