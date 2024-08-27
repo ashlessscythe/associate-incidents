@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,15 +30,62 @@ app.use(express.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "dist")));
 
-// validate
+// hash
+const hashSalt = process.env.VITE_HASH_SALT;
+
+if (!hashSalt) {
+  throw new Error("Hash salt not defined in .env file");
+} else {
+  console.log(`server.js: Hash salt is ${hashSalt.length} chars`);
+}
+
+function generateTimeHash() {
+  const now = new Date();
+  const dateString = now.toISOString().split("T")[0];
+  const hour = now.getUTCHours().toString().padStart(2, "0");
+  const minute = now.getUTCMinutes().toString().padStart(2, "0");
+
+  const timeString = `${dateString}${hour}${minute}`;
+
+  // Create hash
+  const hash = crypto.createHash("sha256");
+  hash.update(timeString + hashSalt);
+
+  // Return first 8 characters of the hash
+  return hash.digest("hex").substring(0, 8);
+}
+
+function validateTimeHash(hash) {
+  const now = new Date();
+  const currentHash = generateTimeHash();
+
+  // Check if the hash matches the current minute
+  if (hash === currentHash) {
+    return true;
+  }
+
+  // Check if the hash matches the previous minute
+  now.setMinutes(now.getMinutes() - 1);
+  const previousHash = generateTimeHash();
+
+  return hash === previousHash;
+}
+
 const validateApiKey = (req, res, next) => {
   const urlParts = req.url.split("/");
-  const apiKey = urlParts[1]; // The API key should now be the second part of the URL
+  const fullApiKey = urlParts[1]; // The full API key should now be the second part of the URL
 
-  // Updated validation regex
+  const [apiKey, timeHash] = fullApiKey.split("-");
+
+  // Updated validation regex for the API key part
   const validPattern = /^(?=.*[!$^*_])(?!.*[92])[A-Za-z0-8!$^*\-_.~]{15}$/;
 
-  if (apiKey && validPattern.test(apiKey)) {
+  if (
+    apiKey &&
+    timeHash &&
+    validPattern.test(apiKey) &&
+    validateTimeHash(timeHash)
+  ) {
     // Remove the API key from the URL so that your route handlers don't need to change
     req.url = "/" + urlParts.slice(2).join("/");
     next();

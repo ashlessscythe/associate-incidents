@@ -2,22 +2,29 @@ import axios, { AxiosInstance } from "axios";
 
 // Updated symbol pool to avoid URL-encoding issues
 const symbols = "!$*_";
+const hashSalt = import.meta.env.VITE_HASH_SALT;
+
+if (!hashSalt) {
+  throw new Error("HASH_SALT is not defined in .env file");
+} else {
+  console.log(`api.ts: hash is ${hashSalt.length} chars`);
+}
 
 // Function to generate API key
-function generateApiKey(): string {
+export async function generateApiKey(): Promise<string> {
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01345678";
   let result = "";
 
   // Generate 14 random alphanumeric characters
+  const randomValues = new Uint8Array(14);
+  window.crypto.getRandomValues(randomValues);
   for (let i = 0; i < 14; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    result += characters.charAt(randomIndex);
+    result += characters[randomValues[i] % characters.length];
   }
 
   // Add one random symbol from the safe pool
-  const randomSymbolIndex = Math.floor(Math.random() * symbols.length);
-  const randomSymbol = symbols.charAt(randomSymbolIndex);
+  const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
 
   // Insert the symbol at a random position in the string
   const insertPosition = Math.floor(Math.random() * result.length);
@@ -26,21 +33,58 @@ function generateApiKey(): string {
     randomSymbol +
     result.slice(insertPosition);
 
-  return result;
+  // Generate time-based hash
+  const timeHash = await generateTimeHash();
+
+  // Combine API key with time hash
+  return `${result}-${timeHash}`;
+}
+
+async function generateTimeHash(): Promise<string> {
+  const now = new Date();
+  const dateString = now.toISOString().split("T")[0];
+  const hour = now.getUTCHours().toString().padStart(2, "0");
+  const minute = now.getUTCMinutes().toString().padStart(2, "0");
+
+  const timeString = `${dateString}${hour}${minute}`;
+
+  // Create hash using Web Crypto API
+  const encoder = new TextEncoder();
+  const data = encoder.encode(timeString + hashSalt);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Return first 8 characters of the hash
+  return hashHex.substring(0, 8);
 }
 
 const api: AxiosInstance = axios.create({
   baseURL: "/zapi",
 });
 
+// Function to get and cache the API key
+let cachedApiKey: string | null = null;
+let lastGeneratedTime: number = 0;
+const API_KEY_LIFETIME = 60000; // 1 minute in milliseconds
+
+async function getApiKey(): Promise<string> {
+  const now = Date.now();
+  if (!cachedApiKey || now - lastGeneratedTime > API_KEY_LIFETIME) {
+    cachedApiKey = await generateApiKey();
+    lastGeneratedTime = now;
+  }
+  return cachedApiKey;
+}
+
 // Add a request interceptor
 api.interceptors.request.use(
-  (config) => {
-    const apiKey = generateApiKey();
-
+  async (config) => {
+    const apiKey = await getApiKey();
     // Modify the url to include the API key
     config.url = `/${apiKey}${config.url}`;
-
     return config;
   },
   (error) => {
