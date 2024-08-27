@@ -6,7 +6,7 @@ const symbols = "!$*_";
 // Function to generate API key
 function generateApiKey(): string {
   const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01345678";
   let result = "";
 
   // Generate 14 random alphanumeric characters

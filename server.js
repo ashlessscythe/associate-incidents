@@ -35,7 +35,7 @@ const validateApiKey = (req, res, next) => {
   const apiKey = urlParts[1]; // The API key should now be the second part of the URL
 
   // Updated validation regex
-  const validPattern = /^(?=.*[!$^*_])[A-Za-z0-9!$^*\-_.~]{15}$/;
+  const validPattern = /^(?=.*[!$^*_])(?!.*[92])[A-Za-z0-8!$^*\-_.~]{15}$/;
 
   if (apiKey && validPattern.test(apiKey)) {
     // Remove the API key from the URL so that your route handlers don't need to change
