@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { getCAByType, getAssociatesData } from "../lib/api";
+import React, { useEffect, useState } from "react";
+import { getCAByType, getRules, getAssociatesData } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import CAByTypeRow from "@/components/CAByTypeRow";
-import { CorrectiveAction } from "../lib/api";
+import { CorrectiveAction, Rule } from "../lib/api";
 
 interface AssociateData {
   id: string;
@@ -12,14 +12,34 @@ interface AssociateData {
   totalCA: number;
 }
 
+interface CAByTypeData {
+  id: string;
+  name: string;
+  correctiveActions: CorrectiveAction[];
+}
+
 const ReportsPage: React.FC = () => {
-  const [caByTypeData, setCAByTypeData] = useState<any[]>([]);
+  const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
   const [associatesData, setAssociatesData] = useState<AssociateData[]>([]);
+  const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeReport, setActiveReport] = useState<"points" | "ca" | null>(
     null
   );
+
+  useEffect(() => {
+    const fetchRules = async () => {
+      try {
+        const rulesData = await getRules();
+        setRules(rulesData);
+      } catch (err) {
+        console.error("Failed to fetch rules:", err);
+        setError("Failed to fetch rules");
+      }
+    };
+    fetchRules();
+  }, []);
 
   const handleFetchCAByType = async () => {
     setLoading(true);
@@ -112,10 +132,11 @@ const ReportsPage: React.FC = () => {
       case "ca":
         return (
           <ul className="space-y-4">
-            {caByTypeData.map((associate, index) => (
+            {caByTypeData.map((associate) => (
               <CAByTypeRow
-                key={index}
+                key={associate.id}
                 associate={associate}
+                rules={rules}
                 onEditCA={handleEditCA}
                 onDeleteCA={handleDeleteCA}
               />

@@ -31,16 +31,16 @@ const CAList: React.FC<CAListProps> = ({
 
   const getLevelDescription = (level: number) => {
     switch (level) {
-      case 0:
-        return "0 - Coaching Conversation";
       case 1:
-        return "1 - Documented Verbal Warning";
+        return "1 - Coaching Conversation";
       case 2:
-        return "2 - Written Warning";
+        return "2 - Documented Verbal Warning";
       case 3:
-        return "3 - Final Written Warning";
+        return "3 - Written Warning";
       case 4:
-        return "4 - Termination";
+        return "4 - Final Written Warning";
+      case 5:
+        return "5 - Termination";
       default:
         return `${level} - Unknown Level`;
     }
@@ -81,7 +81,7 @@ const CAList: React.FC<CAListProps> = ({
                     <p className="font-semibold">
                       {getRuleDescription(ca.ruleId)}
                     </p>
-                    <p>Level: {getLevelDescription(ca.level)}</p>
+                    <p>{getLevelDescription(ca.level)}</p>
                     <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
                     <p>Description: {ca.description}</p>
                   </div>
