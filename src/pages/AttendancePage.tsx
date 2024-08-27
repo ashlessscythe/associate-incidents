@@ -8,9 +8,7 @@ import {
   getOccurrenceTypes,
   addOccurrence,
 } from "@/lib/api";
-import {
-  useAuthorizer
-} from "@authorizerdev/authorizer-react";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";
@@ -26,7 +24,8 @@ function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor');
+  const hasEditorRole =
+    user && Array.isArray(user.roles) && user.roles.includes("att-edit");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -122,7 +121,10 @@ function AttendancePage() {
             onAddOccurrence={handleAddOccurrence}
           />
         ) : (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+          <div
+            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
+            role="alert"
+          >
             <p className="font-bold">View Only Mode</p>
             <p>You do not have permission to add or edit occurrences.</p>
           </div>

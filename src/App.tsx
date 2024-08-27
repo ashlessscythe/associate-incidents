@@ -136,7 +136,7 @@ function AppContent() {
             <Route
               path="/attendance"
               element={
-                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
+                <ProtectedRoute allowedRoles={["viewer", "att-edit"]}>
                   <AttendancePage />
                 </ProtectedRoute>
               }
@@ -144,7 +144,7 @@ function AppContent() {
             <Route
               path="/ca"
               element={
-                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
+                <ProtectedRoute allowedRoles={["viewer", "ca-edit"]}>
                   <CAPage />
                 </ProtectedRoute>
               }
@@ -152,7 +152,7 @@ function AppContent() {
             <Route
               path="/associates"
               element={
-                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
+                <ProtectedRoute allowedRoles={["viewer", "user-edit"]}>
                   <AssociatesPage />
                 </ProtectedRoute>
               }
@@ -160,7 +160,7 @@ function AppContent() {
             <Route
               path="/reports"
               element={
-                <ProtectedRoute allowedRoles={["viewer", "editor"]}>
+                <ProtectedRoute allowedRoles={["viewer", "report-edit"]}>
                   <ReportsPage />
                 </ProtectedRoute>
               }

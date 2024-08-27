@@ -26,7 +26,8 @@ const CAList: React.FC<CAListProps> = ({
       : "Unknown Rule";
   };
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor')
+  const hasEditorRole =
+    user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
 
   const getLevelDescription = (level: number) => {
     switch (level) {
@@ -87,24 +88,26 @@ const CAList: React.FC<CAListProps> = ({
                   <div className="flex space-x-2">
                     {hasEditorRole ? (
                       <>
-                      <Button
-                        onClick={() => onEditCA(ca)}
-                        className="text-blue-500 hover:text-blue-700"
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Edit2 size={20} />
-                      </Button>
-                      <Button
-                        onClick={() => onDeleteCA(ca.id)}
-                        className="text-red-500 hover:text-red-700"
-                        aria-label="Delete corrective action"
-                      >
-                        <Trash2 size={20} />
-                      </Button>
+                        <Button
+                          onClick={() => onEditCA(ca)}
+                          className="text-blue-500 hover:text-blue-700"
+                          variant="ghost"
+                          size="icon"
+                        >
+                          <Edit2 size={20} />
+                        </Button>
+                        <Button
+                          onClick={() => onDeleteCA(ca.id)}
+                          className="text-red-500 hover:text-red-700"
+                          aria-label="Delete corrective action"
+                        >
+                          <Trash2 size={20} />
+                        </Button>
                       </>
                     ) : (
-                      <span className="text-gray-400">No actioons available</span>
+                      <span className="text-gray-400">
+                        No actions available
+                      </span>
                     )}
                   </div>
                 </div>

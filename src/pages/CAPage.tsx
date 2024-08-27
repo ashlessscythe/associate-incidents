@@ -14,9 +14,7 @@ import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "./CAForm";
 import CAList from "./CAList";
 import CAEditModal from "@/components/CAEditModal";
-import {
-  useAuthorizer
-} from "@authorizerdev/authorizer-react";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 function CAPage() {
   const { user } = useAuthorizer();
@@ -32,7 +30,8 @@ function CAPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor');
+  const hasEditorRole =
+    user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -148,17 +147,20 @@ function CAPage() {
         onAssociateSelect={handleAssociateSelect}
       />
       {hasEditorRole ? (
-      <CAForm
-        rules={rules}
-        associateId={selectedAssociateId}
-        onAddCorrectiveAction={handleAddCorrectiveAction}
-      />
-        ) : (
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
-            <p className="font-bold">View Only Mode</p>
-            <p>You do not have permission to add or edit corrective actions.</p>
-          </div>
-        )}
+        <CAForm
+          rules={rules}
+          associateId={selectedAssociateId}
+          onAddCorrectiveAction={handleAddCorrectiveAction}
+        />
+      ) : (
+        <div
+          className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
+          role="alert"
+        >
+          <p className="font-bold">View Only Mode</p>
+          <p>You do not have permission to add or edit corrective actions.</p>
+        </div>
+      )}
       <CAList
         correctiveActions={correctiveActions}
         rules={rules}

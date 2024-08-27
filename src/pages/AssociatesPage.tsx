@@ -38,7 +38,9 @@ const AssociatesPage: React.FC = () => {
     }
   };
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor') || false
+  const hasEditorRole =
+    (user && Array.isArray(user.roles) && user.roles.includes("user-edit")) ||
+    false;
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -48,7 +50,7 @@ const AssociatesPage: React.FC = () => {
       <h1 className="text-2xl font-bold mb-4">Associates</h1>
       <div className="flex justify-between mb-4">
         <NewAssociateModal
-          onAddAssociate={handleAddAssociate} 
+          onAddAssociate={handleAddAssociate}
           hasEditorRole={hasEditorRole}
         />
         <Button onClick={() => setShowTable(!showTable)}>
