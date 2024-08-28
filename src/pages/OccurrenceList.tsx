@@ -69,7 +69,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     null
   );
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.includes('editor')
+  const hasEditorRole =
+    user && Array.isArray(user.roles) && user.roles.includes("att-edit");
 
   const handleDelete = async (occurrenceId: string) => {
     const isConfirmed = window.confirm("Are you sure you want to delete?");

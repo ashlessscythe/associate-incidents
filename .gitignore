@@ -16,6 +16,10 @@ dist-ssr
 .env
 .env.local
 
+# prisma
+prisma/definitions.js
+prisma/associates.csv
+
 # sql
 *.sql
 *.dump

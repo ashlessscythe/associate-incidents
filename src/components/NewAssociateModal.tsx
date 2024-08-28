@@ -32,7 +32,11 @@ const NewAssociateModal: React.FC<NewAssociateModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button disabled={!hasEditorRole}>{hasEditorRole ? "Add New Associate" : "Add New Associate (requires editor role)"}</Button>
+        <Button disabled={!hasEditorRole}>
+          {hasEditorRole
+            ? "Add New Associate"
+            : "Add New Associate (requires editor role)"}
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -54,7 +58,11 @@ const NewAssociateModal: React.FC<NewAssociateModalProps> = ({
             </div>
           </div>
           <div className="flex justify-end">
-            <Button disabled={hasEditorRole} type="submit">{hasEditorRole ? "Add Associate (requires editor role)" : "Add New Associate"}</Button>
+            <Button disabled={!hasEditorRole} type="submit">
+              {hasEditorRole
+                ? "Add Associate"
+                : "Add Associate (Requires Editor Role)"}
+            </Button>
           </div>
         </form>
       </DialogContent>
