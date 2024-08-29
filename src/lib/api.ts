@@ -44,9 +44,10 @@ async function generateTimeHash(): Promise<string> {
   const now = new Date();
   const dateString = now.toISOString().split("T")[0];
   const hour = now.getUTCHours().toString().padStart(2, "0");
-  const minute = now.getUTCMinutes().toString().padStart(2, "0");
+  // removing minute (a bit too agressive)
+  // const minute = now.getUTCMinutes().toString().padStart(2, "0");
 
-  const timeString = `${dateString}${hour}${minute}`;
+  const timeString = `${dateString}${hour}`;
 
   // Create hash using Web Crypto API
   const encoder = new TextEncoder();
