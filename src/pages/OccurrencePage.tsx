@@ -13,7 +13,7 @@ import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";
 
-function AttendancePage() {
+function OccurrencePage() {
   const { user } = useAuthorizer();
   const [associates, setAssociates] = useState<Associate[]>([]);
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
@@ -141,4 +141,4 @@ function AttendancePage() {
   );
 }
 
-export default AttendancePage;
+export default OccurrencePage;

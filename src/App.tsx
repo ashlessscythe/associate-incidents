@@ -10,7 +10,7 @@ import {
   useAuthorizer,
 } from "@authorizerdev/authorizer-react";
 import LoginModal from "@/components/LoginModal";
-import AttendancePage from "./pages/AttendancePage";
+import OccurencePage from "./pages/OccurrencePage";
 import CAPage from "./pages/CAPage";
 import Header from "@/components/Header";
 import AssociatesPage from "@/pages/AssociatesPage";
@@ -137,7 +137,7 @@ function AppContent() {
               path="/attendance"
               element={
                 <ProtectedRoute allowedRoles={["viewer", "att-edit"]}>
-                  <AttendancePage />
+                  <OccurencePage />
                 </ProtectedRoute>
               }
             />
