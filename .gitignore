@@ -34,3 +34,4 @@ prisma/associates.csv
 *.njsproj
 *.sln
 *.sw?
+.env
