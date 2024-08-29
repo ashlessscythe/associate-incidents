@@ -35,4 +35,3 @@ prisma/associates.csv
 *.sln
 *.sw?
 .env
-prisma/seed.mjs
