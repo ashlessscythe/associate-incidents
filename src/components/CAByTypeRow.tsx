@@ -76,6 +76,7 @@ const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
       {isExpanded && (
         <div className="mt-2 p-4">
           <CAList
+            associate={associate}
             correctiveActions={associate.correctiveActions}
             rules={rules}
             onDeleteCA={onDeleteCA}

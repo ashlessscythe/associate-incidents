@@ -21,6 +21,9 @@ function OccurrencePage() {
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
+  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +72,12 @@ function OccurrencePage() {
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
+    if (associateId) {
+      const associate = associates.find((a) => a.id === associateId) || null;
+      setSelectedAssociate(associate);
+    } else {
+      setSelectedAssociate(null);
+    }
   };
 
   const handleAddOccurrence = async (occurrenceData: {
@@ -130,6 +139,7 @@ function OccurrencePage() {
           </div>
         )}
         <OccurrenceList
+          associate={selectedAssociate}
           occurrences={occurrences}
           associateId={selectedAssociateId}
           onDelete={handleDelete}

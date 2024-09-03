@@ -7,12 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Pencil } from "lucide-react";
+import { Printer, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getAssociatePointsAndNotification,
   deleteOccurrence,
   updateOccurrence,
+  Associate,
 } from "@/lib/api";
 import {
   Dialog,
@@ -31,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { generateOccurrenceForm } from "@/lib/pdfGenerator";
 
 interface OccurrenceType {
   id: string;
@@ -48,6 +50,7 @@ interface Occurrence {
 }
 
 interface OccurrenceListProps {
+  associate: Associate | null;
   occurrences: Occurrence[];
   associateId: string | null;
   onDelete: (occurrenceId: string) => void;
@@ -56,6 +59,7 @@ interface OccurrenceListProps {
 }
 
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
+  associate,
   occurrences,
   associateId,
   onUpdate,
@@ -141,6 +145,14 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return occurenceDate < oneYearAgo;
   };
 
+  const handlePrint = (
+    associate: Associate | null,
+    occurrence: Occurrence,
+    occurrences: Occurrence[]
+  ) => {
+    generateOccurrenceForm(associate, occurrence, occurrences);
+  };
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-2">Occurrence List</h2>
@@ -179,6 +191,17 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
+                  <Button
+                    onClick={() =>
+                      handlePrint(associate, occurrence, occurrences)
+                    }
+                    className="text-gray-500 hover:text-gray-700"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Print corrective action"
+                  >
+                    <Printer size={20} />
+                  </Button>
                   {hasEditorRole ? (
                     <>
                       <Button

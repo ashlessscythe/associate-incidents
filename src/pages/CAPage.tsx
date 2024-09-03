@@ -27,6 +27,9 @@ function CAPage() {
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
+  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +97,12 @@ function CAPage() {
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
+    if (associateId) {
+      const associate = associates.find((a) => a.id === associateId) || null;
+      setSelectedAssociate(associate);
+    } else {
+      setSelectedAssociate(null);
+    }
   };
 
   const handleAddCorrectiveAction = async (caData: {
@@ -162,6 +171,7 @@ function CAPage() {
         </div>
       )}
       <CAList
+        associate={selectedAssociate}
         correctiveActions={correctiveActions}
         rules={rules}
         onDeleteCA={handleDeleteCA}

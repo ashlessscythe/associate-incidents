@@ -98,8 +98,8 @@ api.interceptors.request.use(
 export interface Associate {
   id: string;
   name: string;
-  currentPoints: number;
-  correctiveAction: CorrectiveAction;
+  currentPoints?: number;
+  correctiveAction?: CorrectiveAction;
 }
 
 export interface OccurrenceType {
@@ -111,13 +111,13 @@ export interface OccurrenceType {
 
 export interface Occurrence {
   id: string;
-  typeId: string;
+  typeId?: string;
   type: OccurrenceType;
   date: Date;
   pointsAtTime: number;
   notes: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Associate stuffs
