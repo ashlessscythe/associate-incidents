@@ -142,7 +142,11 @@ app.post("/zapi/associates", async (req, res) => {
 // Get all occurrence types
 app.get("/zapi/occurrence-types", async (req, res) => {
   try {
-    const occurrenceTypes = await prisma.occurrenceType.findMany();
+    const occurrenceTypes = await prisma.occurrenceType.findMany({
+      orderBy: {
+        code: "asc", // Sort by 'code' in ascending order (or change to 'desc' for descending)
+      },
+    });
     res.json(occurrenceTypes);
   } catch (error) {
     res.status(500).json({ error: "Error fetching occurrence types" });

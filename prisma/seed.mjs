@@ -74,17 +74,49 @@ async function createAssociates(associates) {
 
 async function main() {
   try {
+    // Check for flags from command line
+    const clearFlag = process.argv.includes("--clear");
+    const occurrencesOnly = process.argv.includes("--occurrences-only");
+    const rulesOnly = process.argv.includes("--rules-only");
+    const usersOnly = process.argv.includes("--users-only");
+
     if (clearFlag) {
       await clearData();
     }
 
-    await upsertOccurrenceTypes();
-    await upsertRules();
+    // Handle occurrences only mode
+    if (!usersOnly && !rulesOnly) {
+      await upsertOccurrenceTypes();
+    }
 
-    const csvPath = path.join(__dirname, "associates.csv");
-    const associates = await readAssociatesFromCSV(csvPath);
-    if (associates.length > 0) {
-      await createAssociates(associates);
+    if (occurrencesOnly) {
+      console.log(
+        "Occurrences only mode. Skipping rules and associate creation."
+      );
+      return;
+    }
+
+    // Handle rules only mode
+    if (!usersOnly && !occurrencesOnly) {
+      await upsertRules();
+    }
+
+    if (rulesOnly) {
+      console.log("Rules only mode. Skipping associate creation.");
+      return;
+    }
+
+    // Handle name-only mode
+    if (usersOnly) {
+      const csvPath = path.join(__dirname, "associates.csv");
+      const associates = await readAssociatesFromCSV(csvPath);
+      if (associates.length > 0) {
+        await createAssociates(associates);
+        console.log("Associates created successfully.");
+      } else {
+        console.log("No associates found in CSV.");
+      }
+      return;
     }
 
     console.log("Seed completed successfully.");
