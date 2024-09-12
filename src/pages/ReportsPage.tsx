@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { getCAByType, getRules, getAssociatesData } from "../lib/api";
+import {
+  getCAByType,
+  getRules,
+  getAssociates,
+  getOccurrences,
+  getOccurrenceTypes,
+  getAssociatePointsAndNotification,
+} from "../lib/api";
 import { Button } from "@/components/ui/button";
+import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
 import CAByTypeRow from "@/components/CAByTypeRow";
-import { CorrectiveAction, Rule } from "../lib/api";
-
-interface AssociateData {
-  id: string;
-  name: string;
-  currentPoints: number;
-  totalOccurrences: number;
-  totalCA: number;
-}
+import {
+  Associate,
+  AssociateInfo,
+  Occurrence,
+  OccurrenceType,
+  CorrectiveAction,
+  Rule,
+} from "../lib/api";
 
 interface CAByTypeData {
   id: string;
@@ -20,25 +27,39 @@ interface CAByTypeData {
 
 const ReportsPage: React.FC = () => {
   const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
-  const [associatesData, setAssociatesData] = useState<AssociateData[]>([]);
+  const [occurrencesByAssociate, setOccurrencesByAssociate] = useState<
+    {
+      associate: Associate;
+      occurrences: Occurrence[];
+      associateInfo: AssociateInfo;
+    }[]
+  >([]);
+  const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
+  const [associates, setAssociates] = useState<Associate[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeReport, setActiveReport] = useState<"points" | "ca" | null>(
+  const [activeReport, setActiveReport] = useState<"occurrences" | "ca" | null>(
     null
   );
 
   useEffect(() => {
-    const fetchRules = async () => {
+    const fetchInitialData = async () => {
       try {
-        const rulesData = await getRules();
+        const [rulesData, occurrenceTypesData, associates] = await Promise.all([
+          getRules(),
+          getOccurrenceTypes(),
+          getAssociates(),
+        ]);
         setRules(rulesData);
+        setOccurrenceTypes(occurrenceTypesData);
+        setAssociates(associates);
       } catch (err) {
-        console.error("Failed to fetch rules:", err);
-        setError("Failed to fetch rules");
+        console.error("Failed to fetch initial data:", err);
+        setError("Failed to fetch initial data");
       }
     };
-    fetchRules();
+    fetchInitialData();
   }, []);
 
   const handleFetchCAByType = async () => {
@@ -56,15 +77,24 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleFetchAssociatesData = async () => {
+  const handleFetchOccurrencesByAssociate = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getAssociatesData();
-      setAssociatesData(data);
-      setActiveReport("points");
+      const occurrencesData = await Promise.all(
+        associates.map(async (associate) => {
+          const occurrences = await getOccurrences(associate.id);
+          const associateInfo = await getAssociatePointsAndNotification(
+            associate.id
+          );
+          return { associate, occurrences, associateInfo };
+        })
+      );
+      console.log(`occurrencesData: ${occurrencesData.length}`);
+      setOccurrencesByAssociate(occurrencesData);
+      setActiveReport("occurrences");
     } catch (err) {
-      setError("Failed to fetch associates data");
+      setError("Failed to fetch occurrences by associate data");
       console.error(err);
     } finally {
       setLoading(false);
@@ -73,7 +103,7 @@ const ReportsPage: React.FC = () => {
 
   const handleClearReport = () => {
     setCAByTypeData([]);
-    setAssociatesData([]);
+    setAssociates([]);
     setActiveReport(null);
     setError(null);
   };
@@ -88,46 +118,37 @@ const ReportsPage: React.FC = () => {
     console.log("Delete CA:", id);
   };
 
+  const handleDeleteOccurrence = async (occurrenceId: string) => {
+    // Implement delete functionality
+    console.log("Delete Occurrence:", occurrenceId);
+  };
+
+  const handleUpdateOccurrence = async (associateId: string) => {
+    // Implement update functionality
+    console.log("Update Occurrences for Associate:", associateId);
+  };
+
   const renderActiveReport = () => {
+    console.log(`active report ${activeReport}`);
+
     switch (activeReport) {
-      case "points":
+      case "occurrences":
         return (
-          <div className="overflow-x-auto">
-            <table className="w-4/5 mx-auto bg-white dark:bg-gray-800 border-collapse shadow-md rounded-lg">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-700">
-                  <th className="px-4 py-2 text-left border-b dark:border-gray-600">
-                    Name
-                  </th>
-                  <th className="px-4 py-2 text-right border-b dark:border-gray-600">
-                    Current Points
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {associatesData.map((associate, index) => (
-                  <tr
-                    key={associate.id}
-                    className={`
-                      ${
-                        index % 2 === 0
-                          ? "bg-gray-50 dark:bg-gray-800"
-                          : "bg-white dark:bg-gray-900"
-                      }
-                      hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 ease-in-out
-                    `}
-                  >
-                    <td className="border-b dark:border-gray-700 px-4 py-2">
-                      {associate.name}
-                    </td>
-                    <td className="border-b dark:border-gray-700 px-4 py-2 text-right">
-                      {associate.currentPoints.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-4">
+            {occurrencesByAssociate.map(
+              ({ associate, occurrences, associateInfo }) => (
+                <OccurrenceByTypeRow
+                  key={associate.id}
+                  associate={associate}
+                  associateInfo={associateInfo}
+                  occurrences={occurrences}
+                  occurrenceTypes={occurrenceTypes}
+                  onDeleteOccurrence={handleDeleteOccurrence}
+                  onUpdateOccurrence={handleUpdateOccurrence}
+                />
+              )
+            )}
+          </ul>
         );
       case "ca":
         return (
@@ -152,10 +173,10 @@ const ReportsPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Reports</h1>
       <div className="flex justify-start space-x-4 mb-4">
-        <Button onClick={handleFetchAssociatesData} disabled={loading}>
-          {loading && activeReport === "points"
+        <Button onClick={handleFetchOccurrencesByAssociate} disabled={loading}>
+          {loading && activeReport === "occurrences"
             ? "Loading..."
-            : "Run Associate Totals Report"}
+            : "Run Occurrences by Associate Report"}
         </Button>
         <Button onClick={handleFetchCAByType} disabled={loading}>
           {loading && activeReport === "ca"

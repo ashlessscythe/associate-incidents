@@ -202,7 +202,7 @@ export const updateAssociatePoints = async (
   return response.data;
 };
 
-interface AssociateInfo {
+export interface AssociateInfo {
   points: number;
   notificationLevel: string;
 }
