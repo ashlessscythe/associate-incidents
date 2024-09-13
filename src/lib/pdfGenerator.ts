@@ -25,7 +25,7 @@ export const generateOccurrenceForm = (
     doc.setFontSize(fontSize);
     doc.text(text, align === "left" ? x + 2 : x + w - 2, y + h / 2, {
       baseline: "middle",
-      align: undefined ? "left" : "center",
+      align: "left",
     });
     drawRect(x, y, w, h);
   };
@@ -53,9 +53,9 @@ export const generateOccurrenceForm = (
         i === 0
           ? associate.name
           : i === 1
-          ? "SITE LOCATION" || "N/A"
+          ? "SITE LOCATION"
           : i === 2
-          ? "FLOOR" || "N/A"
+          ? "FLOOR"
           : new Date(occurrence.date).toLocaleDateString(),
         x,
         startY + 10,
