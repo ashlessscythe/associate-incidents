@@ -7,6 +7,7 @@ import { rules, occurrenceTypes } from "./definitions.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const associatesFileName = "associates.csv";
 
 // db
 const prisma = new PrismaClient();
@@ -63,10 +64,14 @@ async function readAssociatesFromCSV(filePath) {
   });
 }
 
-async function createAssociates(associates) {
+async function upserAssociates(associates) {
   for (const associate of associates) {
-    await prisma.associate.create({
-      data: associate,
+    await prisma.associate.upsert({
+      where: {
+        name: associate.name,
+      },
+      update: {},
+      create: associate,
     });
   }
   console.log(`${associates.length} associates created from CSV.`);
@@ -108,10 +113,10 @@ async function main() {
 
     // Handle name-only mode
     if (usersOnly) {
-      const csvPath = path.join(__dirname, "associates.csv");
+      const csvPath = path.join(__dirname, associatesFileName);
       const associates = await readAssociatesFromCSV(csvPath);
       if (associates.length > 0) {
-        await createAssociates(associates);
+        await upserAssociates(associates);
         console.log("Associates created successfully.");
       } else {
         console.log("No associates found in CSV.");
