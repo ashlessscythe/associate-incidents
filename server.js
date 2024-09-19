@@ -103,7 +103,9 @@ app.use("/zapi", validateApiKey);
 // Get all associates
 app.get("/zapi/associates", async (req, res) => {
   try {
-    const associates = await prisma.associate.findMany();
+    const associates = await prisma.associate.findMany({
+      orderBy: { name: "asc" },
+    });
     res.json(associates);
   } catch (error) {
     res.status(500).json({ error: "Error fetching associates" });
@@ -395,6 +397,7 @@ app.get("/zapi/associates-data", async (req, res) => {
           },
         },
       },
+      orderBy: { name: "asc" },
     });
 
     const formattedData = associatesData.map((associate) => ({

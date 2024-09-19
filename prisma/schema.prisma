@@ -13,6 +13,8 @@ datasource db {
 model Associate {
   id                  String                @id @default(uuid())
   name                String                @unique
+  ssoid               String?               @unique
+  designation         Designation           @default(NONE)
   currentPoints       Float                 @default(0)
   occurrences         AttendanceOccurrence[]
   correctiveActions   CorrectiveAction[]
@@ -46,6 +48,13 @@ model Rule {
   description String
   type        RuleType
   actions     CorrectiveAction[]
+}
+
+enum Designation {
+  MH
+  CLERK
+  INACTIVE
+  NONE
 }
 
 enum RuleType {

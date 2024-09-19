@@ -57,6 +57,8 @@ async function readAssociatesFromCSV(filePath) {
         associates.push({
           name: row.name,
           currentPoints: 0,
+          ssoid: row.ssoid || null,
+          designation: row.designation || "NONE",
         });
       })
       .on("end", () => resolve(associates))
@@ -68,10 +70,19 @@ async function upserAssociates(associates) {
   for (const associate of associates) {
     await prisma.associate.upsert({
       where: {
-        name: associate.name,
+        name: associate.name, // Find associate by unique name
       },
-      update: {},
-      create: associate,
+      update: {
+        // Only update fields that are provided and not null
+        ssoid: associate.ssoid || undefined, // Update ssoid only if provided
+        designation: associate.designation || undefined, // Update designation only if provided
+      },
+      create: {
+        name: associate.name,
+        currentPoints: associate.currentPoints || 0, // Default to 0 if not provided
+        ssoid: associate.ssoid || null, // Create with ssoid if provided, else null
+        designation: associate.designation || "NONE", // Default to "NONE"
+      },
     });
   }
   console.log(`${associates.length} associates created from CSV.`);

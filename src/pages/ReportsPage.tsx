@@ -90,8 +90,18 @@ const ReportsPage: React.FC = () => {
           return { associate, occurrences, associateInfo };
         })
       );
-      console.log(`occurrencesData: ${occurrencesData.length}`);
-      setOccurrencesByAssociate(occurrencesData);
+
+      // Sort occurrencesData by associate.name
+      const sortedOccurrencesData = occurrencesData.sort((a, b) => {
+        const nameA = a.associate.name.toLowerCase();
+        const nameB = b.associate.name.toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      });
+
+      console.log(`occurrencesData: ${sortedOccurrencesData.length}`);
+      setOccurrencesByAssociate(sortedOccurrencesData);
       setActiveReport("occurrences");
     } catch (err) {
       setError("Failed to fetch occurrences by associate data");
