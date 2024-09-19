@@ -50,6 +50,17 @@ model Rule {
   actions     CorrectiveAction[]
 }
 
+model NotificationLevel {
+  id              String        @id @default(uuid())
+  designation     Designation
+  level           Int
+  name            String
+  pointThreshold  Float
+
+  // for upsert
+  @@unique([designation, level])
+}
+
 enum Designation {
   MH
   CLERK

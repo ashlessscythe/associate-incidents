@@ -236,31 +236,53 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-    const relevantOccurrences = await prisma.attendanceOccurrence.findMany({
-      where: {
-        associateId: id,
-        date: {
-          gte: oneYearAgo,
-        },
-      },
+    const associate = await prisma.associate.findUnique({
+      where: { id },
       include: {
-        type: true,
+        occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo,
+            },
+          },
+          include: {
+            type: true,
+          },
+        },
       },
     });
 
-    const totalPoints = relevantOccurrences.reduce(
+    if (!associate) {
+      return res.status(404).json({ error: "Associate not found" });
+    }
+
+    const totalPoints = associate.occurrences.reduce(
       (sum, occ) => sum + occ.type.points,
       0
     );
 
-    let notificationLevel = "None";
-    if (totalPoints >= 10) notificationLevel = "Termination";
-    else if (totalPoints >= 9) notificationLevel = "Final Written";
-    else if (totalPoints >= 8) notificationLevel = "2nd Written";
-    else if (totalPoints >= 6) notificationLevel = "1st Written";
-    else if (totalPoints >= 4) notificationLevel = "Verbal";
+    const notificationLevels = await prisma.notificationLevel.findMany({
+      where: {
+        designation: associate.designation,
+      },
+      orderBy: {
+        pointThreshold: "desc",
+      },
+    });
 
-    res.json({ points: totalPoints, notificationLevel });
+    let notificationLevel = "None";
+    for (const level of notificationLevels) {
+      if (totalPoints >= level.pointThreshold) {
+        notificationLevel = level.name;
+        break;
+      }
+    }
+
+    res.json({
+      points: totalPoints,
+      notificationLevel: notificationLevel,
+      designation: associate.designation,
+    });
   } catch (error) {
     console.error("Error calculating points:", error);
     res

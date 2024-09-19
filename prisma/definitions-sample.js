@@ -1,3 +1,19 @@
+// sample levels
+export const notificationLevels = [
+  {
+    designation: Designation.BRUH,
+    level: 1,
+    name: "Verbal Disciplinary Notice",
+    pointThreshold: 4,
+  },
+  {
+    designation: Designation.SECRETARY,
+    level: 1,
+    name: "Initial Secretary Notification",
+    pointThreshold: 6,
+  },
+];
+
 export const rules = [
   // sample rules
   {

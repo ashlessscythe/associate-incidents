@@ -205,6 +205,7 @@ export const updateAssociatePoints = async (
 export interface AssociateInfo {
   points: number;
   notificationLevel: string;
+  designation: string;
 }
 
 export const getAssociatePointsAndNotification = async (

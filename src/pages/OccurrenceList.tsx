@@ -69,6 +69,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const { user } = useAuthorizer();
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
+  const [designation, setDesignation] = useState<string>("");
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
     null
   );
@@ -125,10 +126,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     const fetchPointsAndNotification = async () => {
       if (associateId) {
         try {
-          const { points, notificationLevel } =
+          const { points, notificationLevel, designation } =
             await getAssociatePointsAndNotification(associateId);
           setTotalPoints(points);
           setNotificationLevel(notificationLevel);
+          setDesignation(designation);
         } catch (e) {
           console.error("Error fetching associate points and notification:", e);
         }
@@ -242,6 +244,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           <p className="font-semibold">
             Current Notification Level: {notificationLevel}
           </p>
+          <p className="font-semibold">Designation: {designation}</p>
         </div>
       )}
 

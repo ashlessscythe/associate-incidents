@@ -8,20 +8,20 @@ Check out the `schema.prisma` file to get more information on how the data model
 
 ## ✨ Features
 
-- 🔍 **Smart Associate Search**: Quickly find associates with an intuitive search functionality.
-- 📊 **Incident Tracking**: Log and manage incidents associated with employees.
-- 🕒 **Attendance Management**: Keep track of attendance occurrences and points.
-- 🖱️ **User-Friendly Interface**: Sleek, responsive design with keyboard navigation support.
-- 📜 **Rule-Based Corrective Actions**: Manage and apply rules for corrective actions.
+🔍 **Smart Associate Search**: Quickly find associates with an intuitive search functionality.
+📊 **Incident Tracking**: Log and manage incidents associated with employees.
+🕒 **Attendance Management**: Keep track of attendance occurrences and points.
+🖱️ **User-Friendly Interface**: Sleek, responsive design with keyboard navigation support.
+📜 **Rule-Based Corrective Actions**: Manage and apply rules for corrective actions.
 
 ## 🛠️ Technologies Used
 
-- **Frontend**: React with TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Shadcn UI
-- **Database**: PostgreSQL
-- **ORM**: Prisma
-- **API**: (Assuming RESTful API based on the structure, but not explicitly shown)
+**Frontend**: React with TypeScript
+**Styling**: Tailwind CSS
+**UI Components**: Shadcn UI
+**Database**: PostgreSQL
+**ORM**: Prisma
+**API**: (Assuming RESTful API based on the structure, but not explicitly shown)
 
 ## 📦 Installation
 
@@ -60,15 +60,59 @@ Check out the `schema.prisma` file to get more information on how the data model
 
 The project includes sample data files:
 
-- `definitions-sample.js`: Contains sample rules and occurrence types.
+- `definitions-sample.js`: Contains sample notification levels, rules, and occurrence types.
 - `associates-sample.csv`: Contains sample associate data.
 
 To populate your database with this initial data:
 
-1. Copy the sample files as mentioned in the installation steps.
-2. Run the seeding script: `node seed.mjs`
+1. Copy the sample files as mentioned in the installation steps:
 
-This will populate your database with the sample associates, rules, and occurrence types, giving you a starting point to work with the system.
+   ```
+   cp definitions-sample.js definitions.js
+   cp associates-sample.csv associates.csv
+   ```
+
+2. (Optional) Modify `definitions.js` to customize notification levels, rules, and occurrence types:
+
+   ```javascript
+   // Sample content in definitions.js
+   export const notificationLevels = [
+     {
+       designation: Designation.BRUH,
+       level: 1,
+       name: "Verbal Disciplinary Notice",
+       pointThreshold: 4,
+     },
+     {
+       designation: Designation.SECRETARY,
+       level: 1,
+       name: "Initial Secretary Notification",
+       pointThreshold: 6,
+     },
+   ];
+
+   export const rules = [
+     {
+       code: "Code A-C3",
+       description: "Code description for A-C3",
+       type: "OPERATIONS",
+     },
+     {
+       code: "Code B-EEI",
+       description: "Description for Rule B-EEI",
+       type: "SIGNAL",
+     },
+   ];
+
+   // ... other definitions
+   ```
+
+3. Run the seeding script:
+   ```
+   node seed.mjs
+   ```
+
+This will populate your database with the sample associates, notification levels, rules, and occurrence types, giving you a starting point to work with the system.
 
 ## 🖥️ Usage
 
