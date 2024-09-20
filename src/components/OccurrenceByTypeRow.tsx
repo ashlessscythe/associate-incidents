@@ -1,60 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OccurrenceList from "@/pages/OccurrenceList";
-import {
-  Associate,
-  AssociateInfo,
-  Occurrence,
-  OccurrenceType,
-} from "@/lib/api";
+import { AssociateInfo, Occurrence, OccurrenceType } from "@/lib/api";
 
 interface OccurrenceByTypeRowProps {
-  associate: Associate;
   associateInfo: AssociateInfo;
-  occurrences: Occurrence[];
+  occurrences?: Occurrence[] | [];
   occurrenceTypes: OccurrenceType[];
   onDeleteOccurrence: (occurrenceId: string) => void;
   onUpdateOccurrence: (associateId: string) => void;
 }
 
 const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
-  associate,
   associateInfo,
-  occurrences,
+  occurrences = [], // Default to empty array if undefined
   occurrenceTypes,
   onDeleteOccurrence,
   onUpdateOccurrence,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
+  // Toggle expanded state
+  const toggleExpand = () => setIsExpanded((prev) => !prev);
 
-  const occurrenceCounts = occurrences.reduce((acc, occurrence) => {
-    const typeCode = occurrence.type.code;
-    acc[typeCode] = (acc[typeCode] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Calculate occurrence counts using useMemo to prevent recalculations on each render
+  const occurrenceCounts = useMemo(() => {
+    return occurrences.reduce((acc, occurrence) => {
+      const typeCode = occurrence.type.code;
+      acc[typeCode] = (acc[typeCode] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [occurrences]);
 
   return (
     <li className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200">
       <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150">
         <div className="flex items-center space-x-4">
           <span className="font-semibold text-gray-800 dark:text-white">
-            {associate.name}
+            {associateInfo.name}
           </span>
           <ArrowRight size={20} className="text-gray-400 dark:text-gray-500" />
           <div className="flex items-center space-x-2">
-            {Object.entries(occurrenceCounts).map(([code, count]) => (
-              <span
-                key={code}
-                className="text-sm bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-2 py-1 rounded"
-              >
-                {code}: {count}
+            {Object.keys(occurrenceCounts).length > 0 ? (
+              Object.entries(occurrenceCounts).map(([code, count]) => (
+                <span
+                  key={code}
+                  className="text-sm bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-2 py-1 rounded"
+                >
+                  {code}: {count}
+                </span>
+              ))
+            ) : (
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                No occurrences
               </span>
-            ))}
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-4">
@@ -75,9 +76,8 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
       {isExpanded && (
         <div className="mt-2 p-4">
           <OccurrenceList
-            associate={associate}
+            associateInfo={associateInfo}
             occurrences={occurrences}
-            associateId={associate.id}
             onDelete={onDeleteOccurrence}
             onUpdate={onUpdateOccurrence}
             occurrenceTypes={occurrenceTypes}

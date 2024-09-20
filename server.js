@@ -279,6 +279,8 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
     }
 
     res.json({
+      id: associate.id,
+      name: associate.name,
       points: totalPoints,
       notificationLevel: notificationLevel,
       designation: associate.designation,
@@ -288,6 +290,78 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
     res
       .status(500)
       .json({ error: "Error calculating points and notification level" });
+  }
+});
+
+// Get info for all associates
+app.get("/zapi/all-with-occurrences", async (req, res) => {
+  try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    // Fetch associates with occurrences
+    const associates = await prisma.associate.findMany({
+      include: {
+        occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo, // Fetch occurrences from the last year
+            },
+          },
+          include: {
+            type: true, // Fetch the type of occurrence to access the points
+          },
+        },
+      },
+    });
+
+    // Map over each associate and calculate points & notification levels
+    const associatesWithInfo = await Promise.all(
+      associates.map(async (associate) => {
+        const totalPoints = associate.occurrences.reduce(
+          (sum, occ) => sum + occ.type.points,
+          0
+        );
+
+        // Fetch notification levels based on designation
+        const notificationLevels = await prisma.notificationLevel.findMany({
+          where: {
+            designation: associate.designation,
+          },
+          orderBy: {
+            pointThreshold: "desc",
+          },
+        });
+
+        // Determine the notification level
+        let notificationLevel = "None";
+        for (const level of notificationLevels) {
+          if (totalPoints >= level.pointThreshold) {
+            notificationLevel = level.name;
+            break;
+          }
+        }
+
+        // Return the associate data along with their calculated info
+        return {
+          id: associate.id,
+          name: associate.name,
+          occurrences: associate.occurrences,
+          info: {
+            id: associate.id,
+            name: associate.name,
+            points: totalPoints,
+            notificationLevel: notificationLevel,
+            designation: associate.designation,
+          },
+        };
+      })
+    );
+
+    res.json(associatesWithInfo); // Send back the JSON response
+  } catch (error) {
+    console.error("Error fetching associates with occurrences:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

@@ -13,7 +13,7 @@ import {
   getAssociatePointsAndNotification,
   deleteOccurrence,
   updateOccurrence,
-  Associate,
+  AssociateInfo,
 } from "@/lib/api";
 import {
   Dialog,
@@ -50,18 +50,16 @@ interface Occurrence {
 }
 
 interface OccurrenceListProps {
-  associate: Associate | null;
-  occurrences: Occurrence[];
-  associateId: string | null;
+  occurrences?: Occurrence[] | [];
+  associateInfo: AssociateInfo;
   onDelete: (occurrenceId: string) => void;
   onUpdate: (occurenceId: string) => void;
   occurrenceTypes: OccurrenceType[];
 }
 
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
-  associate,
   occurrences,
-  associateId,
+  associateInfo,
   onUpdate,
   onDelete,
   occurrenceTypes,
@@ -108,8 +106,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       await updateOccurrence(occurrenceId, occurrenceData);
 
       // Instead of fetching occurrences here, we'll call the onUpdate prop
-      if (associateId) {
-        onUpdate(associateId);
+      if (associateInfo.id) {
+        onUpdate(associateInfo.id);
       }
 
       // alert("Occurrence updated successfully");
@@ -124,10 +122,10 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   useEffect(() => {
     const fetchPointsAndNotification = async () => {
-      if (associateId) {
+      if (associateInfo.id) {
         try {
           const { points, notificationLevel, designation } =
-            await getAssociatePointsAndNotification(associateId);
+            await getAssociatePointsAndNotification(associateInfo.id);
           setTotalPoints(points);
           setNotificationLevel(notificationLevel);
           setDesignation(designation);
@@ -138,7 +136,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     };
 
     fetchPointsAndNotification();
-  }, [associateId, occurrences]);
+  }, [associateInfo.id, occurrences]);
 
   const isOverOneYearOld = (date: Date) => {
     const occurenceDate = new Date(date);
@@ -148,11 +146,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   };
 
   const handlePrint = (
-    associate: Associate | null,
+    associateInfo: AssociateInfo | null,
     occurrence: Occurrence,
     occurrences: Occurrence[]
   ) => {
-    generateOccurrenceForm(associate, occurrence, occurrences);
+    generateOccurrenceForm(associateInfo, occurrence, occurrences);
   };
 
   return (
@@ -170,7 +168,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {occurrences.map((occurrence) => {
+          {occurrences?.map((occurrence) => {
             const isOld = isOverOneYearOld(occurrence.date);
             const rowStyle = isOld
               ? { color: "gray", textDecoration: "line-through" }
@@ -195,7 +193,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                 <TableCell>
                   <Button
                     onClick={() =>
-                      handlePrint(associate, occurrence, occurrences)
+                      handlePrint(associateInfo, occurrence, occurrences)
                     }
                     className="text-gray-500 hover:text-gray-700"
                     variant="ghost"
@@ -232,7 +230,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           })}
         </TableBody>
       </Table>
-      {occurrences.length === 0 ? (
+      {occurrences?.length === 0 ? (
         <p className="text-center text-gray-500 mt-4">
           No occurrences recorded
         </p>

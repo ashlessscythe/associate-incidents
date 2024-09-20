@@ -99,7 +99,8 @@ export interface Associate {
   id: string;
   name: string;
   currentPoints?: number;
-  correctiveAction?: CorrectiveAction;
+  correctiveAction?: CorrectiveAction[];
+  occurrences?: Occurrence[];
 }
 
 export interface OccurrenceType {
@@ -203,9 +204,18 @@ export const updateAssociatePoints = async (
 };
 
 export interface AssociateInfo {
+  id: string;
+  name: string;
   points: number;
   notificationLevel: string;
   designation: string;
+}
+
+export interface AssociateAndInfo {
+  id: string;
+  name: string;
+  occurrences: Occurrence[];
+  info: AssociateInfo;
 }
 
 export const getAssociatePointsAndNotification = async (
@@ -218,6 +228,19 @@ export const getAssociatePointsAndNotification = async (
     return response.data;
   } catch (error) {
     console.error("Error fetching points and notification level:", error);
+    throw error; // Rethrow the error to handle it in the useEffect
+  }
+};
+
+export const getAllAssociatesWithOccurrences = async (): Promise<
+  AssociateAndInfo[]
+> => {
+  try {
+    const response = await api.get<AssociateAndInfo[]>("/all-with-occurrences"); // Ensure the path matches server.js
+    // console.log(`data: ${JSON.stringify(response.data)}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all associates with occurrences:", error);
     throw error; // Rethrow the error to handle it in the useEffect
   }
 };

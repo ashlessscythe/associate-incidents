@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import {
   Associate,
+  AssociateInfo,
   OccurrenceType,
   Occurrence,
   getAssociates,
   getOccurrences,
   getOccurrenceTypes,
   addOccurrence,
+  getAssociatePointsAndNotification,
 } from "@/lib/api";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
@@ -21,7 +23,8 @@ function OccurrencePage() {
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
-  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
+  const [_, setSelectedAssociate] = useState<AssociateInfo | null>(null);
+  const [associateInfo, setAssociateInfo] = useState<AssociateInfo | null>(
     null
   );
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,7 @@ function OccurrencePage() {
 
   useEffect(() => {
     fetchOccurrences();
+    fetchInfo(selectedAssociateId);
   }, [selectedAssociateId]);
 
   const fetchOccurrences = async () => {
@@ -70,10 +74,25 @@ function OccurrencePage() {
     }
   };
 
-  const handleAssociateSelect = (associateId: string | null) => {
+  const fetchInfo = async (id: string | null) => {
+    if (id) {
+      try {
+        const associateInfoData = await getAssociatePointsAndNotification(id);
+        setAssociateInfo(associateInfoData);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
+      }
+    } else {
+      setAssociateInfo(null);
+    }
+  };
+
+  const handleAssociateSelect = async (associateId: string | null) => {
     setSelectedAssociateId(associateId);
     if (associateId) {
-      const associate = associates.find((a) => a.id === associateId) || null;
+      const associate = await getAssociatePointsAndNotification(associateId);
       setSelectedAssociate(associate);
     } else {
       setSelectedAssociate(null);
@@ -112,6 +131,10 @@ function OccurrencePage() {
     );
   };
 
+  function isAssociateInfo(info: AssociateInfo | null): info is AssociateInfo {
+    return info !== null;
+  }
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -138,14 +161,15 @@ function OccurrencePage() {
             <p>You do not have permission to add or edit occurrences.</p>
           </div>
         )}
-        <OccurrenceList
-          associate={selectedAssociate}
-          occurrences={occurrences}
-          associateId={selectedAssociateId}
-          onDelete={handleDelete}
-          onUpdate={handleUpdate}
-          occurrenceTypes={occurrenceTypes}
-        />
+        {isAssociateInfo(associateInfo) && (
+          <OccurrenceList
+            associateInfo={associateInfo}
+            occurrences={occurrences}
+            onDelete={handleDelete}
+            onUpdate={handleUpdate}
+            occurrenceTypes={occurrenceTypes}
+          />
+        )}
       </main>
     </div>
   );

@@ -2,22 +2,14 @@ import React, { useEffect, useState } from "react";
 import {
   getCAByType,
   getRules,
-  getAssociates,
-  getOccurrences,
   getOccurrenceTypes,
-  getAssociatePointsAndNotification,
+  getAllAssociatesWithOccurrences,
+  AssociateAndInfo,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
 import CAByTypeRow from "@/components/CAByTypeRow";
-import {
-  Associate,
-  AssociateInfo,
-  Occurrence,
-  OccurrenceType,
-  CorrectiveAction,
-  Rule,
-} from "../lib/api";
+import { OccurrenceType, CorrectiveAction, Rule } from "../lib/api";
 
 interface CAByTypeData {
   id: string;
@@ -27,15 +19,8 @@ interface CAByTypeData {
 
 const ReportsPage: React.FC = () => {
   const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
-  const [occurrencesByAssociate, setOccurrencesByAssociate] = useState<
-    {
-      associate: Associate;
-      occurrences: Occurrence[];
-      associateInfo: AssociateInfo;
-    }[]
-  >([]);
   const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
-  const [associates, setAssociates] = useState<Associate[]>([]);
+  const [associatesData, setAssociatesData] = useState<AssociateAndInfo[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,14 +31,12 @@ const ReportsPage: React.FC = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [rulesData, occurrenceTypesData, associates] = await Promise.all([
+        const [rulesData, occurrenceTypesData] = await Promise.all([
           getRules(),
           getOccurrenceTypes(),
-          getAssociates(),
         ]);
         setRules(rulesData);
         setOccurrenceTypes(occurrenceTypesData);
-        setAssociates(associates);
       } catch (err) {
         console.error("Failed to fetch initial data:", err);
         setError("Failed to fetch initial data");
@@ -61,6 +44,27 @@ const ReportsPage: React.FC = () => {
     };
     fetchInitialData();
   }, []);
+
+  const handleGetAllOccurrences = async () => {
+    setLoading(true);
+    setError(null);
+    fetchAssociateData();
+  };
+
+  async function fetchAssociateData() {
+    try {
+      const associatesData: AssociateAndInfo[] =
+        await getAllAssociatesWithOccurrences();
+      setAssociatesData(associatesData);
+      // console.log("full response: ", associatesData);
+      setActiveReport("occurrences");
+    } catch (err) {
+      setError("Failed to fetch all associates with occurrences");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const handleFetchCAByType = async () => {
     setLoading(true);
@@ -77,64 +81,26 @@ const ReportsPage: React.FC = () => {
     }
   };
 
-  const handleFetchOccurrencesByAssociate = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const occurrencesData = await Promise.all(
-        associates.map(async (associate) => {
-          const occurrences = await getOccurrences(associate.id);
-          const associateInfo = await getAssociatePointsAndNotification(
-            associate.id
-          );
-          return { associate, occurrences, associateInfo };
-        })
-      );
-
-      // Sort occurrencesData by associate.name
-      const sortedOccurrencesData = occurrencesData.sort((a, b) => {
-        const nameA = a.associate.name.toLowerCase();
-        const nameB = b.associate.name.toLowerCase();
-        if (nameA < nameB) return -1;
-        if (nameA > nameB) return 1;
-        return 0;
-      });
-
-      console.log(`occurrencesData: ${sortedOccurrencesData.length}`);
-      setOccurrencesByAssociate(sortedOccurrencesData);
-      setActiveReport("occurrences");
-    } catch (err) {
-      setError("Failed to fetch occurrences by associate data");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleClearReport = () => {
     setCAByTypeData([]);
-    setAssociates([]);
+    setAssociatesData([]);
     setActiveReport(null);
     setError(null);
   };
 
   const handleEditCA = async (ca: CorrectiveAction) => {
-    // Implement edit functionality
     console.log("Edit CA:", ca);
   };
 
   const handleDeleteCA = async (id: string) => {
-    // Implement delete functionality
     console.log("Delete CA:", id);
   };
 
   const handleDeleteOccurrence = async (occurrenceId: string) => {
-    // Implement delete functionality
     console.log("Delete Occurrence:", occurrenceId);
   };
 
   const handleUpdateOccurrence = async (associateId: string) => {
-    // Implement update functionality
     console.log("Update Occurrences for Associate:", associateId);
   };
 
@@ -145,18 +111,19 @@ const ReportsPage: React.FC = () => {
       case "occurrences":
         return (
           <ul className="space-y-4">
-            {occurrencesByAssociate.map(
-              ({ associate, occurrences, associateInfo }) => (
+            {associatesData?.length > 0 ? (
+              associatesData.map((associate) => (
                 <OccurrenceByTypeRow
-                  key={associate.id}
-                  associate={associate}
-                  associateInfo={associateInfo}
-                  occurrences={occurrences}
+                  key={associate.info.id}
+                  associateInfo={associate.info} // Accessing info field from associate
+                  occurrences={associate.occurrences} // Accessing occurrences field from associate
                   occurrenceTypes={occurrenceTypes}
                   onDeleteOccurrence={handleDeleteOccurrence}
                   onUpdateOccurrence={handleUpdateOccurrence}
                 />
-              )
+              ))
+            ) : (
+              <p>No associates found with occurrences.</p>
             )}
           </ul>
         );
@@ -175,7 +142,7 @@ const ReportsPage: React.FC = () => {
           </ul>
         );
       default:
-        return null;
+        return <p>Please select associate report to run.</p>;
     }
   };
 
@@ -183,7 +150,7 @@ const ReportsPage: React.FC = () => {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Reports</h1>
       <div className="flex justify-start space-x-4 mb-4">
-        <Button onClick={handleFetchOccurrencesByAssociate} disabled={loading}>
+        <Button onClick={handleGetAllOccurrences} disabled={loading}>
           {loading && activeReport === "occurrences"
             ? "Loading..."
             : "Run Occurrences by Associate Report"}
