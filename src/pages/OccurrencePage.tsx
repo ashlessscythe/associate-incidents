@@ -1,29 +1,32 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Associate,
-  AssociateInfo,
   OccurrenceType,
   Occurrence,
-  getAssociates,
   getOccurrences,
   getOccurrenceTypes,
   addOccurrence,
   getAssociatePointsAndNotification,
+  AssociateInfo,
 } from "@/lib/api";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";
+import { useAssociates } from "@/hooks/useAssociates";
 
 function OccurrencePage() {
   const { user } = useAuthorizer();
-  const [associates, setAssociates] = useState<Associate[]>([]);
+  const {
+    associatesWithInfo,
+    loading: associatesLoading,
+    error: associatesError,
+    refreshAssociates,
+  } = useAssociates();
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
-  const [_, setSelectedAssociate] = useState<AssociateInfo | null>(null);
   const [associateInfo, setAssociateInfo] = useState<AssociateInfo | null>(
     null
   );
@@ -34,13 +37,9 @@ function OccurrencePage() {
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchOccurrenceTypes = async () => {
       try {
-        const [associatesData, typesData] = await Promise.all([
-          getAssociates(),
-          getOccurrenceTypes(),
-        ]);
-        setAssociates(associatesData);
+        const typesData = await getOccurrenceTypes();
         setOccurrenceTypes(typesData);
       } catch (err: unknown) {
         setError(
@@ -51,52 +50,45 @@ function OccurrencePage() {
       }
     };
 
-    fetchData();
+    fetchOccurrenceTypes();
   }, []);
 
   useEffect(() => {
-    fetchOccurrences();
-    fetchInfo(selectedAssociateId);
-  }, [selectedAssociateId]);
-
-  const fetchOccurrences = async () => {
     if (selectedAssociateId) {
-      try {
-        const occurrencesData = await getOccurrences(selectedAssociateId);
-        setOccurrences(occurrencesData);
-      } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-      }
+      fetchOccurrences(selectedAssociateId);
+      fetchAssociateInfo(selectedAssociateId);
     } else {
       setOccurrences([]);
-    }
-  };
-
-  const fetchInfo = async (id: string | null) => {
-    if (id) {
-      try {
-        const associateInfoData = await getAssociatePointsAndNotification(id);
-        setAssociateInfo(associateInfoData);
-      } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-      }
-    } else {
       setAssociateInfo(null);
     }
+  }, [selectedAssociateId]);
+
+  const fetchOccurrences = async (associateId: string) => {
+    try {
+      const occurrencesData = await getOccurrences(associateId);
+      setOccurrences(occurrencesData);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    }
   };
 
-  const handleAssociateSelect = async (associateId: string | null) => {
-    setSelectedAssociateId(associateId);
-    if (associateId) {
-      const associate = await getAssociatePointsAndNotification(associateId);
-      setSelectedAssociate(associate);
-    } else {
-      setSelectedAssociate(null);
+  const fetchAssociateInfo = async (associateId: string) => {
+    try {
+      const associateInfoData = await getAssociatePointsAndNotification(
+        associateId
+      );
+      setAssociateInfo(associateInfoData);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
     }
+  };
+
+  const handleAssociateSelect = (associateId: string | null) => {
+    setSelectedAssociateId(associateId);
   };
 
   const handleAddOccurrence = async (occurrenceData: {
@@ -110,10 +102,9 @@ function OccurrencePage() {
           ...occurrenceData,
           associateId: selectedAssociateId,
         });
-        await fetchOccurrences();
-        // Refresh associate data to update current points and notification
-        const updatedAssociates = await getAssociates();
-        setAssociates(updatedAssociates);
+        await fetchOccurrences(selectedAssociateId);
+        await fetchAssociateInfo(selectedAssociateId);
+        await refreshAssociates();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "An unknown error occurred");
       }
@@ -121,8 +112,8 @@ function OccurrencePage() {
   };
 
   const handleUpdate = async (associateId: string) => {
-    const updatedOccurrences = await getOccurrences(associateId);
-    setOccurrences(updatedOccurrences);
+    await fetchOccurrences(associateId);
+    await fetchAssociateInfo(associateId);
   };
 
   const handleDelete = (occurrenceId: string) => {
@@ -131,18 +122,15 @@ function OccurrencePage() {
     );
   };
 
-  function isAssociateInfo(info: AssociateInfo | null): info is AssociateInfo {
-    return info !== null;
-  }
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (associatesLoading || loading) return <div>Loading...</div>;
+  if (associatesError || error)
+    return <div>Error: {associatesError || error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <main className="container mx-auto p-4 max-w-[95%]">
         <AssociateSelect
-          associates={associates}
+          associates={associatesWithInfo}
           selectedAssociateId={selectedAssociateId}
           onAssociateSelect={handleAssociateSelect}
         />
@@ -161,7 +149,7 @@ function OccurrencePage() {
             <p>You do not have permission to add or edit occurrences.</p>
           </div>
         )}
-        {isAssociateInfo(associateInfo) && (
+        {associateInfo && (
           <OccurrenceList
             associateInfo={associateInfo}
             occurrences={occurrences}

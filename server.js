@@ -497,6 +497,7 @@ app.get("/zapi/associates-data", async (req, res) => {
     });
 
     const formattedData = associatesData.map((associate) => ({
+      id: associate.id,
       name: associate.name,
       currentPoints: associate.occurrences.reduce(
         (sum, occurrence) => sum + occurrence.type.points,

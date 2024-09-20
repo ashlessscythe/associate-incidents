@@ -1,40 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import AssociateSelect from "@/components/AssociateSelect";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/NewAssociateModal";
-import { addAssociate, getAssociatesData } from "@/lib/api";
+import { addAssociate } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Associate } from "@/types/associate";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAssociates } from "@/hooks/useAssociates";
 
 const AssociatesPage: React.FC = () => {
-  const [associates, setAssociates] = useState<Associate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { associatesWithInfo, associates, loading, error, refreshAssociates } =
+    useAssociates();
   const [showTable, setShowTable] = useState(false);
   const { user } = useAuthorizer();
-
-  useEffect(() => {
-    fetchAssociates();
-  }, []);
-
-  const fetchAssociates = async () => {
-    try {
-      const data = await getAssociatesData();
-      setAssociates(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddAssociate = async (name: string) => {
     try {
       await addAssociate(name);
-      await fetchAssociates(); // Refresh the list after adding
+      await refreshAssociates(); // Refresh the associates list after adding a new one
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      console.error("Error adding associate:", err);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -61,7 +46,7 @@ const AssociatesPage: React.FC = () => {
         <AssociatesTable associates={associates} />
       ) : (
         <AssociateSelect
-          associates={associates}
+          associates={associatesWithInfo}
           selectedAssociateId={null}
           onAssociateSelect={() => {}}
         />

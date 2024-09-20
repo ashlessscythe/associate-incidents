@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Associate,
-  getAssociates,
   getRules,
   getCorrectiveActions,
   addCorrectiveAction,
@@ -15,19 +13,21 @@ import CAForm from "./CAForm";
 import CAList from "./CAList";
 import CAEditModal from "@/components/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAssociates } from "@/hooks/useAssociates";
 
 function CAPage() {
   const { user } = useAuthorizer();
-  const [associates, setAssociates] = useState<Associate[]>([]);
+  const {
+    associatesWithInfo,
+    loading: associatesLoading,
+    error: associatesError,
+  } = useAssociates();
   const [rules, setRules] = useState<Rule[]>([]);
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
   >([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
-    null
-  );
-  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
     null
   );
   const [loading, setLoading] = useState(true);
@@ -37,13 +37,9 @@ function CAPage() {
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchRules = async () => {
       try {
-        const [associatesData, rulesData] = await Promise.all([
-          getAssociates(),
-          getRules(),
-        ]);
-        setAssociates(associatesData);
+        const rulesData = await getRules();
         setRules(rulesData);
       } catch (err: unknown) {
         setError(
@@ -54,7 +50,7 @@ function CAPage() {
       }
     };
 
-    fetchData();
+    fetchRules();
   }, []);
 
   useEffect(() => {
@@ -87,22 +83,16 @@ function CAPage() {
       setEditingCA(null);
     } catch (error) {
       console.error("Failed to update corrective action:", error);
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unknown error occurred while updating the CA");
-      }
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An unknown error occurred while updating the CA"
+      );
     }
   };
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
-    if (associateId) {
-      const associate = associates.find((a) => a.id === associateId) || null;
-      setSelectedAssociate(associate);
-    } else {
-      setSelectedAssociate(null);
-    }
   };
 
   const handleAddCorrectiveAction = async (caData: {
@@ -126,32 +116,32 @@ function CAPage() {
 
   const handleDeleteCA = async (id: string) => {
     const isConfirmed = window.confirm("Are you sure you want to delete?");
+    if (!isConfirmed) return;
 
-    if (!isConfirmed) {
-      return; // do nothing
-    }
     try {
       await deleteCorrectiveAction(id);
-      // Update your state to remove the deleted corrective action
       setCorrectiveActions((prevCAs) => prevCAs.filter((ca) => ca.id !== id));
     } catch (error) {
       console.error("Failed to delete corrective action:", error);
-      // Handle error (e.g., show an error message to the user)
-      if (error instanceof Error) {
-        alert(`Failed to delete CA: ${error.message}`);
-      } else {
-        alert("An unknown error occured while deleting the CA");
-      }
+      alert(
+        error instanceof Error
+          ? `Failed to delete CA: ${error.message}`
+          : "An unknown error occurred while deleting the CA"
+      );
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (associatesLoading || loading) return <div>Loading...</div>;
+  if (associatesError || error)
+    return <div>Error: {associatesError || error}</div>;
+
+  const selectedAssociate =
+    associatesWithInfo.find((a) => a.id === selectedAssociateId) || null;
 
   return (
     <div>
       <AssociateSelect
-        associates={associates}
+        associates={associatesWithInfo}
         selectedAssociateId={selectedAssociateId}
         onAssociateSelect={handleAssociateSelect}
       />

@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Associate } from "@/types/associate";
+import { Associate } from "@/lib/api";
 
 interface AssociatesTableProps {
   associates: Associate[];
