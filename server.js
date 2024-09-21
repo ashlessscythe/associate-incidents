@@ -141,6 +141,41 @@ app.post("/zapi/associates", async (req, res) => {
   }
 });
 
+// delete associate
+app.delete("/zapi/associates/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the associate first
+    const associate = await prisma.associate.findUnique({
+      where: { id },
+    });
+
+    if (!associate) {
+      return res.status(404).json({ error: "Associate not found" });
+    }
+
+    // Try to delete the associate
+    await prisma.associate.delete({ where: { id } });
+
+    // Send success with no content
+    res.status(204).send();
+  } catch (error) {
+    // Check for Prisma constraint violation errors
+    if (error.code === "P2003") { // Prisma error code for foreign key constraint failure
+      res.status(400).json({
+        error: "Cannot delete associate, as there is related data in other tables.",
+      });
+    } else {
+      // Log the full error for debugging
+      console.error("Error deleting associate:", error);
+
+      // Send a generic error message
+      res.status(500).json({ error: "Error deleting associate" });
+    }
+  }
+});
+
 // Get all occurrence types
 app.get("/zapi/occurrence-types", async (req, res) => {
   try {
@@ -290,6 +325,30 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
     res
       .status(500)
       .json({ error: "Error calculating points and notification level" });
+  }
+});
+
+// Get all associates with designation
+app.get("/zapi/associates-with-designation", async (req, res) => {
+  try {
+    // Fetch all associates
+    const associates = await prisma.associate.findMany({
+      // Remove the include if designation is not a relation, but a simple field
+      // include is only required for relations, not for enums or basic fields
+    });
+
+    // Map the result to return only the necessary fields
+    const result = associates.map((associate) => ({
+      id: associate.id,
+      name: associate.name,
+      designation: associate.designation, // This should directly return the enum value
+    }));
+
+    // Send the response
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching associates with designation:", error);
+    res.status(500).json({ error: "Error fetching associates with designation" });
   }
 });
 

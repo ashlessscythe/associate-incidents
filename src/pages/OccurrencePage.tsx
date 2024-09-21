@@ -12,16 +12,15 @@ import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/pages/OccurrenceForm";
 import OccurrenceList from "@/pages/OccurrenceList";
-import { useAssociates } from "@/hooks/useAssociates";
+import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 function OccurrencePage() {
   const { user } = useAuthorizer();
   const {
-    associatesWithInfo,
+    fetchAssociatesWithDesignation,
     loading: associatesLoading,
     error: associatesError,
-    refreshAssociates,
-  } = useAssociates();
+  } = useAssociatesWithDesignation();
   const [occurrences, setOccurrences] = useState<Occurrence[]>([]);
   const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
@@ -104,7 +103,7 @@ function OccurrencePage() {
         });
         await fetchOccurrences(selectedAssociateId);
         await fetchAssociateInfo(selectedAssociateId);
-        await refreshAssociates();
+        await fetchAssociatesWithDesignation();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "An unknown error occurred");
       }
@@ -130,7 +129,6 @@ function OccurrencePage() {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
       <main className="container mx-auto p-4 max-w-[95%]">
         <AssociateSelect
-          associates={associatesWithInfo}
           selectedAssociateId={selectedAssociateId}
           onAssociateSelect={handleAssociateSelect}
         />

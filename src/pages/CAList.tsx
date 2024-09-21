@@ -1,9 +1,8 @@
 import React from "react";
 import { Associate, CorrectiveAction, Rule } from "@/lib/api";
-import { Printer, Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { generateCAFormPDF } from "@/lib/pdfGenerator";
 
 interface CAListProps {
   associate: Associate | null;
@@ -15,7 +14,6 @@ interface CAListProps {
 }
 
 const CAList: React.FC<CAListProps> = ({
-  associate,
   correctiveActions,
   rules,
   onEditCA,
@@ -60,9 +58,9 @@ const CAList: React.FC<CAListProps> = ({
     (ca) => new Date(ca.date) >= oneYearAgo
   ).length;
 
-  const handlePrint = (associate: Associate | null, ca: CorrectiveAction) => {
-    generateCAFormPDF(associate, ca);
-  };
+  // const handlePrint = (associate: Associate | null, ca: CorrectiveAction) => {
+  //   generateCAFormPDF(associate, ca);
+  // };
 
   return (
     <div>
@@ -93,7 +91,7 @@ const CAList: React.FC<CAListProps> = ({
                     <p>Description: {ca.description}</p>
                   </div>
                   <div className="flex space-x-2">
-                    <Button
+                    {/* <Button
                       onClick={() => handlePrint(associate, ca)}
                       className="text-gray-500 hover:text-gray-700"
                       variant="ghost"
@@ -101,7 +99,7 @@ const CAList: React.FC<CAListProps> = ({
                       aria-label="Print corrective action"
                     >
                       <Printer size={20} />
-                    </Button>
+                    </Button> */}
                     {hasEditorRole ? (
                       <>
                         <Button

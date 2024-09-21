@@ -32,21 +32,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { generateOccurrenceForm } from "@/lib/pdfGenerator";
+import { Occurrence } from "@/lib/api";
+import { loadAndInspectPdf } from "@/components/PDFOccurrences";
 
 interface OccurrenceType {
   id: string;
   code: string;
   description: string;
   points: number;
-}
-
-interface Occurrence {
-  id: string;
-  type: OccurrenceType;
-  date: Date;
-  pointsAtTime: number;
-  notes: string;
 }
 
 interface OccurrenceListProps {
@@ -145,14 +138,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return occurenceDate < oneYearAgo;
   };
 
-  const handlePrint = (
-    associateInfo: AssociateInfo | null,
-    occurrence: Occurrence,
-    occurrences: Occurrence[]
-  ) => {
-    generateOccurrenceForm(associateInfo, occurrence, occurrences);
-  };
-
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-2">Occurrence List</h2>
@@ -165,6 +150,19 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             <TableHead>Notes</TableHead>
             <TableHead>Points</TableHead>
             <TableHead>Actions</TableHead>
+            {occurrences ? (
+              <Button
+                onClick={() => loadAndInspectPdf()}
+                className="text-gray-500 hover:text-gray-700"
+                variant="ghost"
+                size="icon"
+                aria-label="Print corrective action"
+              >
+                <Printer size={20} />
+              </Button>
+            ) : (
+              <></>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -191,17 +189,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    onClick={() =>
-                      handlePrint(associateInfo, occurrence, occurrences)
-                    }
-                    className="text-gray-500 hover:text-gray-700"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Print corrective action"
-                  >
-                    <Printer size={20} />
-                  </Button>
                   {hasEditorRole ? (
                     <>
                       <Button

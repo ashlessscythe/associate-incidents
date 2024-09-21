@@ -135,10 +135,17 @@ export const getAssociateById = async (
   return response.data;
 };
 
+// add associate
 export async function addAssociate(name: string, currentPoints: number = 0) {
   const res = await api.post<Associate>("/associates", { name, currentPoints });
   return res.data;
 }
+
+// delete associate
+export const deleteAssociate = async (id: string): Promise<void> => {
+  const res = await api.delete(`/associates/${id}`);
+  return res.data;
+};
 
 // occurence stuffs
 export const getOccurrenceTypes = async (): Promise<OccurrenceType[]> => {
@@ -211,7 +218,13 @@ export interface AssociateInfo {
   designation: string;
 }
 
-export interface AssociateAndInfo {
+export interface AssociateAndDesignation {
+  id: string;
+  name: string;
+  designation: string;
+}
+
+export interface AssociateAndOccurrences {
   id: string;
   name: string;
   occurrences: Occurrence[];
@@ -232,11 +245,23 @@ export const getAssociatePointsAndNotification = async (
   }
 };
 
+export const getAssociatesAndDesignation = async (): Promise<AssociateAndDesignation[]> => {
+    try {
+      const response = await api.get<AssociateAndDesignation[]>(
+        "/associates-with-designation"
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching associates with designation:", error);
+      throw error; // Rethrow the error to handle it in the useEffect
+    }
+  };
+
 export const getAllAssociatesWithOccurrences = async (): Promise<
-  AssociateAndInfo[]
+  AssociateAndOccurrences[]
 > => {
   try {
-    const response = await api.get<AssociateAndInfo[]>("/all-with-occurrences"); // Ensure the path matches server.js
+    const response = await api.get<AssociateAndOccurrences[]>("/all-with-occurrences"); // Ensure the path matches server.js
     // console.log(`data: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {

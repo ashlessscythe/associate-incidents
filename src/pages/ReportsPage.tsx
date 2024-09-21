@@ -4,7 +4,7 @@ import {
   getRules,
   getOccurrenceTypes,
   getAllAssociatesWithOccurrences,
-  AssociateAndInfo,
+  AssociateAndOccurrences,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
@@ -20,7 +20,7 @@ interface CAByTypeData {
 const ReportsPage: React.FC = () => {
   const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
   const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
-  const [associatesData, setAssociatesData] = useState<AssociateAndInfo[]>([]);
+  const [associatesData, setAssociatesData] = useState<AssociateAndOccurrences[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ const ReportsPage: React.FC = () => {
 
   async function fetchAssociateData() {
     try {
-      const associatesData: AssociateAndInfo[] =
+      const associatesData: AssociateAndOccurrences[] =
         await getAllAssociatesWithOccurrences();
       setAssociatesData(associatesData);
       // console.log("full response: ", associatesData);

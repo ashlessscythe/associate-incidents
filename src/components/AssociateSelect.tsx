@@ -10,12 +10,11 @@ import {
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Input } from "@/components/ui/input";
-import { useAssociates } from "@/hooks/useAssociates";
+import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { Designation } from "@/hooks/useAssociates";
-import { AssociateAndInfo } from "@/lib/api";
+import { AssociateAndDesignation } from "@/lib/api";
 
 interface AssociateSelectProps {
-  associates: AssociateAndInfo[];
   selectedAssociateId: string | null;
   onAssociateSelect: (associateId: string | null) => void;
 }
@@ -25,38 +24,58 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
   onAssociateSelect,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const { associatesWithInfo } = useAssociates();
+  const { associatesWithDesignation, fetchAssociatesWithDesignation } = useAssociatesWithDesignation();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedDesignation, setSelectedDesignation] = useState<
-    Designation | "ALL"
-  >("ALL");
+  const [selectedDesignation, setSelectedDesignation] = useState<Designation | "ALL">("ALL");
+  const [cachedAssociates, setCachedAssociates] = useState<AssociateAndDesignation[]>([]); // Local cache
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredAssociates = associatesWithInfo.filter(
+  // Fetch data on component mount and when designation changes
+  useEffect(() => {
+    const fetchData = async () => {
+      if (cachedAssociates.length === 0) {
+        await fetchAssociatesWithDesignation();
+        setCachedAssociates(associatesWithDesignation); // Cache fetched data locally
+      }
+    };
+
+    console.log(isOpen)
+    fetchData(); // Fetch data on component mount
+  }, [cachedAssociates, fetchAssociatesWithDesignation]);
+
+  // Refetch if designation changes and clear the search term
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchAssociatesWithDesignation();
+      setCachedAssociates(associatesWithDesignation); // Update the cached data
+    };
+
+    if (selectedDesignation !== "ALL") {
+      fetchData(); // Refetch on designation change
+    }
+
+    setSearchTerm(""); // Reset search term when designation changes
+  }, [selectedDesignation, fetchAssociatesWithDesignation]);
+
+  // Filter associates based on search term and selected designation
+  const filteredAssociates = cachedAssociates.filter(
     (associate) =>
       associate.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (selectedDesignation === "ALL" ||
-        associate.info.designation === selectedDesignation)
+      (selectedDesignation === "ALL" || associate.designation === selectedDesignation)
   );
 
   const handleChange = (value: string) => {
     onAssociateSelect(value === "SELECT_ASSOCIATE" ? null : value);
   };
 
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
-
   return (
     <div className="space-y-2 mb-4">
       <h2 className="text-xl font-semibold mb-2">Select Associate</h2>
+
+      {/* Radio buttons for filtering by designation */}
       <RadioGroup
         value={selectedDesignation}
-        onValueChange={(value) =>
-          setSelectedDesignation(value as Designation | "ALL")
-        }
+        onValueChange={(value) => setSelectedDesignation(value as Designation | "ALL")}
         className="flex space-x-4 mb-4"
       >
         <div className="flex items-center space-x-2">
@@ -71,6 +90,7 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
         ))}
       </RadioGroup>
 
+      {/* Select dropdown for choosing an associate */}
       <Select
         onValueChange={handleChange}
         value={selectedAssociateId || "SELECT_ASSOCIATE"}
@@ -88,14 +108,14 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
               className="h-8 w-full bg-transparent focus:outline-none focus:ring-0 border-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()} // Prevent keypress from closing dropdown
             />
           </div>
           <div className="max-h-[200px] overflow-y-auto">
             <SelectItem value="SELECT_ASSOCIATE">Select Associate</SelectItem>
             {filteredAssociates.map((associate) => (
               <SelectItem key={associate.id} value={associate.id}>
-                {associate.name} - [{associate.info.designation}]
+                {associate.name} - [{associate.designation}]
               </SelectItem>
             ))}
           </div>

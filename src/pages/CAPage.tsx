@@ -13,20 +13,21 @@ import CAForm from "./CAForm";
 import CAList from "./CAList";
 import CAEditModal from "@/components/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { useAssociates } from "@/hooks/useAssociates";
+import { AssociateAndDesignation } from "@/lib/api";
+import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 function CAPage() {
   const { user } = useAuthorizer();
   const {
-    associatesWithInfo,
     loading: associatesLoading,
     error: associatesError,
-  } = useAssociates();
+  } = useAssociatesWithDesignation();
   const [rules, setRules] = useState<Rule[]>([]);
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
   >([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
+  const [associates] = useState<AssociateAndDesignation[]>([])
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
@@ -136,12 +137,11 @@ function CAPage() {
     return <div>Error: {associatesError || error}</div>;
 
   const selectedAssociate =
-    associatesWithInfo.find((a) => a.id === selectedAssociateId) || null;
+    associates.find((a) => a.id === selectedAssociateId) || null;
 
   return (
     <div>
       <AssociateSelect
-        associates={associatesWithInfo}
         selectedAssociateId={selectedAssociateId}
         onAssociateSelect={handleAssociateSelect}
       />

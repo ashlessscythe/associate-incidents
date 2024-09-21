@@ -1,25 +1,50 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AssociateSelect from "@/components/AssociateSelect";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/NewAssociateModal";
-import { addAssociate } from "@/lib/api";
+import { addAssociate, deleteAssociate, AssociateAndDesignation } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { useAssociates } from "@/hooks/useAssociates";
+import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 const AssociatesPage: React.FC = () => {
-  const { associatesWithInfo, associates, loading, error, refreshAssociates } =
-    useAssociates();
+  const { associatesWithDesignation, fetchAssociatesWithDesignation, loading, error } =
+    useAssociatesWithDesignation();
   const [showTable, setShowTable] = useState(false);
+  const [associates, setAssociates] = useState<AssociateAndDesignation[]>([]);
   const { user } = useAuthorizer();
+
+  // Fetch associates on first load or when view switches to table
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await fetchAssociatesWithDesignation();
+        setAssociates(associatesWithDesignation); // Update state with fetched associates
+      } catch (err) {
+        console.error("Error fetching associates:", err);
+      }
+    };
+
+    if (showTable) {
+      fetchData(); // Fetch associates only when showing the table
+    }
+  }, [showTable, fetchAssociatesWithDesignation]); // Run when table view toggles
 
   const handleAddAssociate = async (name: string) => {
     try {
       await addAssociate(name);
-      await refreshAssociates(); // Refresh the associates list after adding a new one
+      await fetchAssociatesWithDesignation(); // Refresh the associates list after adding a new one
     } catch (err) {
       console.error("Error adding associate:", err);
-      // You might want to show an error message to the user here
+    }
+  };
+
+  const handleDeleteAssociate = async (id: string) => {
+    try {
+      await deleteAssociate(id); // Assume deleteAssociate is a function in your API
+      await fetchAssociatesWithDesignation(); // Refresh the list after deletion
+    } catch (err) {
+      console.error("Error deleting associate:", err);
     }
   };
 
@@ -43,10 +68,9 @@ const AssociatesPage: React.FC = () => {
         </Button>
       </div>
       {showTable ? (
-        <AssociatesTable associates={associates} />
+        <AssociatesTable associates={associates} onDelete={handleDeleteAssociate} />
       ) : (
         <AssociateSelect
-          associates={associatesWithInfo}
           selectedAssociateId={null}
           onAssociateSelect={() => {}}
         />

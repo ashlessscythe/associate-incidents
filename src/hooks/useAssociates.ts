@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
-  Associate,
-  AssociateAndInfo,
+  AssociateAndDesignation,
+  AssociateAndOccurrences,
   getAllAssociatesWithOccurrences,
+  getAssociatesAndDesignation,
 } from "@/lib/api";
 
 export enum Designation {
@@ -11,20 +12,18 @@ export enum Designation {
   CLERK = "CLERK",
 }
 
-export function useAssociates() {
-  const [associates, setAssociates] = useState<Associate[]>([]);
-  const [associatesWithInfo, setAssociatesWithInfo] = useState<
-    AssociateAndInfo[]
-  >([]);
-  const [loading, setLoading] = useState(true);
+// Hook to fetch associates with occurrences
+export function useAssociatesWithOccurrences() {
+  const [associatesWithInfo, setAssociatesWithInfo] = useState<AssociateAndOccurrences[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAssociates = useCallback(async () => {
+  const fetchAssociatesWithOccurrences = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getAllAssociatesWithOccurrences();
 
-      const formattedAssociates: AssociateAndInfo[] = data.map((associate) => ({
+      const formattedAssociates: AssociateAndOccurrences[] = data.map((associate) => ({
         id: associate.id,
         name: associate.name,
         info: {
@@ -38,13 +37,6 @@ export function useAssociates() {
       }));
 
       setAssociatesWithInfo(formattedAssociates);
-      setAssociates(
-        formattedAssociates.map(({ id, name, occurrences }) => ({
-          id,
-          name,
-          occurrences,
-        }))
-      );
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -53,15 +45,38 @@ export function useAssociates() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchAssociates();
-  }, [fetchAssociates]);
-
   return {
-    associates,
     associatesWithInfo,
     loading,
     error,
-    refreshAssociates: fetchAssociates,
+    fetchAssociatesWithOccurrences,
+  };
+}
+
+// Hook to fetch associates with designation
+export function useAssociatesWithDesignation() {
+  const [associatesWithDesignation, setAssociatesWithDesignation] = useState<AssociateAndDesignation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAssociatesWithDesignation = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await getAssociatesAndDesignation();
+
+      setAssociatesWithDesignation(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    associatesWithDesignation,
+    loading,
+    error,
+    fetchAssociatesWithDesignation,
   };
 }
