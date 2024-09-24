@@ -19,6 +19,7 @@ dist-ssr
 # prisma
 prisma/definitions.js
 prisma/associates.csv
+prisma/occurrences.csv
 
 # sql
 *.sql

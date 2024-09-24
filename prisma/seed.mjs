@@ -8,18 +8,17 @@ import { rules, occurrenceTypes, notificationLevels } from "./definitions.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const associatesFileName = "associates.csv";
+const occurrencesFileName = "occurrences.csv";
 
-// db
 const prisma = new PrismaClient();
-// clear if requested
-const clearFlag = process.argv.includes("--clear");
 
 async function clearData() {
   await prisma.attendanceOccurrence.deleteMany();
   await prisma.correctiveAction.deleteMany();
   await prisma.associate.deleteMany();
   await prisma.notificationLevel.deleteMany();
-  console.log("All associates and related data cleared.");
+  await prisma.occurrenceType.deleteMany();
+  console.log("All data cleared.");
 }
 
 async function upsertOccurrenceTypes() {
@@ -95,27 +94,130 @@ async function upsertAssociates(associates) {
   for (const associate of associates) {
     await prisma.associate.upsert({
       where: {
-        name: associate.name, // Find associate by unique name
+        name: associate.name,
       },
       update: {
-        // Only update fields that are provided and not null
-        ssoid: associate.ssoid || undefined, // Update ssoid only if provided
-        designation: associate.designation || undefined, // Update designation only if provided
+        ssoid: associate.ssoid || undefined,
+        designation: associate.designation || undefined,
       },
       create: {
         name: associate.name,
-        currentPoints: associate.currentPoints || 0, // Default to 0 if not provided
-        ssoid: associate.ssoid || null, // Create with ssoid if provided, else null
-        designation: associate.designation || "NONE", // Default to "NONE"
+        currentPoints: associate.currentPoints || 0,
+        ssoid: associate.ssoid || null,
+        designation: associate.designation || "NONE",
       },
     });
   }
-  console.log(`${associates.length} associates created from CSV.`);
+  console.log(`${associates.length} associates upserted from CSV.`);
+}
+
+async function readOccurrencesFromCSV(filePath) {
+  const occurrences = [];
+  if (!fs.existsSync(filePath)) {
+    console.error(`${filePath} not found. Skipping occurrence creation.`);
+    return occurrences;
+  }
+
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (row) => {
+        occurrences.push({
+          ssoid: row.SSO,
+          name: row.name,
+          date: new Date(row.date),
+          code: row.code,
+          comment: row.comment,
+        });
+      })
+      .on("end", () => resolve(occurrences))
+      .on("error", reject);
+  });
+}
+
+async function upsertOccurrences(occurrences) {
+  let batchSize = 100; // Adjust the batch size for performance tuning
+  let upsertedCount = 0;
+  let skippedCount = 0;
+
+  for (let i = 0; i < occurrences.length; i += batchSize) {
+    const batch = occurrences.slice(i, i + batchSize);
+
+    for (const occurrence of batch) {
+      try {
+        const associate = await prisma.associate.findFirst({
+          where: {
+            OR: [{ ssoid: occurrence.ssoid }, { name: occurrence.name }],
+          },
+        });
+
+        if (!associate) {
+          console.error(
+            `Associate not found for SSO: ${occurrence.ssoid} or Name: ${occurrence.name}. Skipping occurrence.`
+          );
+          skippedCount++;
+          continue;
+        }
+
+        const occurrenceType = await prisma.occurrenceType.findFirst({
+          where: { code: { equals: occurrence.code, mode: "insensitive" } },
+        });
+
+        if (!occurrenceType) {
+          console.error(
+            `OccurrenceType not found for code: ${occurrence.code}. Skipping occurrence.`
+          );
+          skippedCount++;
+          continue;
+        }
+
+        // Check if the occurrence already exists
+        const existingOccurrence = await prisma.attendanceOccurrence.findFirst({
+          where: {
+            associateId: associate.id,
+            typeId: occurrenceType.id,
+            date: occurrence.date,
+          },
+        });
+
+        if (existingOccurrence) {
+          // Update existing occurrence
+          await prisma.attendanceOccurrence.update({
+            where: { id: existingOccurrence.id },
+            data: {
+              notes: occurrence.comment,
+              pointsAtTime: occurrenceType.points,
+            },
+          });
+        } else {
+          // Create new occurrence
+          await prisma.attendanceOccurrence.create({
+            data: {
+              associateId: associate.id,
+              typeId: occurrenceType.id,
+              date: occurrence.date,
+              notes: occurrence.comment,
+              pointsAtTime: occurrenceType.points,
+            },
+          });
+        }
+
+        upsertedCount++;
+      } catch (error) {
+        console.error(
+          `Error processing occurrence: ${error.message}. Skipping occurrence.`
+        );
+        skippedCount++;
+      }
+    }
+  }
+
+  console.log(`${upsertedCount} occurrences upserted from CSV.`);
+  console.log(`${skippedCount} occurrences skipped due to errors.`);
 }
 
 async function main() {
   try {
-    // Check for flags from command line
     const clearFlag = process.argv.includes("--clear");
     const occurrencesOnly = process.argv.includes("--occurrences-only");
     const rulesOnly = process.argv.includes("--rules-only");
@@ -126,46 +228,71 @@ async function main() {
       await clearData();
     }
 
-    // Handle notifications only mode
-    if (notificationsOnly || (!occurrencesOnly && !rulesOnly && !usersOnly)) {
-      await upsertNotificationLevels();
-      if (notificationsOnly) {
-        console.log("Notifications only mode. Skipping other operations.");
-        return;
-      }
+    // Always upsert OccurrenceTypes first
+    await upsertOccurrenceTypes();
+
+    const operations = [];
+
+    if (notificationsOnly) {
+      operations.push(upsertNotificationLevels);
     }
 
-    // Handle occurrences only mode
-    if (occurrencesOnly || (!rulesOnly && !usersOnly && !notificationsOnly)) {
-      await upsertOccurrenceTypes();
-      if (occurrencesOnly) {
-        console.log("Occurrences only mode. Skipping other operations.");
-        return;
-      }
+    if (rulesOnly) {
+      operations.push(upsertRules);
     }
 
-    // Handle rules only mode
-    if (rulesOnly || (!occurrencesOnly && !usersOnly && !notificationsOnly)) {
-      await upsertRules();
-      if (rulesOnly) {
-        console.log("Rules only mode. Skipping other operations.");
-        return;
-      }
+    if (usersOnly) {
+      operations.push(async () => {
+        const csvPath = path.join(__dirname, associatesFileName);
+        const associates = await readAssociatesFromCSV(csvPath);
+        if (associates.length > 0) {
+          await upsertAssociates(associates);
+        } else {
+          console.log("No associates found in CSV.");
+        }
+      });
     }
 
-    // Handle users only mode
-    if (usersOnly || (!occurrencesOnly && !rulesOnly && !notificationsOnly)) {
-      const csvPath = path.join(__dirname, associatesFileName);
-      const associates = await readAssociatesFromCSV(csvPath);
-      if (associates.length > 0) {
-        await upsertAssociates(associates);
-        console.log("Associates upserted successfully.");
-      } else {
-        console.log("No associates found in CSV.");
-      }
-      if (usersOnly) {
-        return;
-      }
+    if (occurrencesOnly) {
+      operations.push(async () => {
+        const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+        const occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+        if (occurrences.length > 0) {
+          await upsertOccurrences(occurrences);
+        } else {
+          console.log("No occurrences found in CSV.");
+        }
+      });
+    }
+
+    // If no specific flag is set, perform all operations
+    if (operations.length === 0) {
+      operations.push(
+        upsertNotificationLevels,
+        upsertRules,
+        async () => {
+          const csvPath = path.join(__dirname, associatesFileName);
+          const associates = await readAssociatesFromCSV(csvPath);
+          if (associates.length > 0) {
+            await upsertAssociates(associates);
+          } else {
+            console.log("No associates found in CSV.");
+          }
+        },
+        async () => {
+          const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+          const occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+          if (occurrences.length > 0) {
+            await upsertOccurrences(occurrences);
+          } else {
+            console.log("No occurrences found in CSV.");
+          }
+        }
+      );
+    }
+
+    for (const operation of operations) {
+      await operation();
     }
 
     console.log("Seed completed successfully.");
@@ -176,5 +303,4 @@ async function main() {
   }
 }
 
-// ye
 main();

@@ -107,10 +107,25 @@ To populate your database with this initial data:
    // ... other definitions
    ```
 
+### 📂 Occurrences Data
+
+In addition to `associates.csv` and `definitions.js`, the system also supports populating attendance occurrences via an `occurrences-sample.csv` file. This file contains sample data that tracks attendance occurrences for associates, including the date of the occurrence, the type (code), and any additional comments.
+
+#### Sample `occurrences-sample.csv` Format:
+
+```csv
+SSO,name,date,code,comment
+332333244,Bob Jones,2024-01-01,c02,Some Reason for the c02
+
+```
+
 3. Run the seeding script:
-   ```
-   node seed.mjs
-   ```
+
+```
+
+node seed.mjs
+
+```
 
 This will populate your database with the sample associates, notification levels, rules, and occurrence types, giving you a starting point to work with the system.
 
@@ -137,3 +152,7 @@ We welcome contributions to the Associate Management System! Please feel free to
 ---
 
 Built with ❤️ by Some Dude
+
+```
+
+```
