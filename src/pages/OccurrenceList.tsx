@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Printer, Trash2, Pencil } from "lucide-react";
+import { Printer, Trash2, Pencil, EyeOff, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getAssociatePointsAndNotification,
@@ -64,6 +64,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
     null
   );
+  const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
+  const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
@@ -98,12 +100,9 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     try {
       await updateOccurrence(occurrenceId, occurrenceData);
 
-      // Instead of fetching occurrences here, we'll call the onUpdate prop
       if (associateInfo.id) {
         onUpdate(associateInfo.id);
       }
-
-      // alert("Occurrence updated successfully");
     } catch (err) {
       if (err instanceof Error) {
         alert(`Failed to update occurrence: ${err.message}`);
@@ -138,9 +137,58 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return occurenceDate < oneYearAgo;
   };
 
+  const toggleHideZeroPoints = () => {
+    setHideZeroPoints(!hideZeroPoints);
+  };
+
+  const toggleHideOldOccurrences = () => {
+    setHideOldOccurrences(!hideOldOccurrences);
+  };
+
+  const filteredOccurrences = occurrences?.filter((occurrence) => {
+    if (hideZeroPoints && occurrence.type.points === 0) {
+      return false;
+    }
+    if (hideOldOccurrences && isOverOneYearOld(occurrence.date)) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <div className="mt-6">
       <h2 className="text-xl font-semibold mb-2">Occurrence List</h2>
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex space-x-2">
+          <Button
+            onClick={toggleHideZeroPoints}
+            variant={hideZeroPoints ? "destructive" : "outline"}
+            className="flex items-center w-64 justify-center"
+          >
+            <EyeOff className="mr-2 h-4 w-4" />
+            {hideZeroPoints ? "Show" : "Hide"} 0 Point Occurrences
+          </Button>
+          <Button
+            onClick={toggleHideOldOccurrences}
+            variant={hideOldOccurrences ? "destructive" : "outline"}
+            className="flex items-center w-64 justify-center"
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            {hideOldOccurrences ? "Show" : "Hide"} Old Occurrences
+          </Button>
+        </div>
+        {occurrences && (
+          <Button
+            onClick={() => loadAndInspectPdf()}
+            className="text-gray-500 hover:text-gray-700"
+            variant="ghost"
+            size="icon"
+            aria-label="Print corrective action"
+          >
+            <Printer size={20} />
+          </Button>
+        )}
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -150,23 +198,10 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             <TableHead>Notes</TableHead>
             <TableHead>Points</TableHead>
             <TableHead>Actions</TableHead>
-            {occurrences ? (
-              <Button
-                onClick={() => loadAndInspectPdf()}
-                className="text-gray-500 hover:text-gray-700"
-                variant="ghost"
-                size="icon"
-                aria-label="Print corrective action"
-              >
-                <Printer size={20} />
-              </Button>
-            ) : (
-              <></>
-            )}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {occurrences?.map((occurrence) => {
+          {filteredOccurrences?.map((occurrence) => {
             const isOld = isOverOneYearOld(occurrence.date);
             const rowStyle = isOld
               ? { color: "gray", textDecoration: "line-through" }
@@ -217,7 +252,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           })}
         </TableBody>
       </Table>
-      {occurrences?.length === 0 ? (
+      {filteredOccurrences?.length === 0 ? (
         <p className="text-center text-gray-500 mt-4">
           No occurrences recorded
         </p>

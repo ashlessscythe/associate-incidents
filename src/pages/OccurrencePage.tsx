@@ -126,37 +126,45 @@ function OccurrencePage() {
     return <div>Error: {associatesError || error}</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <main className="container mx-auto p-4 max-w-[95%]">
-        <AssociateSelect
-          selectedAssociateId={selectedAssociateId}
-          onAssociateSelect={handleAssociateSelect}
-        />
-        {hasEditorRole ? (
-          <OccurrenceForm
-            occurrenceTypes={occurrenceTypes}
-            associateId={selectedAssociateId}
-            onAddOccurrence={handleAddOccurrence}
-          />
-        ) : (
-          <div
-            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
-            role="alert"
-          >
-            <p className="font-bold">View Only Mode</p>
-            <p>You do not have permission to add or edit occurrences.</p>
+    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+      <div className="flex-grow flex flex-col lg:flex-row">
+        {/* Sticky element for both mobile and desktop */}
+        <div className="w-full lg:w-1/3 xl:w-1/4 p-4 lg:overflow-y-auto">
+          <div className="sticky top-0 lg:top-4 z-10 bg-gray-100 dark:bg-gray-900 p-4 shadow-md">
+            <AssociateSelect
+              selectedAssociateId={selectedAssociateId}
+              onAssociateSelect={handleAssociateSelect}
+            />
+            {hasEditorRole && (
+              <OccurrenceForm
+                occurrenceTypes={occurrenceTypes}
+                associateId={selectedAssociateId}
+                onAddOccurrence={handleAddOccurrence}
+              />
+            )}
           </div>
-        )}
-        {associateInfo && (
-          <OccurrenceList
-            associateInfo={associateInfo}
-            occurrences={occurrences}
-            onDelete={handleDelete}
-            onUpdate={handleUpdate}
-            occurrenceTypes={occurrenceTypes}
-          />
-        )}
-      </main>
+        </div>
+        <div className="lg:w-2/3 xl:w-3/4 p-4 overflow-y-auto">
+          {!hasEditorRole && (
+            <div
+              className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
+              role="alert"
+            >
+              <p className="font-bold">View Only Mode</p>
+              <p>You do not have permission to add or edit occurrences.</p>
+            </div>
+          )}
+          {associateInfo && (
+            <OccurrenceList
+              associateInfo={associateInfo}
+              occurrences={occurrences}
+              onDelete={handleDelete}
+              onUpdate={handleUpdate}
+              occurrenceTypes={occurrenceTypes}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

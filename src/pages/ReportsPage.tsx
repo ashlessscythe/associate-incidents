@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   getCAByType,
   getRules,
@@ -7,6 +7,7 @@ import {
   AssociateAndOccurrences,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
 import CAByTypeRow from "@/components/CAByTypeRow";
 import { OccurrenceType, CorrectiveAction, Rule } from "../lib/api";
@@ -20,13 +21,16 @@ interface CAByTypeData {
 const ReportsPage: React.FC = () => {
   const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
   const [occurrenceTypes, setOccurrenceTypes] = useState<OccurrenceType[]>([]);
-  const [associatesData, setAssociatesData] = useState<AssociateAndOccurrences[]>([]);
+  const [associatesData, setAssociatesData] = useState<
+    AssociateAndOccurrences[]
+  >([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeReport, setActiveReport] = useState<"occurrences" | "ca" | null>(
     null
   );
+  const [filter, setFilter] = useState<string>("");
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -56,7 +60,6 @@ const ReportsPage: React.FC = () => {
       const associatesData: AssociateAndOccurrences[] =
         await getAllAssociatesWithOccurrences();
       setAssociatesData(associatesData);
-      // console.log("full response: ", associatesData);
       setActiveReport("occurrences");
     } catch (err) {
       setError("Failed to fetch all associates with occurrences");
@@ -104,19 +107,33 @@ const ReportsPage: React.FC = () => {
     console.log("Update Occurrences for Associate:", associateId);
   };
 
-  const renderActiveReport = () => {
-    console.log(`active report ${activeReport}`);
+  const filteredAssociatesData = useMemo(() => {
+    if (!filter) return associatesData;
 
+    return associatesData.filter((associate) =>
+      associate.info.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [associatesData, filter]);
+
+  const filteredCAByTypeData = useMemo(() => {
+    if (!filter) return caByTypeData;
+
+    return caByTypeData.filter((associate) =>
+      associate.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [caByTypeData, filter]);
+
+  const renderActiveReport = () => {
     switch (activeReport) {
       case "occurrences":
         return (
           <ul className="space-y-4">
-            {associatesData?.length > 0 ? (
-              associatesData.map((associate) => (
+            {filteredAssociatesData?.length > 0 ? (
+              filteredAssociatesData.map((associate) => (
                 <OccurrenceByTypeRow
                   key={associate.info.id}
-                  associateInfo={associate.info} // Accessing info field from associate
-                  occurrences={associate.occurrences} // Accessing occurrences field from associate
+                  associateInfo={associate.info}
+                  occurrences={associate.occurrences}
                   occurrenceTypes={occurrenceTypes}
                   onDeleteOccurrence={handleDeleteOccurrence}
                   onUpdateOccurrence={handleUpdateOccurrence}
@@ -130,7 +147,7 @@ const ReportsPage: React.FC = () => {
       case "ca":
         return (
           <ul className="space-y-4">
-            {caByTypeData.map((associate) => (
+            {filteredCAByTypeData.map((associate) => (
               <CAByTypeRow
                 key={associate.id}
                 associate={associate}
@@ -142,30 +159,56 @@ const ReportsPage: React.FC = () => {
           </ul>
         );
       default:
-        return <p>Please select associate report to run.</p>;
+        return <p>Please select a report to run.</p>;
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Reports</h1>
-      <div className="flex justify-start space-x-4 mb-4">
-        <Button onClick={handleGetAllOccurrences} disabled={loading}>
-          {loading && activeReport === "occurrences"
-            ? "Loading..."
-            : "Run Occurrences by Associate Report"}
-        </Button>
-        <Button onClick={handleFetchCAByType} disabled={loading}>
-          {loading && activeReport === "ca"
-            ? "Loading..."
-            : "Run CA by Type Report"}
-        </Button>
-        <Button onClick={handleClearReport} variant="outline">
-          Clear Report
-        </Button>
-      </div>
-      {error && <p className="text-red-500 mt-2 mb-4">{error}</p>}
-      {renderActiveReport()}
+    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+      <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-md">
+        <div className="container mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold mb-4">Reports</h1>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button
+              onClick={handleGetAllOccurrences}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading && activeReport === "occurrences"
+                ? "Loading..."
+                : "Run Occurrences by Associate Report"}
+            </Button>
+            <Button
+              onClick={handleFetchCAByType}
+              disabled={loading}
+              className="w-full sm:w-auto"
+            >
+              {loading && activeReport === "ca"
+                ? "Loading..."
+                : "Run CA by Type Report"}
+            </Button>
+            <Button
+              onClick={handleClearReport}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              Clear Report
+            </Button>
+            {/* Filter input field */}
+            <Input
+              type="text"
+              placeholder="Filter by Associate Name"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md dark:border-gray-600"
+            />
+          </div>
+          {error && <p className="text-red-500 mt-2 mb-4">{error}</p>}
+        </div>
+      </header>
+      <main className="flex-grow overflow-y-auto p-4">
+        <div className="container mx-auto">{renderActiveReport()}</div>
+      </main>
     </div>
   );
 };
