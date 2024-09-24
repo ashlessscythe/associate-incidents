@@ -7,7 +7,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Printer, Trash2, Pencil, EyeOff, Clock } from "lucide-react";
+import {
+  Printer,
+  Trash2,
+  Pencil,
+  EyeOff,
+  Clock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getAssociatePointsAndNotification,
@@ -50,6 +59,9 @@ interface OccurrenceListProps {
   occurrenceTypes: OccurrenceType[];
 }
 
+type SortColumn = "type" | "description" | "date" | "points";
+type SortDirection = "asc" | "desc";
+
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
   occurrences,
   associateInfo,
@@ -66,6 +78,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   );
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
@@ -145,7 +159,35 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     setHideOldOccurrences(!hideOldOccurrences);
   };
 
-  const filteredOccurrences = occurrences?.filter((occurrence) => {
+  const handleSort = (column: SortColumn) => {
+    if (column === sortColumn) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedOccurrences = [...(occurrences || [])].sort((a, b) => {
+    let comparison = 0;
+    switch (sortColumn) {
+      case "type":
+        comparison = a.type.code.localeCompare(b.type.code);
+        break;
+      case "description":
+        comparison = a.type.description.localeCompare(b.type.description);
+        break;
+      case "date":
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+        break;
+      case "points":
+        comparison = a.type.points - b.type.points;
+        break;
+    }
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  const filteredOccurrences = sortedOccurrences.filter((occurrence) => {
     if (hideZeroPoints && occurrence.type.points === 0) {
       return false;
     }
@@ -154,6 +196,17 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     }
     return true;
   });
+
+  const renderSortIcon = (column: SortColumn) => {
+    if (column === sortColumn) {
+      return sortDirection === "asc" ? (
+        <ArrowUp className="ml-2 h-4 w-4" />
+      ) : (
+        <ArrowDown className="ml-2 h-4 w-4" />
+      );
+    }
+    return <ArrowUpDown className="ml-2 h-4 w-4" />;
+  };
 
   return (
     <div className="mt-6">
@@ -192,16 +245,32 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort("type")}>
+                Type {renderSortIcon("type")}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort("description")}>
+                Description {renderSortIcon("description")}
+              </Button>
+            </TableHead>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort("date")}>
+                Date {renderSortIcon("date")}
+              </Button>
+            </TableHead>
             <TableHead>Notes</TableHead>
-            <TableHead>Points</TableHead>
+            <TableHead>
+              <Button variant="ghost" onClick={() => handleSort("points")}>
+                Points {renderSortIcon("points")}
+              </Button>
+            </TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredOccurrences?.map((occurrence) => {
+          {filteredOccurrences.map((occurrence) => {
             const isOld = isOverOneYearOld(occurrence.date);
             const rowStyle = isOld
               ? { color: "gray", textDecoration: "line-through" }
@@ -252,7 +321,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           })}
         </TableBody>
       </Table>
-      {filteredOccurrences?.length === 0 ? (
+      {filteredOccurrences.length === 0 ? (
         <p className="text-center text-gray-500 mt-4">
           No occurrences recorded
         </p>
