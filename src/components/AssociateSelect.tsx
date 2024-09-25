@@ -32,27 +32,24 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
   >("ALL");
   const [cachedAssociates, setCachedAssociates] = useState<
     AssociateAndDesignation[]
-  >([]); // Local cache
+  >([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch data on component mount and when designation changes
   useEffect(() => {
     const fetchData = async () => {
       if (cachedAssociates.length === 0 || selectedDesignation !== "ALL") {
         await fetchAssociatesWithDesignation();
-        setCachedAssociates(associatesWithDesignation); // Cache fetched data locally
+        setCachedAssociates(associatesWithDesignation);
       }
     };
 
     fetchData();
   }, [cachedAssociates, fetchAssociatesWithDesignation, selectedDesignation]);
 
-  // Clear search term when designation changes
   useEffect(() => {
     setSearchTerm("");
   }, [selectedDesignation]);
 
-  // Filter associates based on search term and selected designation
   const filteredAssociates = cachedAssociates.filter(
     (associate) =>
       associate.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -65,16 +62,15 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
   };
 
   return (
-    <div className="space-y-2 mb-4">
-      <h2 className="text-xl font-semibold mb-2">Select Associate</h2>
+    <div className="space-y-4 w-full">
+      <h2 className="text-xl font-semibold">Select Associate</h2>
 
-      {/* Radio buttons for filtering by designation */}
       <RadioGroup
         value={selectedDesignation}
         onValueChange={(value) =>
           setSelectedDesignation(value as Designation | "ALL")
         }
-        className="flex space-x-4 mb-4"
+        className="flex flex-wrap gap-2 mb-4"
       >
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="ALL" id="all" />
@@ -88,7 +84,6 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
         ))}
       </RadioGroup>
 
-      {/* Select dropdown for choosing an associate */}
       <Select
         onValueChange={handleChange}
         value={selectedAssociateId || "SELECT_ASSOCIATE"}
@@ -98,8 +93,7 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select an associate" />
         </SelectTrigger>
-        <SelectContent>
-          {/* Search Input in Dropdown */}
+        <SelectContent className="w-full">
           <div className="flex items-center px-3 py-2 sticky top-0 bg-white dark:bg-gray-800 z-10 border-b">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
@@ -109,7 +103,6 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => {
-                // Prevent default dropdown behavior on key presses
                 if (
                   e.key === "Enter" ||
                   e.key === "ArrowDown" ||
@@ -118,10 +111,9 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
                   e.preventDefault();
                 }
               }}
-              onKeyUp={(e) => e.stopPropagation()} // Ensure input focus is retained
+              onKeyUp={(e) => e.stopPropagation()}
             />
           </div>
-          {/* Dropdown List */}
           <div className="max-h-[200px] overflow-y-auto">
             <SelectItem value="SELECT_ASSOCIATE">Select Associate</SelectItem>
             {filteredAssociates.map((associate) => (

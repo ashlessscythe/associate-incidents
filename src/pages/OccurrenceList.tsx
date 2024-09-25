@@ -11,13 +11,12 @@ import {
   Printer,
   Trash2,
   Pencil,
-  EyeOff,
-  Clock,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   getAssociatePointsAndNotification,
   deleteOccurrence,
@@ -52,7 +51,7 @@ interface OccurrenceType {
 }
 
 interface OccurrenceListProps {
-  occurrences?: Occurrence[] | [];
+  occurrences?: Occurrence[];
   associateInfo: AssociateInfo;
   onDelete: (occurrenceId: string) => void;
   onUpdate: (occurenceId: string) => void;
@@ -151,14 +150,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return occurenceDate < oneYearAgo;
   };
 
-  const toggleHideZeroPoints = () => {
-    setHideZeroPoints(!hideZeroPoints);
-  };
-
-  const toggleHideOldOccurrences = () => {
-    setHideOldOccurrences(!hideOldOccurrences);
-  };
-
   const handleSort = (column: SortColumn) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -209,133 +200,156 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   };
 
   return (
-    <div className="mt-6">
-      <h2 className="text-xl font-semibold mb-2">Occurrence List</h2>
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex space-x-2">
-          <Button
-            onClick={toggleHideZeroPoints}
-            variant={hideZeroPoints ? "destructive" : "outline"}
-            className="flex items-center w-64 justify-center"
-          >
-            <EyeOff className="mr-2 h-4 w-4" />
-            {hideZeroPoints ? "Show" : "Hide"} 0 Point Occurrences
-          </Button>
-          <Button
-            onClick={toggleHideOldOccurrences}
-            variant={hideOldOccurrences ? "destructive" : "outline"}
-            className="flex items-center w-64 justify-center"
-          >
-            <Clock className="mr-2 h-4 w-4" />
-            {hideOldOccurrences ? "Show" : "Hide"} Old Occurrences
-          </Button>
+    <div className="mt-6 flex flex-col md:flex-row">
+      <div className="w-full">
+        <h2 className="text-xl font-semibold mb-2">Occurrence List</h2>
+        {/* Responsive block for Summary and Toggles */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          {/* Summary Block */}
+          <div className="w-full md:w-1/2 mb-4 md:mb-0">
+            <h3 className="text-xl font-semibold mb-2">
+              Summary for: {associateInfo.name}
+            </h3>
+            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                Total Points (last 12 months): {totalPoints}
+              </p>
+              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                Current Notification Level: {notificationLevel}
+              </p>
+              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                Designation: {designation}
+              </p>
+            </div>
+          </div>
+
+          {/* Toggles Block */}
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="hide-zero-points"
+                checked={hideZeroPoints}
+                onCheckedChange={setHideZeroPoints}
+              />
+              <Label htmlFor="hide-zero-points">Hide Zero</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="hide-old-occurrences"
+                checked={hideOldOccurrences}
+                onCheckedChange={setHideOldOccurrences}
+              />
+              <Label htmlFor="hide-old-occurrences">Hide Old</Label>
+            </div>
+          </div>
         </div>
+
+        {/* Table Section */}
         {occurrences && (
-          <Button
-            onClick={() => loadAndInspectPdf()}
-            className="text-gray-500 hover:text-gray-700"
-            variant="ghost"
-            size="icon"
-            aria-label="Print corrective action"
-          >
-            <Printer size={20} />
-          </Button>
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={() => loadAndInspectPdf()}
+              className="text-light-500 hover:text-light-700"
+              variant="ghost"
+              size="icon"
+              aria-label="Print corrective action"
+            >
+              <Printer size={20} />
+            </Button>
+          </div>
+        )}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <Button variant="ghost" onClick={() => handleSort("type")}>
+                    Type {renderSortIcon("type")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort("description")}
+                  >
+                    Description {renderSortIcon("description")}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button variant="ghost" onClick={() => handleSort("date")}>
+                    Date {renderSortIcon("date")}
+                  </Button>
+                </TableHead>
+                <TableHead>Notes</TableHead>
+                <TableHead>
+                  <Button variant="ghost" onClick={() => handleSort("points")}>
+                    Points {renderSortIcon("points")}
+                  </Button>
+                </TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredOccurrences.map((occurrence) => {
+                const isOld = isOverOneYearOld(occurrence.date);
+                const rowStyle = isOld
+                  ? { color: "gray", textDecoration: "line-through" }
+                  : {};
+
+                return (
+                  <TableRow key={occurrence.id} style={rowStyle}>
+                    <TableCell>{occurrence.type.code}</TableCell>
+                    <TableCell>{occurrence.type.description}</TableCell>
+                    <TableCell>
+                      {new Date(occurrence.date).toISOString().split("T")[0]}
+                    </TableCell>
+                    <TableCell>{occurrence.notes}</TableCell>
+                    <TableCell>
+                      {occurrence.type.points}
+                      {isOld && (
+                        <span className="ml-2 text-sm text-gray-500">
+                          (rolled out)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {hasEditorRole ? (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDelete(occurrence.id)}
+                            aria-label="Delete occurrence"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setEditingOccurrence(occurrence)}
+                            aria-label="Edit occurrence"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">
+                          No actions available
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        {filteredOccurrences.length === 0 && (
+          <p className="text-center text-gray-500 mt-4">
+            No occurrences recorded
+          </p>
         )}
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Button variant="ghost" onClick={() => handleSort("type")}>
-                Type {renderSortIcon("type")}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button variant="ghost" onClick={() => handleSort("description")}>
-                Description {renderSortIcon("description")}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button variant="ghost" onClick={() => handleSort("date")}>
-                Date {renderSortIcon("date")}
-              </Button>
-            </TableHead>
-            <TableHead>Notes</TableHead>
-            <TableHead>
-              <Button variant="ghost" onClick={() => handleSort("points")}>
-                Points {renderSortIcon("points")}
-              </Button>
-            </TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredOccurrences.map((occurrence) => {
-            const isOld = isOverOneYearOld(occurrence.date);
-            const rowStyle = isOld
-              ? { color: "gray", textDecoration: "line-through" }
-              : {};
-
-            return (
-              <TableRow key={occurrence.id} style={rowStyle}>
-                <TableCell>{occurrence.type.code}</TableCell>
-                <TableCell>{occurrence.type.description}</TableCell>
-                <TableCell>
-                  {new Date(occurrence.date).toISOString().split("T")[0]}
-                </TableCell>
-                <TableCell>{occurrence.notes}</TableCell>
-                <TableCell>
-                  {occurrence.type.points}
-                  {isOld && (
-                    <span className="ml-2 text-sm text-gray-500">
-                      (rolled out)
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {hasEditorRole ? (
-                    <>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(occurrence.id)}
-                        aria-label="Delete occurrence"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => setEditingOccurrence(occurrence)}
-                        aria-label="Edit occurrence"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <span className="text-gray-400">No actions available</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-      {filteredOccurrences.length === 0 ? (
-        <p className="text-center text-gray-500 mt-4">
-          No occurrences recorded
-        </p>
-      ) : (
-        <div className="mt-4">
-          <p className="font-semibold">
-            Total Points (last 12 months): {totalPoints}
-          </p>
-          <p className="font-semibold">
-            Current Notification Level: {notificationLevel}
-          </p>
-          <p className="font-semibold">Designation: {designation}</p>
-        </div>
-      )}
 
       {editingOccurrence && (
         <Dialog
