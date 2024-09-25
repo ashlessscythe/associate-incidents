@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { Occurrence } from "@/lib/api";
-import { loadAndInspectPdf } from "@/components/PDFOccurrences";
+import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
 
 interface OccurrenceType {
   id: string;
@@ -79,6 +79,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  const handlePrint = useOccurrencePrint();
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
@@ -248,11 +250,19 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         {occurrences && (
           <div className="flex justify-end mb-4">
             <Button
-              onClick={() => loadAndInspectPdf()}
+              onClick={() =>
+                handlePrint({
+                  associateInfo,
+                  totalPoints,
+                  notificationLevel,
+                  designation,
+                  filteredOccurrences,
+                })
+              }
               className="text-light-500 hover:text-light-700"
               variant="ghost"
               size="icon"
-              aria-label="Print corrective action"
+              aria-label="Print occurrence list"
             >
               <Printer size={20} />
             </Button>
@@ -262,12 +272,12 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
+                <TableHead className="w-24">
                   <Button variant="ghost" onClick={() => handleSort("type")}>
                     Type {renderSortIcon("type")}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-64">
                   <Button
                     variant="ghost"
                     onClick={() => handleSort("description")}
@@ -275,18 +285,18 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                     Description {renderSortIcon("description")}
                   </Button>
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-32">
                   <Button variant="ghost" onClick={() => handleSort("date")}>
                     Date {renderSortIcon("date")}
                   </Button>
                 </TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead>
+                <TableHead className="w-64">Notes</TableHead>
+                <TableHead className="w-24">
                   <Button variant="ghost" onClick={() => handleSort("points")}>
                     Points {renderSortIcon("points")}
                   </Button>
                 </TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -298,13 +308,19 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
                 return (
                   <TableRow key={occurrence.id} style={rowStyle}>
-                    <TableCell>{occurrence.type.code}</TableCell>
-                    <TableCell>{occurrence.type.description}</TableCell>
-                    <TableCell>
+                    <TableCell className="w-24">
+                      {occurrence.type.code}
+                    </TableCell>
+                    <TableCell className="w-64">
+                      {occurrence.type.description}
+                    </TableCell>
+                    <TableCell className="w-32">
                       {new Date(occurrence.date).toISOString().split("T")[0]}
                     </TableCell>
-                    <TableCell>{occurrence.notes}</TableCell>
-                    <TableCell>
+                    <TableCell className="w-64 whitespace-normal break-words">
+                      {occurrence.notes}
+                    </TableCell>
+                    <TableCell className="w-24">
                       {occurrence.type.points}
                       {isOld && (
                         <span className="ml-2 text-sm text-gray-500">
@@ -312,7 +328,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="w-32">
                       {hasEditorRole ? (
                         <>
                           <Button
