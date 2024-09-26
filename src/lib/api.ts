@@ -374,3 +374,25 @@ export async function getCAByType(months: number = 12) {
     return [];
   }
 }
+
+// Excel export handler
+export async function exportToExcel(associateName: string, occurrences: Occurrence[]): Promise<Blob> {
+  try {
+    const response = await api.post('/export-excel', {
+      associateName,
+      occurrences: occurrences.map(occurrence => ({
+        code: occurrence.type.code,
+        description: occurrence.type.description,
+        date: new Date(occurrence.date).toISOString().split('T')[0],
+        notes: occurrence.notes,
+        points: occurrence.type.points
+      }))
+    }, {
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    throw error;
+  }
+}

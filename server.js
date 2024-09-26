@@ -3,6 +3,7 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import path from "path";
+import XLSX from 'xlsx';
 import { fileURLToPath } from "url";
 import crypto from "crypto";
 
@@ -97,6 +98,40 @@ const validateApiKey = (req, res, next) => {
 
 // Apply the validateApiKey middleware to all /api routes
 app.use("/zapi", validateApiKey);
+
+// excel stuffs
+app.post("/zapi/export-excel", async (req, res) => {
+  try {
+    const { associateName, occurrences } = req.body;
+    // Read the template file
+    const templatePath = path.join(__dirname, 'excel', 'company-sample.xlsx');
+    const workbook = XLSX.readFile(templatePath);
+    // Get the first sheet
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+     // Populate the data starting from cell D15
+    occurrences.forEach((occurrence, index) => {
+      const rowIndex = 14 + index; // 15 - 1 because XLSX uses 0-based indexing
+      XLSX.utils.sheet_add_aoa(worksheet, [[
+        occurrence.code,
+        occurrence.description,
+        occurrence.date,
+        occurrence.notes,
+        occurrence.points
+      ]], { origin: `D${rowIndex + 1}` });
+    })
+      // Generate the Excel file
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    // Set response headers
+    res.setHeader('Content-Disposition', `attachment; filename=${associateName}_occurrences.xlsx`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); 
+    // Send the file
+    res.send(excelBuffer);
+   } catch (error) {
+    console.error('Error generating Excel file:', error);
+    res.status(500).json({ error: 'Failed to generate Excel file' });
+   }
+ });
 
 // Associate STUFFS
 

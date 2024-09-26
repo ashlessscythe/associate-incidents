@@ -14,6 +14,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +23,7 @@ import {
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
+  exportToExcel,
 } from "@/lib/api";
 import {
   Dialog,
@@ -201,6 +203,23 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
+  const handleExcelExport = async () => {
+    try {
+      const blob = await exportToExcel(associateInfo.name, filteredOccurrences);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${associateInfo.name}_occurrences.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('An error occurred while exporting to Excel. Please try again.');
+    }
+  };
+
   return (
     <div className="mt-6 flex flex-col md:flex-row">
       <div className="w-full">
@@ -259,12 +278,21 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   filteredOccurrences,
                 })
               }
-              className="text-light-500 hover:text-light-700"
+              className="text-light-500 hover:text-light-700 mr-2"
               variant="ghost"
               size="icon"
               aria-label="Print occurrence list"
             >
               <Printer size={20} />
+            </Button>
+            <Button
+              onClick={handleExcelExport}
+              className="text-light-500 hover:text-light-700"
+              variant="ghost"
+              size="icon"
+              aria-label="Export to Excel"
+            >
+              <FileSpreadsheet size={20} />
             </Button>
           </div>
         )}
