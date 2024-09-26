@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { rules, occurrenceTypes, notificationLevels } from "./definitions.js";
-import { faker } from '@faker-js/faker';
+import { faker } from "@faker-js/faker";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -154,7 +154,7 @@ async function readOccurrencesFromCSV(filePath) {
 
 function generateFakeOccurrences(associates, count) {
   const occurrences = [];
-  const occurrenceCodes = occurrenceTypes.map(type => type.code);
+  const occurrenceCodes = occurrenceTypes.map((type) => type.code);
 
   for (let i = 0; i < count; i++) {
     const associate = faker.helpers.arrayElement(associates);
@@ -251,15 +251,88 @@ async function upsertOccurrences(occurrences) {
   console.log(`${skippedCount} occurrences skipped due to errors.`);
 }
 
+// Function to generate fake corrective actions
+function generateFakeCorrectiveActions(associates, rules, count) {
+  const correctiveActions = [];
+  const levels = [1, 2, 3, 4]; // Possible levels for corrective actions (based on your schema)
+
+  for (let i = 0; i < count; i++) {
+    const associate = faker.helpers.arrayElement(associates);
+    const rule = faker.helpers.arrayElement(rules);
+
+    correctiveActions.push({
+      associateId: associate.id, // Referencing Associate's id
+      ruleId: rule.id, // Referencing Rule's id
+      description: faker.lorem.sentence(), // Fake description for corrective action
+      level: faker.helpers.arrayElement(levels), // Random level between 1 and 4
+      date: faker.date.past(), // Random past date for corrective action
+    });
+  }
+
+  return correctiveActions;
+}
+
+async function upsertCorrectiveActions(correctiveActions) {
+  let upsertedCount = 0;
+  let skippedCount = 0;
+
+  for (const correctiveAction of correctiveActions) {
+    try {
+      // Step 1: Find existing corrective action by associateId and ruleId
+      const existingCorrectiveAction = await prisma.correctiveAction.findFirst({
+        where: {
+          associateId: correctiveAction.associateId,
+          ruleId: correctiveAction.ruleId,
+        },
+      });
+
+      if (existingCorrectiveAction) {
+        // Step 2: Update the existing corrective action
+        await prisma.correctiveAction.update({
+          where: { id: existingCorrectiveAction.id },
+          data: {
+            description: correctiveAction.description,
+            level: correctiveAction.level,
+            date: correctiveAction.date,
+          },
+        });
+      } else {
+        // Step 3: Create a new corrective action
+        await prisma.correctiveAction.create({
+          data: {
+            associateId: correctiveAction.associateId,
+            ruleId: correctiveAction.ruleId,
+            description: correctiveAction.description,
+            level: correctiveAction.level,
+            date: correctiveAction.date,
+          },
+        });
+      }
+
+      upsertedCount++;
+    } catch (error) {
+      console.error(
+        `Error processing corrective action: ${error.message}. Skipping.`
+      );
+      skippedCount++;
+    }
+  }
+
+  console.log(`${upsertedCount} corrective actions upserted.`);
+  console.log(`${skippedCount} corrective actions skipped due to errors.`);
+}
+
 async function main() {
   try {
     const clearFlag = process.argv.includes("--clear");
     const occurrencesOnly = process.argv.includes("--occurrences-only");
     const rulesOnly = process.argv.includes("--rules-only");
     const usersOnly = process.argv.includes("--users-only");
+    const caOnly = process.argv.includes("--ca-only");
     const notificationsOnly = process.argv.includes("--notifications-only");
-    const useFakerFlag = process.argv.findIndex(arg => arg === "--use-faker");
-    const fakerCount = useFakerFlag !== -1 ? parseInt(process.argv[useFakerFlag + 1], 10) : 0;
+    const useFakerFlag = process.argv.findIndex((arg) => arg === "--use-faker");
+    const fakerCount =
+      useFakerFlag !== -1 ? parseInt(process.argv[useFakerFlag + 1], 10) : 0;
 
     if (clearFlag) {
       await clearData();
@@ -313,6 +386,24 @@ async function main() {
       });
     }
 
+    // needed for CA
+    const associates = await prisma.associate.findMany();
+    const rules = await prisma.rule.findMany();
+
+    // If only generating CorrectiveActions (with faker)
+    if (caOnly || fakerCount > 0) {
+      const correctiveActions = generateFakeCorrectiveActions(
+        associates,
+        rules,
+        fakerCount * 2
+      ); // Generate twice as many corrective actions
+      if (correctiveActions.length > 0) {
+        await upsertCorrectiveActions(correctiveActions);
+      } else {
+        console.log("No corrective actions generated.");
+      }
+    }
+
     // If no specific flag is set, perform all operations
     if (operations.length === 0) {
       operations.push(
@@ -338,13 +429,31 @@ async function main() {
           if (fakerCount > 0) {
             occurrences = generateFakeOccurrences(associates, fakerCount * 2);
           } else {
-            const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+            const occurrencesCsvPath = path.join(
+              __dirname,
+              occurrencesFileName
+            );
             occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
           }
           if (occurrences.length > 0) {
             await upsertOccurrences(occurrences);
           } else {
             console.log("No occurrences found.");
+          }
+        },
+        async (associates) => {
+          let correctiveActions;
+          if (fakerCount > 0) {
+            correctiveActions = generateFakeCorrectiveActions(
+              associates,
+              fakerCount * 2
+            );
+          } else {
+            console.log("No corrective actions data to process.");
+            return;
+          }
+          if (correctiveActions.length > 0) {
+            await upsertCorrectiveActions(correctiveActions);
           }
         }
       );
