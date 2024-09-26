@@ -23,7 +23,7 @@ import {
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
-  exportToExcel,
+  exportExcel,
 } from "@/lib/api";
 import {
   Dialog,
@@ -205,18 +205,28 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   const handleExcelExport = async () => {
     try {
-      const blob = await exportToExcel(associateInfo.name, filteredOccurrences);
+      const templatePath = "excel/occurrence.xlsx"; // Adjust this path as needed
+      const currentDate = new Date().toISOString().split("T")[0];
+      const blob = await exportExcel(
+        templatePath,
+        associateInfo.name,
+        "N/A",
+        "N/A",
+        currentDate,
+        filteredOccurrences,
+        notificationLevel
+      );
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
+      const a = document.createElement("a");
+      a.style.display = "none";
       a.href = url;
       a.download = `${associateInfo.name}_occurrences.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      alert('An error occurred while exporting to Excel. Please try again.');
+      console.error("Error exporting to Excel:", error);
+      alert("An error occurred while exporting to Excel. Please try again.");
     }
   };
 

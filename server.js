@@ -3,10 +3,9 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import path from "path";
-import XLSX from 'xlsx';
 import { fileURLToPath } from "url";
 import crypto from "crypto";
-
+import XlsxPopulate from "xlsx-populate";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -99,40 +98,6 @@ const validateApiKey = (req, res, next) => {
 // Apply the validateApiKey middleware to all /api routes
 app.use("/zapi", validateApiKey);
 
-// excel stuffs
-app.post("/zapi/export-excel", async (req, res) => {
-  try {
-    const { associateName, occurrences } = req.body;
-    // Read the template file
-    const templatePath = path.join(__dirname, 'excel', 'company-sample.xlsx');
-    const workbook = XLSX.readFile(templatePath);
-    // Get the first sheet
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-     // Populate the data starting from cell D15
-    occurrences.forEach((occurrence, index) => {
-      const rowIndex = 14 + index; // 15 - 1 because XLSX uses 0-based indexing
-      XLSX.utils.sheet_add_aoa(worksheet, [[
-        occurrence.code,
-        occurrence.description,
-        occurrence.date,
-        occurrence.notes,
-        occurrence.points
-      ]], { origin: `D${rowIndex + 1}` });
-    })
-      // Generate the Excel file
-    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    // Set response headers
-    res.setHeader('Content-Disposition', `attachment; filename=${associateName}_occurrences.xlsx`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); 
-    // Send the file
-    res.send(excelBuffer);
-   } catch (error) {
-    console.error('Error generating Excel file:', error);
-    res.status(500).json({ error: 'Failed to generate Excel file' });
-   }
- });
-
 // Associate STUFFS
 
 // Get all associates
@@ -197,9 +162,11 @@ app.delete("/zapi/associates/:id", async (req, res) => {
     res.status(204).send();
   } catch (error) {
     // Check for Prisma constraint violation errors
-    if (error.code === "P2003") { // Prisma error code for foreign key constraint failure
+    if (error.code === "P2003") {
+      // Prisma error code for foreign key constraint failure
       res.status(400).json({
-        error: "Cannot delete associate, as there is related data in other tables.",
+        error:
+          "Cannot delete associate, as there is related data in other tables.",
       });
     } else {
       // Log the full error for debugging
@@ -383,7 +350,9 @@ app.get("/zapi/associates-with-designation", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("Error fetching associates with designation:", error);
-    res.status(500).json({ error: "Error fetching associates with designation" });
+    res
+      .status(500)
+      .json({ error: "Error fetching associates with designation" });
   }
 });
 
@@ -650,6 +619,84 @@ app.get("/zapi/ca-by-type", async (req, res) => {
     res
       .status(500)
       .json({ error: "An error occurred while fetching CA by type data" });
+  }
+});
+
+app.post("/zapi/export-excel", async (req, res) => {
+  try {
+    const {
+      templatePath,
+      associateName,
+      location,
+      department,
+      date,
+      occurrences,
+      notificationLevel,
+    } = req.body;
+
+    // Load the template
+    const workbook = await XlsxPopulate.fromFileAsync(templatePath);
+    const sheet = workbook.sheet(0);
+
+    // Fill in the basic information
+    sheet.cell("A7").value(associateName);
+    sheet.cell("F7").value(location);
+    sheet.cell("H7").value(department);
+    sheet.cell("J7").value(date);
+
+    // Fill in the occurrences
+    occurrences.slice(0, 4).forEach((occurrence, index) => {
+      const row = 24 + index;
+      sheet
+        .cell(`B${row}`)
+        .value(new Date(occurrence.date).toISOString().split("T")[0]);
+      sheet.cell(`D${row}`).value(occurrence.type.code);
+      sheet.cell(`G${row}`).value(occurrence.type.points);
+    });
+
+    // Fill in the notification level based on the provided value
+    switch (notificationLevel) {
+      case "Termination":
+        sheet.cell("E10").value("10");
+        break;
+      case "Final Written Notice":
+        sheet.cell("B10").value("7");
+        break;
+      case "2nd Written Notice":
+        sheet.cell("H9").value("5");
+        break;
+      case "1st Written Notice":
+        sheet.cell("E9").value("3");
+        break;
+      case "Verbal Notice":
+        sheet.cell("B9").value("4");
+        break;
+    }
+
+    // Fill in the misconduct description
+    const misconduct = occurrences
+      .map((occ) => `${occ.type.description} (${occ.type.points} points)`)
+      .join(", ");
+    sheet.cell("A14").value(misconduct);
+
+    // Generate blob
+    const excelBuffer = await workbook.outputAsync();
+
+    // Set the appropriate headers for file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${associateName}_occurrences.xlsx`
+    );
+
+    // Send the Excel file
+    res.send(Buffer.from(excelBuffer));
+  } catch (error) {
+    console.error("Error generating Excel file:", error);
+    res.status(500).json({ error: "Error generating Excel file" });
   }
 });
 

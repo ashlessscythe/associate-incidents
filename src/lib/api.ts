@@ -245,23 +245,27 @@ export const getAssociatePointsAndNotification = async (
   }
 };
 
-export const getAssociatesAndDesignation = async (): Promise<AssociateAndDesignation[]> => {
-    try {
-      const response = await api.get<AssociateAndDesignation[]>(
-        "/associates-with-designation"
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching associates with designation:", error);
-      throw error; // Rethrow the error to handle it in the useEffect
-    }
-  };
+export const getAssociatesAndDesignation = async (): Promise<
+  AssociateAndDesignation[]
+> => {
+  try {
+    const response = await api.get<AssociateAndDesignation[]>(
+      "/associates-with-designation"
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching associates with designation:", error);
+    throw error; // Rethrow the error to handle it in the useEffect
+  }
+};
 
 export const getAllAssociatesWithOccurrences = async (): Promise<
   AssociateAndOccurrences[]
 > => {
   try {
-    const response = await api.get<AssociateAndOccurrences[]>("/all-with-occurrences"); // Ensure the path matches server.js
+    const response = await api.get<AssociateAndOccurrences[]>(
+      "/all-with-occurrences"
+    ); // Ensure the path matches server.js
     // console.log(`data: ${JSON.stringify(response.data)}`);
     return response.data;
   } catch (error) {
@@ -375,24 +379,37 @@ export async function getCAByType(months: number = 12) {
   }
 }
 
-// Excel export handler
-export async function exportToExcel(associateName: string, occurrences: Occurrence[]): Promise<Blob> {
+// Excel export
+// Excel export
+export async function exportExcel(
+  templatePath: string,
+  associateName: string,
+  location: string,
+  department: string,
+  date: string,
+  occurrences: Occurrence[],
+  notificationLevel: string
+): Promise<Blob> {
   try {
-    const response = await api.post('/export-excel', {
-      associateName,
-      occurrences: occurrences.map(occurrence => ({
-        code: occurrence.type.code,
-        description: occurrence.type.description,
-        date: new Date(occurrence.date).toISOString().split('T')[0],
-        notes: occurrence.notes,
-        points: occurrence.type.points
-      }))
-    }, {
-      responseType: 'blob'
-    });
-    return response.data;
+    const response = await api.post(
+      "/export-excel",
+      {
+        templatePath,
+        associateName,
+        location,
+        department,
+        date,
+        occurrences,
+        notificationLevel,
+      },
+      {
+        responseType: "blob", // Important: This tells axios to handle the response as a Blob
+      }
+    );
+
+    return response.data; // axios stores the blob in response.data when responseType is 'blob'
   } catch (error) {
-    console.error('Error exporting to Excel:', error);
+    console.error("Error exporting Excel:", error);
     throw error;
   }
 }
