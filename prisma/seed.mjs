@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { rules, occurrenceTypes, notificationLevels } from "./definitions.js";
+import { faker } from '@faker-js/faker';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,6 +91,22 @@ async function readAssociatesFromCSV(filePath) {
   });
 }
 
+function generateFakeAssociates(count) {
+  const associates = [];
+  const designations = ["MH", "NONE", "CLERK"];
+
+  for (let i = 0; i < count; i++) {
+    associates.push({
+      name: faker.person.fullName(),
+      currentPoints: 0,
+      ssoid: faker.string.alphanumeric(8),
+      designation: faker.helpers.arrayElement(designations),
+    });
+  }
+
+  return associates;
+}
+
 async function upsertAssociates(associates) {
   for (const associate of associates) {
     await prisma.associate.upsert({
@@ -108,7 +125,7 @@ async function upsertAssociates(associates) {
       },
     });
   }
-  console.log(`${associates.length} associates upserted from CSV.`);
+  console.log(`${associates.length} associates upserted.`);
 }
 
 async function readOccurrencesFromCSV(filePath) {
@@ -133,6 +150,24 @@ async function readOccurrencesFromCSV(filePath) {
       .on("end", () => resolve(occurrences))
       .on("error", reject);
   });
+}
+
+function generateFakeOccurrences(associates, count) {
+  const occurrences = [];
+  const occurrenceCodes = occurrenceTypes.map(type => type.code);
+
+  for (let i = 0; i < count; i++) {
+    const associate = faker.helpers.arrayElement(associates);
+    occurrences.push({
+      ssoid: associate.ssoid,
+      name: associate.name,
+      date: faker.date.past(),
+      code: faker.helpers.arrayElement(occurrenceCodes),
+      comment: faker.lorem.sentence(),
+    });
+  }
+
+  return occurrences;
 }
 
 async function upsertOccurrences(occurrences) {
@@ -212,7 +247,7 @@ async function upsertOccurrences(occurrences) {
     }
   }
 
-  console.log(`${upsertedCount} occurrences upserted from CSV.`);
+  console.log(`${upsertedCount} occurrences upserted.`);
   console.log(`${skippedCount} occurrences skipped due to errors.`);
 }
 
@@ -223,6 +258,8 @@ async function main() {
     const rulesOnly = process.argv.includes("--rules-only");
     const usersOnly = process.argv.includes("--users-only");
     const notificationsOnly = process.argv.includes("--notifications-only");
+    const useFakerFlag = process.argv.findIndex(arg => arg === "--use-faker");
+    const fakerCount = useFakerFlag !== -1 ? parseInt(process.argv[useFakerFlag + 1], 10) : 0;
 
     if (clearFlag) {
       await clearData();
@@ -241,26 +278,37 @@ async function main() {
       operations.push(upsertRules);
     }
 
-    if (usersOnly) {
+    if (usersOnly || fakerCount > 0) {
       operations.push(async () => {
-        const csvPath = path.join(__dirname, associatesFileName);
-        const associates = await readAssociatesFromCSV(csvPath);
+        let associates;
+        if (fakerCount > 0) {
+          associates = generateFakeAssociates(fakerCount);
+        } else {
+          const csvPath = path.join(__dirname, associatesFileName);
+          associates = await readAssociatesFromCSV(csvPath);
+        }
         if (associates.length > 0) {
           await upsertAssociates(associates);
         } else {
-          console.log("No associates found in CSV.");
+          console.log("No associates found.");
         }
+        return associates;
       });
     }
 
-    if (occurrencesOnly) {
-      operations.push(async () => {
-        const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
-        const occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+    if (occurrencesOnly || fakerCount > 0) {
+      operations.push(async (associates) => {
+        let occurrences;
+        if (fakerCount > 0) {
+          occurrences = generateFakeOccurrences(associates, fakerCount * 2); // Generate twice as many occurrences as associates
+        } else {
+          const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+          occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+        }
         if (occurrences.length > 0) {
           await upsertOccurrences(occurrences);
         } else {
-          console.log("No occurrences found in CSV.");
+          console.log("No occurrences found.");
         }
       });
     }
@@ -271,28 +319,40 @@ async function main() {
         upsertNotificationLevels,
         upsertRules,
         async () => {
-          const csvPath = path.join(__dirname, associatesFileName);
-          const associates = await readAssociatesFromCSV(csvPath);
+          let associates;
+          if (fakerCount > 0) {
+            associates = generateFakeAssociates(fakerCount);
+          } else {
+            const csvPath = path.join(__dirname, associatesFileName);
+            associates = await readAssociatesFromCSV(csvPath);
+          }
           if (associates.length > 0) {
             await upsertAssociates(associates);
           } else {
-            console.log("No associates found in CSV.");
+            console.log("No associates found.");
           }
+          return associates;
         },
-        async () => {
-          const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
-          const occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+        async (associates) => {
+          let occurrences;
+          if (fakerCount > 0) {
+            occurrences = generateFakeOccurrences(associates, fakerCount * 2);
+          } else {
+            const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+            occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+          }
           if (occurrences.length > 0) {
             await upsertOccurrences(occurrences);
           } else {
-            console.log("No occurrences found in CSV.");
+            console.log("No occurrences found.");
           }
         }
       );
     }
 
+    let lastResult;
     for (const operation of operations) {
-      await operation();
+      lastResult = await operation(lastResult);
     }
 
     console.log("Seed completed successfully.");
