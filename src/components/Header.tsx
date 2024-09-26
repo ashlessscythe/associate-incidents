@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Moon, Sun, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
 
@@ -12,6 +11,8 @@ interface HeaderProps {
   user: any;
   onLoginClick: () => void;
   onLogOut: () => Promise<void>;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -19,36 +20,14 @@ const Header: React.FC<HeaderProps> = ({
   onPageSelect,
   user,
   onLoginClick,
+  onLogOut,
+  isDarkMode,
+  onToggleDarkMode,
 }) => {
-  const { logout } = useAuthorizer();
-  const [darkMode, setDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const isDarkMode =
-      localStorage.getItem("darkMode") === "true" ||
-      (!("darkMode" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    setDarkMode(isDarkMode);
-    document.documentElement.classList.toggle("dark", isDarkMode);
-  }, []);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
-    localStorage.setItem("darkMode", (!darkMode).toString());
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
   };
 
   const NavLinks = () => (
@@ -128,17 +107,17 @@ const Header: React.FC<HeaderProps> = ({
               variant="ghost"
               size="icon"
               aria-label="Toggle Dark Mode"
-              onClick={toggleDarkMode}
+              onClick={onToggleDarkMode}
               className="ml-4 mr-4"
             >
-              {darkMode ? (
+              {isDarkMode ? (
                 <Sun className="h-[1.2rem] w-[1.2rem]" />
               ) : (
                 <Moon className="h-[1.2rem] w-[1.2rem]" />
               )}
             </Button>
             {user ? (
-              <Button onClick={handleLogout} variant="outline">
+              <Button onClick={onLogOut} variant="outline">
                 Log out
               </Button>
             ) : (

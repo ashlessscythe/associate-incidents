@@ -22,7 +22,7 @@ prisma/associates.csv
 prisma/occurrences.csv
 
 # excel
-excel/occurrences.xlsx
+excel/occurrence.xlsx
 excel/ca.xlsx
 
 # sql

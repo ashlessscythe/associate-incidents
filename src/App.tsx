@@ -78,6 +78,10 @@ const ProtectedRoute = ({
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedMode = localStorage.getItem("darkMode");
+    return savedMode ? JSON.parse(savedMode) : false;
+  });
   const { loading, user, logout } = useAuthorizer();
 
   const handlePageSelect = (page: PageType) => {
@@ -94,23 +98,45 @@ function AppContent() {
     }
   };
 
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem("darkMode", JSON.stringify(newMode));
+  };
+
   useEffect(() => {
     if (user) {
       setIsLoginOpen(false);
     }
   }, [user]);
 
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
   if (loading) return <div>Loading...</div>;
 
   return (
     <Router>
-      <div className="flex flex-col h-screen min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+      <div
+        className={`flex flex-col h-screen min-h-screen transition-colors duration-300 ${
+          isDarkMode
+            ? "dark bg-dark-mode-gradient backdrop-blur-md"
+            : "bg-gray-100"
+        }`}
+      >
         <Header
           currentPage={currentPage}
           onPageSelect={handlePageSelect}
           user={user}
           onLoginClick={() => setIsLoginOpen(true)}
           onLogOut={() => handleLogOut()}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
         />
         <main className="container flex-1 overflow-y-auto p-4">
           <Routes>
@@ -118,7 +144,7 @@ function AppContent() {
               path="/"
               element={
                 <div className="text-center mt-10">
-                  <h2 className="text-2xl font-bold mb-4">
+                  <h2 className="text-2xl font-bold mb-4 dark:text-white">
                     Welcome to the Incident Tracker
                   </h2>
                   <Profile />

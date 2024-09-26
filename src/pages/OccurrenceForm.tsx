@@ -75,6 +75,13 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
     }
   };
 
+  // set max date today plus 5 days
+  const maxDate = () => {
+    let d = new Date();
+    d.setDate(d.getDate() + 5);
+    return d.toISOString().split("T")[0];
+  };
+
   return (
     <form onSubmit={handleSubmit} className="mb-4">
       <h2 className="text-xl font-semibold mb-2">Add Occurrence</h2>
@@ -96,7 +103,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
           type="date"
           ref={dateInputRef}
           defaultValue={new Date().toISOString().split("T")[0]}
-          max={new Date().toISOString().split("T")[0]} // Prevents future dates
+          max={maxDate()} // Prevents future dates
         />
         <Textarea
           value={notes}
