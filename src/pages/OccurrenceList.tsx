@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { Occurrence } from "@/lib/api";
+import OccurrenceUploadButton from "@/components/OccurrenceUploadButton";
 import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
 
 interface OccurrenceType {
@@ -56,7 +57,7 @@ interface OccurrenceListProps {
   occurrences?: Occurrence[];
   associateInfo: AssociateInfo;
   onDelete: (occurrenceId: string) => void;
-  onUpdate: (occurenceId: string) => void;
+  onUpdate: (associateId: string) => void;
   occurrenceTypes: OccurrenceType[];
 }
 
@@ -127,6 +128,17 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         alert("An unknown error occurred while updating occurrence");
       }
     }
+  };
+
+  const handleUploadComplete = () => {
+    if (associateInfo.id) {
+      onUpdate(associateInfo.id);
+    }
+    alert("Upload completed successfully");
+  };
+
+  const handleUploadError = (error: Error) => {
+    alert(`Upload failed: ${error.message}`);
   };
 
   useEffect(() => {
@@ -295,13 +307,17 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             </Button>
             <Button
               onClick={handleExcelExport}
-              className="text-light-500 hover:text-light-700"
+              className="text-light-500 hover:text-light-700 mr-2"
               variant="ghost"
               size="icon"
               aria-label="Export to Excel"
             >
               <FileSpreadsheet size={20} />
             </Button>
+            <OccurrenceUploadButton
+              onUploadComplete={handleUploadComplete}
+              onUploadError={handleUploadError}
+            />
           </div>
         )}
         <div className="overflow-x-auto">

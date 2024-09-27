@@ -3,6 +3,7 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
+import { createRouteHandler, createUploadthing } from "uploadthing/express";
 import crypto from "crypto";
 import XlsxPopulate from "xlsx-populate";
 import path from "path";
@@ -29,6 +30,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Serve static files from the React app
@@ -104,8 +106,38 @@ app.use("/zapi", validateApiKey);
 
 // uploadthing stuffs
 import { UTApi } from "uploadthing/server";
-
 const utapi = new UTApi({ token: process.env.UPLOADTHING_SECRET });
+const f = createUploadthing();
+
+const uploadRouter = {
+  excelUploader: f({
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+      maxFileSize: "1MB",
+      maxFileCount: 1,
+    },
+    "application/pdf": {
+      maxFileSize: "2MB",
+      maxFileCount: 1,
+    },
+  }).onUploadComplete((data) => {
+    console.log("Upload complete:", data);
+    // Extract the file URL or key
+    const fileUrl = data.file.url; // The URL of the uploaded file
+    const fileKey = data.file.key; // The key or unique identifier
+
+    // You can now save this fileUrl or fileKey to your database
+    // TODO: function to handle filedata to db
+    console.log(`File URL: ${fileUrl}`);
+    console.log(`File Key: ${fileKey}`);
+  }),
+};
+
+app.use(
+  "/zapi/uploadthing",
+  createRouteHandler({
+    router: uploadRouter,
+  })
+);
 
 app.get("/zapi/get-template/:type", async (req, res) => {
   const { type } = req.params;

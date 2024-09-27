@@ -389,6 +389,24 @@ export async function getCAByType(months: number = 12) {
   }
 }
 
+// file stuff for uploadthing
+export const uploadOccurrenceFile = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await axios.post("/zapi/uploadthing", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data.filePath; // Return the uploaded file path
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw error;
+  }
+};
+
 // get template
 const getTemplate = async (type: "ca" | "occurrence"): Promise<Blob | null> => {
   try {
