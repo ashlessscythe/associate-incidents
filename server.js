@@ -763,14 +763,14 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
     sheet.cell("J7").value(date);
 
     // Fill in the occurrences
-    occurrences.slice(0, 4).forEach((occurrence, index) => {
-      const row = 24 + index;
-      sheet
-        .cell(`B${row}`)
-        .value(new Date(occurrence.date).toISOString().split("T")[0]);
-      sheet.cell(`D${row}`).value(occurrence.type.code);
-      sheet.cell(`G${row}`).value(occurrence.type.points);
-    });
+    // occurrences.slice(0, 4).forEach((occurrence, index) => {
+    //   const row = 24 + index;
+    //   sheet
+    //     .cell(`B${row}`)
+    //     .value(new Date(occurrence.date).toISOString().split("T")[0]);
+    //   sheet.cell(`D${row}`).value(occurrence.type.code);
+    //   sheet.cell(`G${row}`).value(occurrence.type.points);
+    // });
 
     // Fill in the notification level based on the provided value
     switch (notificationLevel) {
@@ -891,14 +891,14 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
     cell.style("verticalAlignment", "top");
 
     // Fill in the corrective actions entries
-    correctiveActions.slice(0, 3).forEach((action, index) => {
-      const row = 28 + index; // Row 28 for the first entry, row 29 for the second, etc.
-      sheet
-        .cell(`B${row}`)
-        .value(new Date(action.date).toISOString().split("T")[0]); // Date
-      sheet.cell(`D${row}`).value(action.rule[0].code); // Type (Rule Code)
-      sheet.cell(`G${row}`).value(action.rule[0].description); // Rule Description
-    });
+    // correctiveActions.slice(0, 3).forEach((action, index) => {
+    //   const row = 28 + index; // Row 28 for the first entry, row 29 for the second, etc.
+    //   sheet
+    //     .cell(`B${row}`)
+    //     .value(new Date(action.date).toISOString().split("T")[0]); // Date
+    //   sheet.cell(`D${row}`).value(action.rule[0].code); // Type (Rule Code)
+    //   sheet.cell(`G${row}`).value(action.rule[0].description); // Rule Description
+    // });
 
     // Generate Excel file buffer
     const excelBuffer = await workbook.outputAsync();
