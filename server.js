@@ -793,8 +793,13 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
 
     // Fill in the misconduct description
     const misconduct = occurrences
-      .map((occ) => `${occ.type.description} (${occ.type.points} points)`)
-      .join(", ");
+      .map((occ) => {
+        // Format the date as a string (e.g., "2023-09-27")
+        const formattedDate = new Date(occ.date).toISOString().split("T")[0];
+        return `${formattedDate} (${occ.type.code})`;
+      })
+      .join("\n"); // Join with line feed character
+
     sheet.cell("A14").value(misconduct);
 
     // Generate blob
@@ -873,9 +878,17 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
 
     // Fill in the corrective action descriptions (misconduct)
     const descriptions = correctiveActions
-      .map((action) => `${action.description} (Level ${action.level})`)
-      .join(", ");
-    sheet.cell("A17").value(descriptions);
+      .map((action) => {
+        // Format the date as a string (e.g., "2023-09-27")
+        const formattedDate = new Date(action.date).toISOString().split("T")[0];
+        return `${formattedDate} (${action.rule[0].code})`;
+      })
+      .join("\n"); // Join with line feed character
+
+    const cell = sheet.cell("A17");
+    cell.value(descriptions);
+    cell.style("wrapText", true);
+    cell.style("verticalAlignment", "top");
 
     // Fill in the corrective actions entries
     correctiveActions.slice(0, 3).forEach((action, index) => {

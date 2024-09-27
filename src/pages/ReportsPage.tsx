@@ -19,6 +19,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Designation } from "@/hooks/useAssociates";
+import { ArrowUpDown } from "lucide-react";
 
 interface CAByTypeData {
   id: string;
@@ -26,6 +27,9 @@ interface CAByTypeData {
   correctiveActions: CorrectiveAction[];
   info: AssociateInfo;
 }
+
+type SortField = "name" | "points" | "notificationLevel";
+type SortOrder = "asc" | "desc";
 
 const ReportsPage: React.FC = () => {
   const [caByTypeData, setCAByTypeData] = useState<CAByTypeData[]>([]);
@@ -43,6 +47,8 @@ const ReportsPage: React.FC = () => {
   const [selectedDesignation, setSelectedDesignation] = useState<
     Designation | "ALL"
   >("ALL");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -121,41 +127,123 @@ const ReportsPage: React.FC = () => {
   };
 
   const filteredAssociatesData = useMemo(() => {
-    if (!filter) return associatesData;
-
-    return associatesData.filter((associate) =>
-      associate.info.name.toLowerCase().includes(filter.toLowerCase())
-    );
-  }, [associatesData, filter]);
+    return associatesData.filter((associate) => {
+      const nameMatch = associate.info.name
+        .toLowerCase()
+        .includes(filter.toLowerCase());
+      const designationMatch =
+        selectedDesignation === "ALL" ||
+        associate.info.designation === selectedDesignation;
+      return nameMatch && designationMatch;
+    });
+  }, [associatesData, filter, selectedDesignation]);
 
   const filteredCAByTypeData = useMemo(() => {
-    if (!filter) return caByTypeData;
+    return caByTypeData.filter((associate) => {
+      const nameMatch = associate.name
+        .toLowerCase()
+        .includes(filter.toLowerCase());
+      const designationMatch =
+        selectedDesignation === "ALL" ||
+        associate.info.designation === selectedDesignation;
+      return nameMatch && designationMatch;
+    });
+  }, [caByTypeData, filter, selectedDesignation]);
 
-    return caByTypeData.filter((associate) =>
-      associate.name.toLowerCase().includes(filter.toLowerCase())
-    );
-  }, [caByTypeData, filter]);
+  // sorting stuffs
+  const sortedAndFilteredAssociatesData = useMemo(() => {
+    return filteredAssociatesData.sort((a, b) => {
+      if (sortField === "name") {
+        return sortOrder === "asc"
+          ? a.info.name.localeCompare(b.info.name)
+          : b.info.name.localeCompare(a.info.name);
+      } else if (sortField === "points") {
+        return sortOrder === "asc"
+          ? a.info.points - b.info.points
+          : b.info.points - a.info.points;
+      } else if (sortField === "notificationLevel") {
+        return sortOrder === "asc"
+          ? a.info.notificationLevel.localeCompare(b.info.notificationLevel)
+          : b.info.notificationLevel.localeCompare(a.info.notificationLevel);
+      }
+      return 0;
+    });
+  }, [filteredAssociatesData, sortField, sortOrder]);
+
+  const handleSort = (field: SortField) => {
+    if (field === sortField) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField === field) {
+      return (
+        <ArrowUpDown
+          className={`inline ml-1 ${
+            sortOrder === "desc" ? "transform rotate-180" : ""
+          }`}
+        />
+      );
+    }
+    return null;
+  };
 
   const renderActiveReport = () => {
     switch (activeReport) {
       case "occurrences":
         return (
-          <ul className="space-y-4">
-            {filteredAssociatesData?.length > 0 ? (
-              filteredAssociatesData.map((associate) => (
-                <OccurrenceByTypeRow
-                  key={associate.info.id}
-                  associateInfo={associate.info}
-                  occurrences={associate.occurrences}
-                  occurrenceTypes={occurrenceTypes}
-                  onDeleteOccurrence={handleDeleteOccurrence}
-                  onUpdateOccurrence={handleUpdateOccurrence}
-                />
-              ))
-            ) : (
-              <p>No associates found with occurrences.</p>
-            )}
-          </ul>
+          <div>
+            <div className="grid grid-cols-4 gap-4 mb-2 font-bold text-sm">
+              <div
+                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                onClick={() => handleSort("name")}
+              >
+                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  Name
+                </span>{" "}
+                {renderSortIcon("name")}
+              </div>
+              <div
+                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                onClick={() => handleSort("points")}
+              >
+                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  Points
+                </span>{" "}
+                {renderSortIcon("points")}
+              </div>
+              <div
+                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                onClick={() => handleSort("notificationLevel")}
+              >
+                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  Notification Level
+                </span>{" "}
+                {renderSortIcon("notificationLevel")}
+              </div>
+              <div className="p-2">Actions</div>
+            </div>
+            <ul className="space-y-4">
+              {sortedAndFilteredAssociatesData.length > 0 ? (
+                sortedAndFilteredAssociatesData.map((associate) => (
+                  <OccurrenceByTypeRow
+                    key={associate.info.id}
+                    associateInfo={associate.info}
+                    occurrences={associate.occurrences}
+                    occurrenceTypes={occurrenceTypes}
+                    onDeleteOccurrence={handleDeleteOccurrence}
+                    onUpdateOccurrence={handleUpdateOccurrence}
+                  />
+                ))
+              ) : (
+                <p>No associates found with occurrences.</p>
+              )}
+            </ul>
+          </div>
         );
       case "ca":
         return (
