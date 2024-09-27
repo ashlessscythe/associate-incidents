@@ -4,16 +4,17 @@ import {
   getCorrectiveActions,
   addCorrectiveAction,
   updateCorrectiveAction,
+  Associate,
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
+  getAssociateById,
 } from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "./CAForm";
 import CAList from "./CAList";
 import CAEditModal from "@/components/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { AssociateAndDesignation } from "@/lib/api";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 function CAPage() {
@@ -25,9 +26,11 @@ function CAPage() {
     CorrectiveAction[]
   >([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
-  const [associates] = useState<AssociateAndDesignation[]>([]);
-  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
+  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
     null
+  );
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
+    ""
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +57,12 @@ function CAPage() {
 
   useEffect(() => {
     fetchCorrectiveActions();
-  }, [selectedAssociateId]);
+  }, [selectedAssociate?.id]);
 
   const fetchCorrectiveActions = async () => {
-    if (selectedAssociateId) {
+    if (selectedAssociate?.id) {
       try {
-        const caData = await getCorrectiveActions(selectedAssociateId);
+        const caData = await getCorrectiveActions(selectedAssociate.id);
         setCorrectiveActions(caData);
       } catch (err: unknown) {
         setError(
@@ -90,8 +93,14 @@ function CAPage() {
     }
   };
 
-  const handleAssociateSelect = (associateId: string | null) => {
+  const handleAssociateSelect = async (associateId: string | null) => {
     setSelectedAssociateId(associateId);
+    if (associateId) {
+      const associate = await getAssociateById(associateId);
+      setSelectedAssociate(associate);
+    } else {
+      setSelectedAssociate(null);
+    }
   };
 
   const handleAddCorrectiveAction = async (caData: {
@@ -133,9 +142,6 @@ function CAPage() {
   if (associatesLoading || loading) return <div>Loading...</div>;
   if (associatesError || error)
     return <div>Error: {associatesError || error}</div>;
-
-  const selectedAssociate =
-    associates.find((a) => a.id === selectedAssociateId) || null;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">

@@ -380,8 +380,7 @@ export async function getCAByType(months: number = 12) {
 }
 
 // Excel export
-// Excel export
-export async function exportExcel(
+export async function exportExcelOcc(
   templatePath: string,
   associateName: string,
   location: string,
@@ -392,7 +391,7 @@ export async function exportExcel(
 ): Promise<Blob> {
   try {
     const response = await api.post(
-      "/export-excel",
+      "/export-excel-occurrence",
       {
         templatePath,
         associateName,
@@ -410,6 +409,40 @@ export async function exportExcel(
     return response.data; // axios stores the blob in response.data when responseType is 'blob'
   } catch (error) {
     console.error("Error exporting Excel:", error);
+    throw error;
+  }
+}
+
+// Excel export for Corrective Actions (CA)
+export async function exportExcelCA(
+  templatePath: string,
+  associateName: string,
+  location: string,
+  department: string,
+  date: string,
+  correctiveActions: CorrectiveAction[], // Use CorrectiveAction type
+  notificationLevel: string
+): Promise<Blob> {
+  try {
+    const response = await api.post(
+      "/export-excel-ca",
+      {
+        templatePath,
+        associateName,
+        location,
+        department,
+        date,
+        correctiveActions,
+        notificationLevel,
+      },
+      {
+        responseType: "blob", // Important: This tells axios to handle the response as a Blob
+      }
+    );
+
+    return response.data; // axios stores the blob in response.data when responseType is 'blob'
+  } catch (error) {
+    console.error("Error exporting Corrective Actions to Excel:", error);
     throw error;
   }
 }

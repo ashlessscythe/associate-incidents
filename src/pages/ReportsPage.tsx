@@ -5,17 +5,24 @@ import {
   getOccurrenceTypes,
   getAllAssociatesWithOccurrences,
   AssociateAndOccurrences,
+  getAssociatePointsAndNotification,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
 import CAByTypeRow from "@/components/CAByTypeRow";
-import { OccurrenceType, CorrectiveAction, Rule } from "../lib/api";
+import {
+  AssociateInfo,
+  OccurrenceType,
+  CorrectiveAction,
+  Rule,
+} from "../lib/api";
 
 interface CAByTypeData {
   id: string;
   name: string;
   correctiveActions: CorrectiveAction[];
+  info: AssociateInfo;
 }
 
 const ReportsPage: React.FC = () => {
@@ -73,8 +80,24 @@ const ReportsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCAByType();
-      setCAByTypeData(data);
+      // Fetch corrective actions by type
+      const caData = await getCAByType();
+
+      // Use Promise.all to fetch points and notifications for all associates in parallel
+      const caDataWithInfo = await Promise.all(
+        caData.map(async (caItem: CAByTypeData) => {
+          const associateInfo = await getAssociatePointsAndNotification(
+            caItem.id
+          );
+
+          return {
+            ...caItem,
+            info: associateInfo, // Attach the fetched associate info
+          };
+        })
+      );
+
+      setCAByTypeData(caDataWithInfo);
       setActiveReport("ca");
     } catch (err) {
       setError("Failed to fetch CA by type data");

@@ -448,6 +448,7 @@ app.get("/zapi/corrective-actions/:associateId", async (req, res) => {
     const correctiveActions = await prisma.correctiveAction.findMany({
       where: { associateId: associateId },
       orderBy: { date: "desc" },
+      include: { rule: true }, // Include the rule information
     });
     res.json(correctiveActions);
   } catch (error) {
@@ -622,7 +623,7 @@ app.get("/zapi/ca-by-type", async (req, res) => {
   }
 });
 
-app.post("/zapi/export-excel", async (req, res) => {
+app.post("/zapi/export-excel-occurrence", async (req, res) => {
   try {
     const {
       templatePath,
@@ -697,6 +698,117 @@ app.post("/zapi/export-excel", async (req, res) => {
   } catch (error) {
     console.error("Error generating Excel file:", error);
     res.status(500).json({ error: "Error generating Excel file" });
+  }
+});
+
+app.post("/zapi/export-excel-ca", async (req, res) => {
+  try {
+    const {
+      templatePath,
+      associateName,
+      location,
+      department,
+      date,
+      correctiveActions,
+      notificationLevel,
+    } = req.body;
+
+    // Check if required fields are missing or empty
+    if (
+      !templatePath ||
+      !associateName ||
+      !correctiveActions ||
+      !correctiveActions.length
+    ) {
+      throw new Error(
+        "Missing required fields or correctiveActions array is empty"
+      );
+    }
+
+    // Log to help debug
+    console.log(
+      "Received request for Corrective Action export with data:",
+      req.body
+    );
+
+    // Load the Excel template
+    const workbook = await XlsxPopulate.fromFileAsync(templatePath);
+    const sheet = workbook.sheet(0);
+
+    // Fill in the basic associate information
+    sheet.cell("A7").value(associateName);
+    sheet.cell("F7").value(location);
+    sheet.cell("H7").value(department);
+    sheet.cell("J7").value(date);
+
+    // Log filling basic info
+    console.log("Filled basic associate information");
+
+    // Fill in the notification levels based on the provided value
+    switch (notificationLevel) {
+      case "1st Documented Verbal":
+        sheet.cell("B10").value("X"); // Mark the point for 1st Documented Verbal
+        break;
+      case "2nd Written Notice":
+        sheet.cell("E10").value("X"); // Mark the point for 2nd Written Notice
+        break;
+      case "3rd Final Written Notice":
+        sheet.cell("H10").value("X"); // Mark the point for 3rd Final Written Notice
+        break;
+      case "Termination":
+        sheet.cell("B11").value("X"); // Mark the point for Termination
+        break;
+      default:
+        console.log("No notification level provided");
+    }
+
+    // Log after filling the notification level
+    console.log("Filled notification level");
+
+    // You can set specific appendixes or violations similarly:
+    sheet.cell("B13").value("Appendix A"); // Example
+    sheet.cell("B14").value("Appendix B");
+    sheet.cell("B15").value("CBA Violation - Article 9");
+
+    // Fill in the corrective action descriptions (misconduct)
+    const descriptions = correctiveActions
+      .map((action) => `${action.description} (Level ${action.level})`)
+      .join(", ");
+    sheet.cell("A17").value(descriptions);
+
+    // Fill in the corrective actions entries
+    correctiveActions.slice(0, 3).forEach((action, index) => {
+      const row = 28 + index; // Row 28 for the first entry, row 29 for the second, etc.
+      sheet
+        .cell(`B${row}`)
+        .value(new Date(action.date).toISOString().split("T")[0]); // Date
+      sheet.cell(`D${row}`).value(action.rule[0].code); // Type (Rule Code)
+      sheet.cell(`G${row}`).value(action.rule[0].description); // Rule Description
+    });
+
+    // Log after filling corrective actions
+    console.log("Filled corrective actions entries");
+
+    // Generate Excel file buffer
+    const excelBuffer = await workbook.outputAsync();
+
+    // Set the appropriate headers for file download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${associateName}_corrective_actions.xlsx`
+    );
+
+    // Send the Excel file
+    res.send(Buffer.from(excelBuffer));
+  } catch (error) {
+    console.error("Error generating Corrective Actions Excel file:", error);
+    res
+      .status(500)
+      .json({ error: "Error generating Corrective Actions Excel file" });
   }
 });
 

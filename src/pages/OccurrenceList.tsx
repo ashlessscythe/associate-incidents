@@ -23,7 +23,7 @@ import {
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
-  exportExcel,
+  exportExcelOcc,
 } from "@/lib/api";
 import {
   Dialog,
@@ -207,7 +207,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     try {
       const templatePath = "excel/occurrence.xlsx"; // Adjust this path as needed
       const currentDate = new Date().toISOString().split("T")[0];
-      const blob = await exportExcel(
+      const blob = await exportExcelOcc(
         templatePath,
         associateInfo.name,
         "N/A",

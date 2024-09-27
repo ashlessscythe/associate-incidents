@@ -1,8 +1,15 @@
 import React from "react";
-import { Associate, CorrectiveAction, Rule } from "@/lib/api";
-import { Edit2, Trash2 } from "lucide-react";
+import {
+  Associate,
+  CorrectiveAction,
+  Rule,
+  RuleType,
+  exportExcelCA,
+} from "@/lib/api";
+import { Edit2, Trash2, Printer, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useCAPrint } from "@/hooks/useCAPrint";
 
 interface CAListProps {
   associate: Associate | null;
@@ -14,17 +21,22 @@ interface CAListProps {
 }
 
 const CAList: React.FC<CAListProps> = ({
+  associate,
   correctiveActions,
   rules,
   onEditCA,
   onDeleteCA,
 }) => {
   const { user } = useAuthorizer();
+  const handlePrint = useCAPrint();
+
   const getRuleDescription = (ruleId: string) => {
     const rule = rules.find((r) => r.id === ruleId);
-    return rule
-      ? `${rule.type} - ${rule.code}: ${rule.description}`
-      : "Unknown Rule";
+    if (!rule) {
+      console.warn(`Rule not found for id: ${ruleId}`);
+      return "Unknown Rule";
+    }
+    return `${rule.type} - ${rule.code}: ${rule.description}`;
   };
 
   const hasEditorRole =
@@ -58,9 +70,56 @@ const CAList: React.FC<CAListProps> = ({
     (ca) => new Date(ca.date) >= oneYearAgo
   ).length;
 
-  // const handlePrint = (associate: Associate | null, ca: CorrectiveAction) => {
-  //   generateCAFormPDF(associate, ca);
-  // };
+  const handleExcelExport = async () => {
+    try {
+      const templatePath = "excel/ca.xlsx"; // Adjust this path as needed
+      const currentDate = new Date().toISOString().split("T")[0];
+
+      // Prepare corrective actions with rule information
+      const preparedCorrectiveActions = sortedCorrectiveActions.map((ca) => {
+        const rule = rules.find((r) => r.id === ca.ruleId);
+        return {
+          ...ca,
+          rule: rule
+            ? [rule]
+            : [
+                {
+                  id: "unknown",
+                  code: "Unknown",
+                  description: "Unknown Rule",
+                  type: RuleType.WORK,
+                },
+              ],
+        };
+      });
+
+      console.log(
+        "Prepared Corrective Actions for Excel export:",
+        preparedCorrectiveActions
+      );
+
+      const blob = await exportExcelCA(
+        templatePath,
+        associate?.name || "N/A",
+        "N/A",
+        "N/A",
+        currentDate,
+        preparedCorrectiveActions,
+        "N/A"
+      );
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `${associate?.name}_corrective_actions.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      alert("An error occurred while exporting to Excel. Please try again.");
+    }
+  };
 
   return (
     <div>
@@ -68,6 +127,31 @@ const CAList: React.FC<CAListProps> = ({
       <p className="mb-4 font-medium">
         Active Corrective Actions: {activeCACount}
       </p>
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={() =>
+            handlePrint({
+              associate,
+              correctiveActions: sortedCorrectiveActions,
+            })
+          }
+          className="text-light-500 hover:text-light-700 mr-2"
+          variant="ghost"
+          size="icon"
+          aria-label="Print corrective actions list"
+        >
+          <Printer size={20} />
+        </Button>
+        <Button
+          onClick={handleExcelExport}
+          className="text-light-500 hover:text-light-700"
+          variant="ghost"
+          size="icon"
+          aria-label="Export to Excel"
+        >
+          <FileSpreadsheet size={20} />
+        </Button>
+      </div>
       {sortedCorrectiveActions.length === 0 ? (
         <p>No corrective actions found.</p>
       ) : (
@@ -91,15 +175,6 @@ const CAList: React.FC<CAListProps> = ({
                     <p>Description: {ca.description}</p>
                   </div>
                   <div className="flex space-x-2">
-                    {/* <Button
-                      onClick={() => handlePrint(associate, ca)}
-                      className="text-gray-500 hover:text-gray-700"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Print corrective action"
-                    >
-                      <Printer size={20} />
-                    </Button> */}
                     {hasEditorRole ? (
                       <>
                         <Button
