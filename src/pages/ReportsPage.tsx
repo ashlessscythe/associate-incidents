@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  getCAByType,
+  getCAByTypeWithAssociateInfo,
   getRules,
   getOccurrenceTypes,
   getAllAssociatesWithOccurrences,
   AssociateAndOccurrences,
-  getAssociatePointsAndNotification,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,23 +79,8 @@ const ReportsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch corrective actions by type
-      const caData = await getCAByType();
-
-      // Use Promise.all to fetch points and notifications for all associates in parallel
-      const caDataWithInfo = await Promise.all(
-        caData.map(async (caItem: CAByTypeData) => {
-          const associateInfo = await getAssociatePointsAndNotification(
-            caItem.id
-          );
-
-          return {
-            ...caItem,
-            info: associateInfo, // Attach the fetched associate info
-          };
-        })
-      );
-
+      // Fetch corrective actions by type with associate info in a single call
+      const caDataWithInfo = await getCAByTypeWithAssociateInfo();
       setCAByTypeData(caDataWithInfo);
       setActiveReport("ca");
     } catch (err) {

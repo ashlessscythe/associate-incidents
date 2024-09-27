@@ -205,10 +205,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   const handleExcelExport = async () => {
     try {
-      const templatePath = "excel/occurrence.xlsx"; // Adjust this path as needed
       const currentDate = new Date().toISOString().split("T")[0];
       const blob = await exportExcelOcc(
-        templatePath,
         associateInfo.name,
         "N/A",
         "N/A",

@@ -369,6 +369,16 @@ export async function getAssociatesData(months: number = 12) {
   }
 }
 
+export async function getCAByTypeWithAssociateInfo(months: number = 12) {
+  try {
+    const res = await api.get(`/ca-by-type-with-info?months=${months}`);
+    return res.data;
+  } catch (err) {
+    console.error("Error fetching CA by type data with associate info:", err);
+    throw err;
+  }
+}
+
 export async function getCAByType(months: number = 12) {
   try {
     const res = await api.get(`/ca-by-type?months=${months}`);
@@ -379,9 +389,29 @@ export async function getCAByType(months: number = 12) {
   }
 }
 
+// get template
+const getTemplate = async (type: "ca" | "occurrence"): Promise<Blob | null> => {
+  try {
+    console.log(`Getting excel blob for ${type}`);
+    const response = await axios.get(`/api/get-template/${type}`, {
+      responseType: "blob",
+    });
+
+    if (response.status !== 200) {
+      throw new Error("Failed to fetch template");
+    }
+
+    return new Blob([response.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    return null;
+  }
+};
+
 // Excel export
 export async function exportExcelOcc(
-  templatePath: string,
   associateName: string,
   location: string,
   department: string,
@@ -390,10 +420,11 @@ export async function exportExcelOcc(
   notificationLevel: string
 ): Promise<Blob> {
   try {
+    const templateBlob = await getTemplate("occurrence");
     const response = await api.post(
       "/export-excel-occurrence",
       {
-        templatePath,
+        templateBlob,
         associateName,
         location,
         department,
@@ -415,7 +446,6 @@ export async function exportExcelOcc(
 
 // Excel export for Corrective Actions (CA)
 export async function exportExcelCA(
-  templatePath: string,
   associateName: string,
   location: string,
   department: string,
@@ -424,10 +454,11 @@ export async function exportExcelCA(
   notificationLevel: string
 ): Promise<Blob> {
   try {
+    const tempalteBlob = await getTemplate("ca");
     const response = await api.post(
       "/export-excel-ca",
       {
-        templatePath,
+        tempalteBlob,
         associateName,
         location,
         department,

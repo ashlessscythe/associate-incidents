@@ -129,6 +129,22 @@ node seed.mjs
 
 This will populate your database with the sample associates, notification levels, rules, and occurrence types, giving you a starting point to work with the system.
 
+## 📊 Excel Exports
+
+The system now supports exporting data to Excel files using customizable templates. These templates are stored using UploadThing, a file hosting service.
+Setting Up Excel Templates
+
+Create your Excel templates for occurrences and corrective actions.
+Upload these templates to UploadThing.
+Add the file keys to your .env file:
+
+```
+CA_TEMPLATE_KEY=your_ca_template_file_key
+OCC_TEMPLATE_KEY=your_occurrence_template_file_key
+```
+
+The system will automatically fetch these templates when generating Excel reports, ensuring that you're always using the latest version of your templates without needing to update the application code.
+
 ## 🖥️ Usage
 
 After starting the development server, open your browser and navigate to `http://localhost:3000` (or the port specified in your console output).

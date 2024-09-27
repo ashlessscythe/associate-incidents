@@ -2,10 +2,14 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
-import path from "path";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
 import XlsxPopulate from "xlsx-populate";
+import path from "path";
+import fs from "fs/promises";
+import os from "os";
+import axios from "axios";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -97,6 +101,42 @@ const validateApiKey = (req, res, next) => {
 
 // Apply the validateApiKey middleware to all /api routes
 app.use("/zapi", validateApiKey);
+
+// uploadthing stuffs
+import { UTApi } from "uploadthing/server";
+
+const utapi = new UTApi({ token: process.env.UPLOADTHING_SECRET });
+
+app.get("/zapi/get-template/:type", async (req, res) => {
+  const { type } = req.params;
+  const fileKey =
+    type === "ca" ? process.env.CA_TEMPLATE_KEY : process.env.OCC_TEMPLATE_KEY;
+
+  if (!fileKey) {
+    return res.status(400).send("Invalid template type");
+  }
+
+  try {
+    // Get a signed URL for the file
+    const signedUrl = await utapi.getSignedUrl(fileKey);
+
+    // Fetch the file content using the signed URL
+    const response = await fetch(signedUrl);
+    if (!response.ok) throw new Error("Failed to fetch file from UploadThing");
+
+    const fileBuffer = await response.arrayBuffer();
+
+    res.set(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.set("Content-Disposition", `attachment; filename=${type}.xlsx`);
+    res.send(Buffer.from(fileBuffer));
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    res.status(500).send("Error retrieving template file");
+  }
+});
 
 // Associate STUFFS
 
@@ -440,6 +480,60 @@ app.get("/zapi/rules", async (req, res) => {
   }
 });
 
+// get all associates all CA
+app.get("/zapi/ca-by-type-with-info", async (req, res) => {
+  try {
+    const months = parseInt(req.query.months) || 12;
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - months);
+
+    const caDataWithInfo = await prisma.associate.findMany({
+      include: {
+        correctiveActions: {
+          where: {
+            date: {
+              gte: cutoffDate,
+            },
+          },
+          include: {
+            rule: true,
+          },
+        },
+        occurrences: {
+          where: {
+            date: {
+              gte: cutoffDate,
+            },
+          },
+          include: {
+            type: true,
+          },
+        },
+      },
+    });
+
+    const formattedData = caDataWithInfo.map((associate) => ({
+      id: associate.id,
+      name: associate.name,
+      correctiveActions: associate.correctiveActions,
+      info: {
+        id: associate.id,
+        name: associate.name,
+        points: associate.occurrences.reduce(
+          (sum, occ) => sum + occ.type.points,
+          0
+        ),
+        designation: associate.designation,
+      },
+    }));
+
+    res.json(formattedData);
+  } catch (error) {
+    console.error("Error fetching CA by type data with associate info:", error);
+    res.status(500).json({ error: "An error occurred while fetching data" });
+  }
+});
+
 // Get corrective actions for an associate
 app.get("/zapi/corrective-actions/:associateId", async (req, res) => {
   const { associateId } = req.params;
@@ -623,10 +717,29 @@ app.get("/zapi/ca-by-type", async (req, res) => {
   }
 });
 
+// Function to download and save template
+async function getTemplate(fileKey, type) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "excel-templates-"));
+  const filePath = path.join(tempDir, `${type}.xlsx`);
+
+  try {
+    const base_url =
+      process.env.BASE_UPLOAD_URL || "https://example.com/urlnotset";
+    const response = await axios.get(`${base_url}${fileKey}`, {
+      responseType: "arraybuffer",
+    });
+
+    await fs.writeFile(filePath, response.data);
+    return filePath;
+  } catch (error) {
+    console.error(`Error downloading template for ${type}:`, error);
+    throw error;
+  }
+}
+
 app.post("/zapi/export-excel-occurrence", async (req, res) => {
   try {
     const {
-      templatePath,
       associateName,
       location,
       department,
@@ -636,6 +749,10 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
     } = req.body;
 
     // Load the template
+    const templatePath = await getTemplate(
+      process.env.OCC_TEMPLATE_KEY,
+      "occurrence"
+    );
     const workbook = await XlsxPopulate.fromFileAsync(templatePath);
     const sheet = workbook.sheet(0);
 
@@ -683,6 +800,9 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
     // Generate blob
     const excelBuffer = await workbook.outputAsync();
 
+    // Clean up: delete the temporary file
+    await fs.unlink(templatePath);
+
     // Set the appropriate headers for file download
     res.setHeader(
       "Content-Type",
@@ -704,7 +824,6 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
 app.post("/zapi/export-excel-ca", async (req, res) => {
   try {
     const {
-      templatePath,
       associateName,
       location,
       department,
@@ -713,25 +832,13 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
       notificationLevel,
     } = req.body;
 
-    // Check if required fields are missing or empty
-    if (
-      !templatePath ||
-      !associateName ||
-      !correctiveActions ||
-      !correctiveActions.length
-    ) {
+    if (!associateName || !correctiveActions || !correctiveActions.length) {
       throw new Error(
         "Missing required fields or correctiveActions array is empty"
       );
     }
 
-    // Log to help debug
-    console.log(
-      "Received request for Corrective Action export with data:",
-      req.body
-    );
-
-    // Load the Excel template
+    const templatePath = await getTemplate(process.env.CA_TEMPLATE_KEY, "ca");
     const workbook = await XlsxPopulate.fromFileAsync(templatePath);
     const sheet = workbook.sheet(0);
 
@@ -740,9 +847,6 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
     sheet.cell("F7").value(location);
     sheet.cell("H7").value(department);
     sheet.cell("J7").value(date);
-
-    // Log filling basic info
-    console.log("Filled basic associate information");
 
     // Fill in the notification levels based on the provided value
     switch (notificationLevel) {
@@ -761,9 +865,6 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
       default:
         console.log("No notification level provided");
     }
-
-    // Log after filling the notification level
-    console.log("Filled notification level");
 
     // You can set specific appendixes or violations similarly:
     sheet.cell("B13").value("Appendix A"); // Example
@@ -786,11 +887,11 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
       sheet.cell(`G${row}`).value(action.rule[0].description); // Rule Description
     });
 
-    // Log after filling corrective actions
-    console.log("Filled corrective actions entries");
-
     // Generate Excel file buffer
     const excelBuffer = await workbook.outputAsync();
+
+    // Clean up: delete the temporary file
+    await fs.unlink(templatePath);
 
     // Set the appropriate headers for file download
     res.setHeader(

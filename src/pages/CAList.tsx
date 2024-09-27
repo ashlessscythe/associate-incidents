@@ -72,7 +72,6 @@ const CAList: React.FC<CAListProps> = ({
 
   const handleExcelExport = async () => {
     try {
-      const templatePath = "excel/ca.xlsx"; // Adjust this path as needed
       const currentDate = new Date().toISOString().split("T")[0];
 
       // Prepare corrective actions with rule information
@@ -99,7 +98,6 @@ const CAList: React.FC<CAListProps> = ({
       );
 
       const blob = await exportExcelCA(
-        templatePath,
         associate?.name || "N/A",
         "N/A",
         "N/A",
