@@ -16,6 +16,9 @@ import {
   CorrectiveAction,
   Rule,
 } from "../lib/api";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Designation } from "@/hooks/useAssociates";
 
 interface CAByTypeData {
   id: string;
@@ -37,6 +40,9 @@ const ReportsPage: React.FC = () => {
     null
   );
   const [filter, setFilter] = useState<string>("");
+  const [selectedDesignation, setSelectedDesignation] = useState<
+    Designation | "ALL"
+  >("ALL");
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -210,6 +216,24 @@ const ReportsPage: React.FC = () => {
               className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md dark:border-gray-600"
             />
           </div>
+          <RadioGroup
+            value={selectedDesignation}
+            onValueChange={(value) =>
+              setSelectedDesignation(value as Designation | "ALL")
+            }
+            className="flex flex-wrap gap-2 mb-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="ALL" id="all" />
+              <Label htmlFor="all">All</Label>
+            </div>
+            {Object.values(Designation).map((designation) => (
+              <div key={designation} className="flex items-center space-x-2">
+                <RadioGroupItem value={designation} id={designation} />
+                <Label htmlFor={designation}>{designation}</Label>
+              </div>
+            ))}
+          </RadioGroup>
           {error && <p className="text-red-500 mt-2 mb-4">{error}</p>}
         </div>
       </header>
