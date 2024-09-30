@@ -1,4 +1,8 @@
 import axios, { AxiosInstance } from "axios";
+import { generateReactHelpers } from "@uploadthing/react";
+import type { OurFileRouter } from "../uploadthing";
+
+export const { useUploadThing } = generateReactHelpers<OurFileRouter>();
 
 // Updated symbol pool to avoid URL-encoding issues
 const symbols = "!$*_";
@@ -389,18 +393,44 @@ export async function getCAByType(months: number = 12) {
   }
 }
 
-// file stuff for uploadthing
-export const uploadOccurrenceFile = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append("file", file);
+// upload occurrence file
 
+// New function to be used within React components
+export const useUploadOccurrenceFile = () => {
+  const { startUpload } = useUploadThing("fileUploader");
+
+  return async (file: File): Promise<string> => {
+    try {
+      const result = await startUpload([file]);
+      if (result && result[0]) {
+        return result[0].url;
+      } else {
+        throw new Error("Upload failed");
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw error;
+    }
+  };
+};
+
+// Keep this function for compatibility with existing code
+export const uploadOccurrenceFile = async (file: File): Promise<string> => {
   try {
-    const response = await axios.post("/zapi/uploadthing", formData, {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await axios.post("/api/uploadthing", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data.filePath; // Return the uploaded file path
+
+    if (response.data && response.data.url) {
+      return response.data.url;
+    } else {
+      throw new Error("Upload failed");
+    }
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;

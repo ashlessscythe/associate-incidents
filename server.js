@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 
 // Configure CORS
 const corsOptions = {
-  origin: true, // This allows all origins. In production, you might want to be more specific.
+  origin: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -49,9 +49,6 @@ function generateTimeHash() {
   const now = new Date();
   const dateString = now.toISOString().split("T")[0];
   const hour = now.getUTCHours().toString().padStart(2, "0");
-  // removing minute (a bit too agressive)
-  // const minute = now.getUTCMinutes().toString().padStart(2, "0");
-
   const timeString = `${dateString}${hour}`;
 
   // Create hash
@@ -106,40 +103,43 @@ app.use("/zapi", validateApiKey);
 
 // uploadthing stuffs
 import { UTApi } from "uploadthing/server";
-const utapi = new UTApi({ token: process.env.UPLOADTHING_SECRET });
+const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
 const f = createUploadthing();
 
 const uploadRouter = {
-  excelUploader: f({
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
-      maxFileSize: "1MB",
+  fileUploader: f({
+    pdf: {
+      maxFileSize: "4MB",
+      maxFileCount: 4,
+    },
+    "application/vnd.ms-excel": {
+      maxFileSize: "4MB",
       maxFileCount: 1,
     },
-    "application/pdf": {
-      maxFileSize: "2MB",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+      maxFileSize: "4MB",
       maxFileCount: 1,
     },
   }).onUploadComplete((data) => {
     console.log("Upload complete:", data);
     // Extract the file URL or key
-    const fileUrl = data.file.url; // The URL of the uploaded file
-    const fileKey = data.file.key; // The key or unique identifier
+    const fileUrl = data.file.url;
+    const fileKey = data.file.key;
 
     // You can now save this fileUrl or fileKey to your database
-    // TODO: function to handle filedata to db
     console.log(`File URL: ${fileUrl}`);
     console.log(`File Key: ${fileKey}`);
   }),
 };
 
 app.use(
-  "/zapi/uploadthing",
+  "/api/uploadthing",
   createRouteHandler({
     router: uploadRouter,
   })
 );
 
-app.get("/zapi/get-template/:type", async (req, res) => {
+app.get("/api/get-template/:type", async (req, res) => {
   const { type } = req.params;
   const fileKey =
     type === "ca" ? process.env.CA_TEMPLATE_KEY : process.env.OCC_TEMPLATE_KEY;

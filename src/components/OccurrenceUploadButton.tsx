@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { uploadOccurrenceFile } from "@/lib/api";
+import { useUploadOccurrenceFile } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { UploadCloud } from "lucide-react";
 
 interface OccurrenceUploadButtonProps {
-  onUploadComplete: () => void;
+  onUploadComplete: (url: string) => void;
   onUploadError: (error: Error) => void;
 }
 
@@ -14,6 +14,7 @@ const OccurrenceUploadButton: React.FC<OccurrenceUploadButtonProps> = ({
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const uploadFile = useUploadOccurrenceFile();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -25,8 +26,8 @@ const OccurrenceUploadButton: React.FC<OccurrenceUploadButtonProps> = ({
     if (!file) return;
     setUploading(true);
     try {
-      await uploadOccurrenceFile(file);
-      onUploadComplete();
+      const url = await uploadFile(file);
+      onUploadComplete(url);
     } catch (error) {
       console.error("Upload failed", error);
       onUploadError(
