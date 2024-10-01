@@ -410,6 +410,15 @@ const getTemplate = async (type: "ca" | "occurrence"): Promise<Blob | null> => {
   }
 };
 
+export interface ExportOccRecord {
+  id: string;
+  associateId: string;
+  exportedBy: string;
+  exportedAt: Date;
+  location: string;
+  department: string;
+}
+
 // Excel export
 export async function exportExcelOcc(
   associateName: string,
@@ -443,6 +452,40 @@ export async function exportExcelOcc(
     throw error;
   }
 }
+
+export const recordOccExport = async (
+  associateId: string,
+  exportedBy: string,
+  exportedAt: Date,
+  location: string,
+  department: string
+): Promise<ExportOccRecord> => {
+  const response = await api.post("/record-occ-export", {
+    associateId,
+    exportedBy,
+    exportedAt,
+    location,
+    department,
+  });
+
+  if (!response) {
+    throw new Error("Failed to record occ export");
+  }
+
+  return response.data;
+};
+
+export const getExportOccRecords = async (
+  associateId: string
+): Promise<ExportOccRecord[]> => {
+  const response = await api.get(`/export-occ-records/${associateId}`);
+
+  if (!response) {
+    throw new Error("Failed to fetch export occ records");
+  }
+
+  return response.data;
+};
 
 // Excel export for Corrective Actions (CA)
 export async function exportExcelCA(

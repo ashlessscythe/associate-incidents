@@ -796,9 +796,9 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
       .map((occ) => {
         // Format the date as a string (e.g., "2023-09-27")
         const formattedDate = new Date(occ.date).toISOString().split("T")[0];
-        return `${formattedDate} (${occ.type.code})`;
+        return `(${formattedDate}) [${occ.type.code}] - ${occ.type.points} pts`;
       })
-      .join("\n"); // Join with line feed character
+      .join(", "); // Join with line feed character
 
     sheet.cell("A14").value(misconduct);
 
@@ -923,6 +923,43 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
     res
       .status(500)
       .json({ error: "Error generating Corrective Actions Excel file" });
+  }
+});
+
+// export recording
+app.post("/zapi/record-occ-export", async (req, res) => {
+  const { associateId, exportedBy, exportedAt, location, department } =
+    req.body;
+
+  try {
+    const exportRecord = await prisma.exportRecord.create({
+      data: {
+        associateId,
+        exportedBy,
+        exportedAt,
+        location,
+        department,
+      },
+    });
+    res.json(exportRecord);
+  } catch (error) {
+    console.error("Error recording occ export:", error);
+    res.status(500).json({ error: "Failed to record occ export" });
+  }
+});
+
+app.get("/zapi/export-occ-records/:associateId", async (req, res) => {
+  const { associateId } = req.params;
+
+  try {
+    const exportRecords = await prisma.exportRecord.findMany({
+      where: { associateId },
+      orderBy: { exportedAt: "desc" },
+    });
+    res.json(exportRecords);
+  } catch (error) {
+    console.error("Error fetching export occ records:", error);
+    res.status(500).json({ error: "Failed to fetch export occ records" });
   }
 });
 

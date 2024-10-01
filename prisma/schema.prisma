@@ -18,6 +18,17 @@ model Associate {
   currentPoints       Float                 @default(0)
   occurrences         AttendanceOccurrence[]
   correctiveActions   CorrectiveAction[]
+  exportRecords       ExportRecord[]
+}
+
+model ExportRecord {
+  id          String  @id @default(uuid())
+  associateId String
+  associate   Associate @relation(fields: [associateId], references: [id])
+  exportedBy  String
+  exportedAt  DateTime
+  location    String
+  department  String
 }
 
 model OccurrenceType {

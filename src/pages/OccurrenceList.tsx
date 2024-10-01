@@ -23,7 +23,10 @@ import {
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
+  ExportOccRecord,
   exportExcelOcc,
+  getExportOccRecords,
+  recordOccExport,
 } from "@/lib/api";
 import {
   Dialog,
@@ -77,6 +80,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
     null
   );
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportLocation, setExportLocation] = useState("");
+  const [exportDepartment, setExportDepartment] = useState("");
+  const [exportRecords, setExportRecords] = useState<ExportOccRecord[]>([]);
+
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
@@ -203,13 +211,32 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
+  useEffect(() => {
+    if (associateInfo.id) {
+      fetchExportRecords();
+    }
+  }, [associateInfo.id]);
+
   const handleExcelExport = async () => {
+    setIsExportModalOpen(true);
+  };
+
+  const fetchExportRecords = async () => {
+    try {
+      const records = await getExportOccRecords(associateInfo.id);
+      setExportRecords(records);
+    } catch (error) {
+      console.error("Error fetching export records:", error);
+    }
+  };
+
+  const executeExcelExport = async () => {
     try {
       const currentDate = new Date().toISOString().split("T")[0];
       const blob = await exportExcelOcc(
         associateInfo.name,
-        "N/A",
-        "N/A",
+        exportLocation,
+        exportDepartment,
         currentDate,
         filteredOccurrences,
         notificationLevel
@@ -222,6 +249,25 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+
+      // get logged in user if exists
+      const exportedBy =
+        `${user?.given_name} ${user?.family_name}` || "no name";
+      const exportedAt = new Date();
+
+      // record the export
+      await recordOccExport(
+        associateInfo.id,
+        exportedBy,
+        exportedAt,
+        exportLocation,
+        exportDepartment
+      );
+
+      // Refresh export records
+      await fetchExportRecords();
+
+      setIsExportModalOpen(false);
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       alert("An error occurred while exporting to Excel. Please try again.");
@@ -249,6 +295,15 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Designation: {designation}
               </p>
+              {exportRecords.length > 0 && (
+                <div className="font-semibold text-gray-800 dark:text-gray-200">
+                  <p>
+                    Last exported on:{" "}
+                    {new Date(exportRecords[0].exportedAt).toLocaleDateString()}
+                  </p>
+                  {/* <p>by: {exportRecords[0].exportedBy}</p> */}
+                </div>
+              )}
             </div>
           </div>
 
@@ -402,6 +457,42 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           </p>
         )}
       </div>
+
+      {/* Export Modal */}
+      <Dialog open={isExportModalOpen} onOpenChange={setIsExportModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export to Excel</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="location" className="text-right">
+                Location
+              </Label>
+              <Input
+                id="location"
+                value={exportLocation}
+                onChange={(e) => setExportLocation(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="department" className="text-right">
+                Department
+              </Label>
+              <Input
+                id="department"
+                value={exportDepartment}
+                onChange={(e) => setExportDepartment(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={executeExcelExport}>Export</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {editingOccurrence && (
         <Dialog
