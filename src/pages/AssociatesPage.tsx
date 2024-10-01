@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import AssociateSelect from "@/components/AssociateSelect";
 import AssociatesTable from "@/components/AssociatesTable";
-import NewAssociateModal from "@/components/NewAssociateModal";
+import NewAssociateModal from "@/components/modals/NewAssociateModal";
 import {
   addAssociate,
   deleteAssociate,

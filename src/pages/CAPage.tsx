@@ -13,7 +13,7 @@ import {
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "../components/form/CAForm";
 import CAList from "../components/list/CAList";
-import CAEditModal from "@/components/CAEditModal";
+import CAEditModal from "@/components/modals/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
@@ -179,7 +179,6 @@ function CAPage() {
             rules={rules}
             onDeleteCA={handleDeleteCA}
             onEditCA={handleEditCA}
-            isReadOnly={false}
           />
         </div>
       </div>

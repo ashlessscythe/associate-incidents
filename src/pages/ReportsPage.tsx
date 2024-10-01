@@ -8,8 +8,8 @@ import {
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import OccurrenceByTypeRow from "@/components/OccurrenceByTypeRow";
-import CAByTypeRow from "@/components/CAByTypeRow";
+import OccurrenceByTypeRow from "@/components/list/OccurrenceByTypeRow";
+import CAByTypeRow from "@/components/list/CAByTypeRow";
 import {
   AssociateInfo,
   OccurrenceType,

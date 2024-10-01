@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CAList from "@/components/list/CAList";
-import { CorrectiveAction, Rule } from "../lib/api";
+import { CorrectiveAction, Rule } from "../../lib/api";
 
 interface CAByTypeRowProps {
   associate: {
@@ -81,7 +81,6 @@ const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
             rules={rules}
             onDeleteCA={onDeleteCA}
             onEditCA={onEditCA}
-            isReadOnly={true}
           />
         </div>
       )}

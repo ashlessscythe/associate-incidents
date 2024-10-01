@@ -9,7 +9,7 @@ import {
   AuthorizerProvider,
   useAuthorizer,
 } from "@authorizerdev/authorizer-react";
-import LoginModal from "@/components/LoginModal";
+import LoginModal from "@/components/modals/LoginModal";
 import OccurencePage from "./pages/OccurrencePage";
 import CAPage from "./pages/CAPage";
 import Header from "@/components/Header";

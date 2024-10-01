@@ -846,14 +846,12 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
       location,
       department,
       date,
-      correctiveActions,
+      correctiveAction,
       notificationLevel,
     } = req.body;
 
-    if (!associateName || !correctiveActions || !correctiveActions.length) {
-      throw new Error(
-        "Missing required fields or correctiveActions array is empty"
-      );
+    if (!associateName || !correctiveAction) {
+      throw new Error("Missing required fields");
     }
 
     const templatePath = await getTemplate(process.env.CA_TEMPLATE_KEY, "ca");
@@ -866,52 +864,35 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
     sheet.cell("H7").value(department);
     sheet.cell("J7").value(date);
 
-    // Fill in the notification levels based on the provided value
-    switch (notificationLevel) {
-      case "1st Documented Verbal":
-        sheet.cell("B10").value("X"); // Mark the point for 1st Documented Verbal
-        break;
-      case "2nd Written Notice":
-        sheet.cell("E10").value("X"); // Mark the point for 2nd Written Notice
-        break;
-      case "3rd Final Written Notice":
-        sheet.cell("H10").value("X"); // Mark the point for 3rd Final Written Notice
-        break;
-      case "Termination":
-        sheet.cell("B11").value("X"); // Mark the point for Termination
-        break;
-      default:
-        console.log("No notification level provided");
-    }
+    // Define the levels and their corresponding cells
+    const levels = [
+      { text: "Coaching Conversation", cell: "B10" },
+      { text: "1st Documented Verbal Warning", cell: "E10" },
+      { text: "2nd Written Warning", cell: "H10" },
+      { text: "3rd Final Written Warning", cell: "B11" },
+      { text: "4th Termination", cell: "E11" },
+    ];
 
-    // You can set specific appendixes or violations similarly:
-    sheet.cell("B13").value("Appendix A"); // Example
-    sheet.cell("B14").value("Appendix B");
-    sheet.cell("B15").value("CBA Violation - Article 9");
+    // Extract the level number from the notificationLevel string
+    const currentLevel = parseInt(notificationLevel.split(" - ")[0]);
 
-    // Fill in the corrective action descriptions (misconduct)
-    const descriptions = correctiveActions
-      .map((action) => {
-        // Format the date as a string (e.g., "2023-09-27")
-        const formattedDate = new Date(action.date).toISOString().split("T")[0];
-        return `${formattedDate} (${action.rule[0].code})`;
-      })
-      .join("\n"); // Join with line feed character
+    // Fill in the notification level
+    levels.forEach((level, index) => {
+      const cellValue =
+        index === currentLevel ? `(X) ${level.text}` : `( ) ${level.text}`;
+      sheet.cell(level.cell).value(cellValue);
+    });
+
+    // Fill in the corrective action description
+    const formattedDate = new Date(correctiveAction.date)
+      .toISOString()
+      .split("T")[0];
+    const description = `${formattedDate} (${correctiveAction.rule.code}) ${correctiveAction.rule.description}\n\n${correctiveAction.description}`;
 
     const cell = sheet.cell("A17");
-    cell.value(descriptions);
+    cell.value(description);
     cell.style("wrapText", true);
     cell.style("verticalAlignment", "top");
-
-    // Fill in the corrective actions entries
-    // correctiveActions.slice(0, 3).forEach((action, index) => {
-    //   const row = 28 + index; // Row 28 for the first entry, row 29 for the second, etc.
-    //   sheet
-    //     .cell(`B${row}`)
-    //     .value(new Date(action.date).toISOString().split("T")[0]); // Date
-    //   sheet.cell(`D${row}`).value(action.rule[0].code); // Type (Rule Code)
-    //   sheet.cell(`G${row}`).value(action.rule[0].description); // Rule Description
-    // });
 
     // Generate Excel file buffer
     const excelBuffer = await workbook.outputAsync();
@@ -926,16 +907,16 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${associateName}_corrective_actions.xlsx`
+      `attachment; filename=${associateName}_corrective_action.xlsx`
     );
 
     // Send the Excel file
     res.send(Buffer.from(excelBuffer));
   } catch (error) {
-    console.error("Error generating Corrective Actions Excel file:", error);
+    console.error("Error generating Corrective Action Excel file:", error);
     res
       .status(500)
-      .json({ error: "Error generating Corrective Actions Excel file" });
+      .json({ error: "Error generating Corrective Action Excel file" });
   }
 });
 
