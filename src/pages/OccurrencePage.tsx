@@ -10,8 +10,8 @@ import {
 } from "@/lib/api";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
-import OccurrenceForm from "@/pages/OccurrenceForm";
-import OccurrenceList from "@/pages/OccurrenceList";
+import OccurrenceForm from "@/components/form/OccurrenceForm";
+import OccurrenceList from "@/components/list/OccurrenceList";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 function OccurrencePage() {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import OccurrenceList from "@/pages/OccurrenceList";
+import OccurrenceList from "@/components/list/OccurrenceList";
 import { AssociateInfo, Occurrence, OccurrenceType } from "@/lib/api";
 
 interface OccurrenceByTypeRowProps {

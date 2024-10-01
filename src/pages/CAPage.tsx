@@ -11,8 +11,8 @@ import {
   getAssociateById,
 } from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
-import CAForm from "./CAForm";
-import CAList from "./CAList";
+import CAForm from "../components/form/CAForm";
+import CAList from "../components/list/CAList";
 import CAEditModal from "@/components/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";

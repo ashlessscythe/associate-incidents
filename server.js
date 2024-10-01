@@ -791,16 +791,29 @@ app.post("/zapi/export-excel-occurrence", async (req, res) => {
         break;
     }
 
+    // calculate total points
+    const totalPoints = occurrences.reduce(
+      (sum, occ) => sum + occ.type.points,
+      0
+    );
+
+    // blurb
+    const blurb = `Associate ${associateName} has below occurrences. Total points: ${totalPoints} \n\n`;
+
     // Fill in the misconduct description
     const misconduct = occurrences
       .map((occ) => {
         // Format the date as a string (e.g., "2023-09-27")
         const formattedDate = new Date(occ.date).toISOString().split("T")[0];
-        return `(${formattedDate}) [${occ.type.code}] - ${occ.type.points} pts`;
+        return `${formattedDate} ${occ.type.code} - ${occ.type.points} pts`;
       })
       .join(", "); // Join with line feed character
 
-    sheet.cell("A14").value(misconduct);
+    // combine above
+    const fullMisconductText = blurb + misconduct;
+
+    // fill in cell
+    sheet.cell("A14").value(fullMisconductText);
 
     // Generate blob
     const excelBuffer = await workbook.outputAsync();

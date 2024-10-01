@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import CAList from "@/pages/CAList";
+import CAList from "@/components/list/CAList";
 import { CorrectiveAction, Rule } from "../lib/api";
 
 interface CAByTypeRowProps {
