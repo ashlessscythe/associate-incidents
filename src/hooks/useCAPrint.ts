@@ -91,7 +91,7 @@ export const useCAPrint = () => {
               <thead>
                 <tr>
                   <th>Rule Code</th>
-                  <th>Description</th>
+                  <th>Type</th>
                   <th>Date</th>
                   <th>Level</th>
                   <th>Notes</th>
@@ -102,8 +102,8 @@ export const useCAPrint = () => {
                   .map(
                     (action) => `
                   <tr>
-                    <td>${action.rule}</td>
-                    <td>${action.description}</td>
+                    <td>${action.rule.code}</td>
+                    <td>${action.rule.type}</td>
                     <td>${
                       new Date(action.date).toISOString().split("T")[0]
                     }</td>

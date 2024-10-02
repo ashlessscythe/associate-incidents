@@ -404,6 +404,8 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
             type: true,
           },
         },
+        department: true,
+        location: true,
       },
     });
 
@@ -439,6 +441,8 @@ app.get("/zapi/associates/:id/points-and-notification", async (req, res) => {
       points: totalPoints,
       notificationLevel: notificationLevel,
       designation: associate.designation,
+      location: associate.location,
+      department: associate.department,
     });
   } catch (error) {
     console.error("Error calculating points:", error);

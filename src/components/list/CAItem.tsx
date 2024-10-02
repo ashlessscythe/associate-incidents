@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { CorrectiveAction, Rule, exportExcelCA } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Printer, FileSpreadsheet, Edit2, Trash2 } from "lucide-react";
+import { FileSpreadsheet, Edit2, Trash2 } from "lucide-react";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import ExportCADetailsModal from "../modals/ExportCADetailsModal";
 
@@ -12,6 +12,8 @@ interface CAItemProps {
   onDeleteCA: (id: string) => Promise<void>;
   associateName: string;
   level: number;
+  associateLocation?: string;
+  associateDepartment?: string;
 }
 
 const CAItem: React.FC<CAItemProps> = ({
@@ -21,6 +23,8 @@ const CAItem: React.FC<CAItemProps> = ({
   onDeleteCA,
   associateName,
   level,
+  associateLocation,
+  associateDepartment,
 }) => {
   const { user } = useAuthorizer();
   const hasEditorRole =
@@ -51,12 +55,12 @@ const CAItem: React.FC<CAItemProps> = ({
     }
   };
 
-  const handlePrint = () => {
-    // Implement print functionality here
-    window.print();
-  };
-
-  const handleExport = async (location: string, department: string) => {
+  const handleExport = async (
+    selectedLocation: string,
+    selectedDepartment: string
+  ) => {
+    const location = associateLocation || selectedLocation;
+    const department = associateDepartment || selectedDepartment;
     try {
       const blob = await exportExcelCA(
         associateName,
@@ -80,6 +84,14 @@ const CAItem: React.FC<CAItemProps> = ({
     }
   };
 
+  const handleExportClick = () => {
+    if (associateLocation && associateDepartment) {
+      handleExport(associateLocation, associateDepartment);
+    } else {
+      setIsExportModalOpen(true);
+    }
+  };
+
   return (
     <li className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
       <div className="flex justify-between items-start">
@@ -90,15 +102,6 @@ const CAItem: React.FC<CAItemProps> = ({
           <p>Description: {ca.description}</p>
         </div>
         <div className="flex space-x-2">
-          <Button
-            onClick={handlePrint}
-            className="text-blue-500 hover:text-blue-700"
-            variant="ghost"
-            size="icon"
-            aria-label="Print corrective action"
-          >
-            <Printer size={20} />
-          </Button>
           <Button
             onClick={() => setIsExportModalOpen(true)}
             className="text-green-500 hover:text-green-700"
@@ -132,7 +135,9 @@ const CAItem: React.FC<CAItemProps> = ({
       <ExportCADetailsModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        onExport={handleExport}
+        onExport={handleExportClick}
+        initialDepartment={associateDepartment}
+        initialLocation={associateLocation}
       />
     </li>
   );

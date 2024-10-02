@@ -8,7 +8,6 @@ import {
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
-  getAssociateById,
 } from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "../components/form/CAForm";
@@ -19,8 +18,12 @@ import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 
 function CAPage() {
   const { user } = useAuthorizer();
-  const { loading: associatesLoading, error: associatesError } =
-    useAssociatesWithDesignation();
+  const {
+    associatesWithDesignation,
+    fetchAssociatesWithDesignation,
+    loading: associatesLoading,
+    error: associatesError,
+  } = useAssociatesWithDesignation();
   const [rules, setRules] = useState<Rule[]>([]);
   const [correctiveActions, setCorrectiveActions] = useState<
     CorrectiveAction[]
@@ -37,6 +40,26 @@ function CAPage() {
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [rulesData] = await Promise.all([
+          getRules(),
+          fetchAssociatesWithDesignation(),
+        ]);
+        setRules(rulesData);
+      } catch (err: unknown) {
+        setError(
+          err instanceof Error ? err.message : "An unknown error occurred"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [fetchAssociatesWithDesignation]);
 
   useEffect(() => {
     const fetchRules = async () => {
@@ -96,8 +119,10 @@ function CAPage() {
   const handleAssociateSelect = async (associateId: string | null) => {
     setSelectedAssociateId(associateId);
     if (associateId) {
-      const associate = await getAssociateById(associateId);
-      setSelectedAssociate(associate);
+      const selectedAssociate = associatesWithDesignation.find(
+        (a) => a.id === associateId
+      );
+      setSelectedAssociate(selectedAssociate || null);
     } else {
       setSelectedAssociate(null);
     }

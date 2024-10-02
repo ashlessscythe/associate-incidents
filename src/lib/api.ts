@@ -123,6 +123,7 @@ export interface Associate {
   correctiveAction?: CorrectiveAction[];
   occurrences?: Occurrence[];
   department?: Department;
+  location?: Location;
 }
 
 export interface OccurrenceType {
@@ -256,6 +257,7 @@ export interface AssociateInfo {
   notificationLevel: string;
   designation: string;
   department?: Department;
+  location?: Location;
 }
 
 export interface AssociateAndDesignation {
@@ -334,7 +336,7 @@ export type CorrectiveAction = {
   id: string;
   associateId: string;
   ruleId: string;
-  rule: Rule[];
+  rule: Rule;
   level: number;
   description: string;
   date: Date;

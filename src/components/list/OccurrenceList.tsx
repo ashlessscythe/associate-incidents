@@ -23,9 +23,7 @@ import {
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
-  ExportOccRecord,
   exportExcelOcc,
-  getExportOccRecords,
   recordOccExport,
   getLocations,
   getDepartments,
@@ -87,12 +85,16 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportLocation, setExportLocation] = useState("");
   const [exportDepartment, setExportDepartment] = useState("");
-  const [exportRecords, setExportRecords] = useState<ExportOccRecord[]>([]);
 
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [associateLocation, setAssociateLocation] = useState<Location | null>(
+    null
+  );
+  const [associateDepartment, setAssociateDepartment] =
+    useState<Department | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
 
@@ -164,11 +166,22 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     const fetchPointsAndNotification = async () => {
       if (associateInfo.id) {
         try {
-          const { points, notificationLevel, designation } =
-            await getAssociatePointsAndNotification(associateInfo.id);
+          const {
+            points,
+            notificationLevel,
+            designation,
+            location,
+            department,
+          } = await getAssociatePointsAndNotification(associateInfo.id);
           setTotalPoints(points);
           setNotificationLevel(notificationLevel);
           setDesignation(designation);
+          if (location) {
+            setAssociateLocation(location);
+          }
+          if (department) {
+            setAssociateDepartment(department);
+          }
         } catch (e) {
           console.error("Error fetching associate points and notification:", e);
         }
@@ -234,32 +247,24 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return <ArrowUpDown className="ml-2 h-4 w-4" />;
   };
 
-  useEffect(() => {
-    if (associateInfo.id) {
-      fetchExportRecords();
-    }
-  }, [associateInfo.id]);
-
   const handleExcelExport = async () => {
-    setIsExportModalOpen(true);
-  };
-
-  const fetchExportRecords = async () => {
-    try {
-      const records = await getExportOccRecords(associateInfo.id);
-      setExportRecords(records);
-    } catch (error) {
-      console.error("Error fetching export records:", error);
+    if (!associateInfo.department || !associateInfo.location) {
+      setIsExportModalOpen(true);
+    } else {
+      await executeExcelExport(
+        associateInfo.department.name,
+        associateInfo.location.name
+      );
     }
   };
 
-  const executeExcelExport = async () => {
+  const executeExcelExport = async (department: string, location: string) => {
     try {
       const currentDate = new Date().toISOString().split("T")[0];
       const blob = await exportExcelOcc(
         associateInfo.name,
-        exportLocation,
-        exportDepartment,
+        location,
+        department,
         currentDate,
         filteredOccurrences,
         notificationLevel
@@ -283,12 +288,9 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         associateInfo.id,
         exportedBy,
         exportedAt,
-        exportLocation,
-        exportDepartment
+        location,
+        department
       );
-
-      // Refresh export records
-      await fetchExportRecords();
 
       setIsExportModalOpen(false);
     } catch (error) {
@@ -318,15 +320,12 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Designation: {designation}
               </p>
-              {exportRecords.length > 0 && (
-                <div className="font-semibold text-gray-800 dark:text-gray-200">
-                  <p>
-                    Last exported on:{" "}
-                    {new Date(exportRecords[0].exportedAt).toLocaleDateString()}
-                  </p>
-                  {/* <p>by: {exportRecords[0].exportedBy}</p> */}
-                </div>
-              )}
+              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                Location: {associateLocation?.name}
+              </p>
+              <p className="font-semibold text-gray-800 dark:text-gray-200">
+                Department: {associateDepartment?.name}
+              </p>
             </div>
           </div>
 
@@ -527,7 +526,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={executeExcelExport}>Export</Button>
+            <Button onClick={handleExcelExport}>Export</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

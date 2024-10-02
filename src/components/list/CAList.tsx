@@ -1,6 +1,9 @@
 import React from "react";
 import { Associate, CorrectiveAction, Rule } from "@/lib/api";
+import { Printer } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import CAItem from "./CAItem";
+import { useCAPrint } from "@/hooks/useCAPrint";
 
 interface CAListProps {
   associate: Associate | null;
@@ -30,6 +33,8 @@ const CAList: React.FC<CAListProps> = ({
     return acc;
   }, {} as Record<string, CorrectiveAction[]>);
 
+  const handlePrint = useCAPrint();
+
   // Sort groups by date of the most recent CA
   const sortedGroups = Object.entries(groupedCAs).sort((a, b) => {
     const latestDateA = new Date(
@@ -44,9 +49,35 @@ const CAList: React.FC<CAListProps> = ({
   return (
     <div>
       <h2 className="text-xl font-semibold mb-2">Corrective Actions</h2>
-      <p className="mb-4 font-medium">
-        Total Corrective Actions: {correctiveActions.length}
-      </p>
+      {/* New Summary Section */}
+      <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4">
+        <h3 className="text-lg font-semibold mb-2">Associate Summary</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <p>
+            <strong>Name:</strong> {associate?.name || "N/A"}
+          </p>
+          <p>
+            <strong>Department:</strong> {associate?.department?.name || "N/A"}
+          </p>
+          <p>
+            <strong>Location:</strong> {associate?.location?.name || "N/A"}
+          </p>
+        </div>
+      </div>
+      <div className="flex justify-between items-center mb-4">
+        <p className="mb-4 font-medium">
+          Total Corrective Actions: {correctiveActions.length}
+          <Button
+            onClick={() => handlePrint({ associate, correctiveActions })}
+            className="text-blue-500 hover:text-blue-700"
+            variant="ghost"
+            size="icon"
+            aria-label="Print corrective action"
+          >
+            <Printer size={20} />
+          </Button>
+        </p>
+      </div>
       {sortedGroups.length === 0 ? (
         <p>No corrective actions found.</p>
       ) : (
@@ -70,6 +101,8 @@ const CAList: React.FC<CAListProps> = ({
                       onDeleteCA={onDeleteCA}
                       associateName={associate?.name || "Unknown"}
                       level={ca.level}
+                      associateLocation={associate?.location?.name}
+                      associateDepartment={associate?.department?.name}
                     />
                   ))}
               </ul>
