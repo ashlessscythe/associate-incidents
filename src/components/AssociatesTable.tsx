@@ -23,6 +23,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface AssociatesTableProps {
   associates: AssociateAndDesignation[];
@@ -45,6 +53,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   onEdit,
 }) => {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [editingAssociate, setEditingAssociate] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDepartmentId, setEditDepartmentId] = useState("");
@@ -71,6 +80,20 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
     };
     fetchData();
   }, []);
+
+  const handleDeleteClick = (id: string) => {
+    setConfirmingDelete(id);
+  };
+
+  const handleConfirmDelete = async (id: string) => {
+    try {
+      await onDelete(id);
+      setConfirmingDelete(null);
+    } catch (error) {
+      console.error("Failed to delete associate:", error);
+      setErrorMessage("Failed to delete associate. Please try again.");
+    }
+  };
 
   const handleEditClick = (associate: AssociateAndDesignation) => {
     setEditingAssociate(associate.id);
@@ -259,7 +282,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                   <div>
                     <span className="mr-2">Are you sure?</span>
                     <button
-                      onClick={() => onDelete(associate.id)}
+                      onClick={() => handleConfirmDelete(associate.id)}
                       className="text-red-500 hover:text-red-700 mr-2"
                     >
                       Yes
@@ -289,7 +312,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                       </button>
                     )}
                     <button
-                      onClick={() => onDelete(associate.id)}
+                      onClick={() => handleDeleteClick(associate.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-5 w-5 inline" />
@@ -301,6 +324,19 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
           ))}
         </TableBody>
       </Table>
+
+      {/* Dialog */}
+      <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error</DialogTitle>
+          </DialogHeader>
+          <p>{errorMessage}</p>
+          <DialogFooter>
+            <Button onClick={() => setErrorMessage(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
