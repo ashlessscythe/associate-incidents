@@ -8,7 +8,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Trash2, Pencil, ChevronUp, ChevronDown } from "lucide-react";
-import { AssociateAndDesignation, Department, getDepartments } from "@/lib/api";
+import {
+  AssociateAndDesignation,
+  Department,
+  getDepartments,
+  Location,
+  getLocations,
+} from "@/lib/api";
 import {
   Select,
   SelectContent,
@@ -25,11 +31,12 @@ interface AssociatesTableProps {
     id: string,
     name: string,
     departmentId: string,
-    designation: string
+    designation: string,
+    location: string
   ) => void;
 }
 
-type SortKey = "name" | "department" | "designation";
+type SortKey = "name" | "department" | "designation" | "location";
 type SortOrder = "asc" | "desc";
 
 const AssociatesTable: React.FC<AssociatesTableProps> = ({
@@ -42,41 +49,39 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   const [editName, setEditName] = useState("");
   const [editDepartmentId, setEditDepartmentId] = useState("");
   const [editDesignation, setEditDesignation] = useState("");
+  const [editLocation, setEditLocation] = useState("");
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchData = async () => {
       try {
-        const fetchedDepartments = await getDepartments();
+        const [fetchedDepartments, fetchedLocations] = await Promise.all([
+          getDepartments(),
+          getLocations(),
+        ]);
         setDepartments(fetchedDepartments);
+        setLocations(fetchedLocations);
       } catch (error) {
-        console.error("Error fetching departments:", error);
+        console.error("Error fetching data:", error);
       }
     };
-    fetchDepartments();
+    fetchData();
   }, []);
-
-  const handleDeleteClick = (id: string) => {
-    if (confirmingDelete === id) {
-      onDelete(id);
-      setConfirmingDelete(null);
-    } else {
-      setConfirmingDelete(id);
-    }
-  };
 
   const handleEditClick = (associate: AssociateAndDesignation) => {
     setEditingAssociate(associate.id);
     setEditName(associate.name);
     setEditDepartmentId(associate.department?.id || "");
     setEditDesignation(associate.designation || "");
+    setEditLocation(associate.location?.id || "");
   };
 
   const handleSaveEdit = (id: string) => {
-    onEdit(id, editName, editDepartmentId, editDesignation);
+    onEdit(id, editName, editDepartmentId, editDesignation, editLocation);
     setEditingAssociate(null);
   };
 
@@ -97,7 +102,12 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
           associate.department?.name
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          associate.designation.toLowerCase().includes(searchTerm.toLowerCase())
+          associate.designation
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (associate.location?.name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
         if (sortKey === "name") {
@@ -110,10 +120,14 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
             : (b.department?.name || "").localeCompare(
                 a.department?.name || ""
               );
-        } else {
+        } else if (sortKey === "designation") {
           return sortOrder === "asc"
             ? a.designation.localeCompare(b.designation)
             : b.designation.localeCompare(a.designation);
+        } else {
+          return sortOrder === "asc"
+            ? (a.location?.name || "").localeCompare(b.location?.name || "")
+            : (b.location?.name || "").localeCompare(a.location?.name || "");
         }
       });
   }, [associates, searchTerm, sortKey, sortOrder]);
@@ -156,6 +170,12 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
               onClick={() => handleSort("designation")}
             >
               Designation <SortIcon columnKey="designation" />
+            </TableHead>
+            <TableHead
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+              onClick={() => handleSort("location")}
+            >
+              Location <SortIcon columnKey="location" />
             </TableHead>
             <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Actions
@@ -214,11 +234,32 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                 )}
               </TableCell>
               <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+                {editingAssociate === associate.id ? (
+                  <Select
+                    value={editLocation}
+                    onValueChange={(value) => setEditLocation(value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select a location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.id}>
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  associate.location?.name
+                )}
+              </TableCell>
+              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                 {confirmingDelete === associate.id ? (
                   <div>
                     <span className="mr-2">Are you sure?</span>
                     <button
-                      onClick={() => handleDeleteClick(associate.id)}
+                      onClick={() => onDelete(associate.id)}
                       className="text-red-500 hover:text-red-700 mr-2"
                     >
                       Yes
@@ -248,7 +289,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                       </button>
                     )}
                     <button
-                      onClick={() => handleDeleteClick(associate.id)}
+                      onClick={() => onDelete(associate.id)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-5 w-5 inline" />

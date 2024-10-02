@@ -168,12 +168,14 @@ export const updateAssociate = async (
   id: string,
   name: string,
   departmentId: string,
-  designation: string
+  designation: string,
+  locationId: string
 ): Promise<AssociateAndDesignation> => {
   const res = await api.put<AssociateAndDesignation>(`/associates/${id}`, {
     name,
     departmentId,
     designation,
+    locationId,
   });
   return res.data;
 };
@@ -261,6 +263,7 @@ export interface AssociateAndDesignation {
   name: string;
   designation: string;
   department?: Department;
+  location?: Location;
 }
 
 export interface AssociateAndOccurrences {

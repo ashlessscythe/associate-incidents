@@ -218,7 +218,16 @@ app.post("/zapi/associates", async (req, res) => {
 app.put("/zapi/associates/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, departmentId, designation } = req.body;
+    const { name, departmentId, designation, locationId } = req.body;
+
+    // Validate that the location exists
+    const locationExists = await prisma.location.findUnique({
+      where: { id: locationId },
+    });
+
+    if (!locationExists) {
+      return res.status(400).json({ error: "Invalid location ID" });
+    }
 
     // Validate that the department exists
     const departmentExists = await prisma.department.findUnique({
@@ -235,9 +244,11 @@ app.put("/zapi/associates/:id", async (req, res) => {
         name,
         departmentId,
         designation,
+        locationId,
       },
       include: {
         department: true,
+        location: true,
       },
     });
 
@@ -442,7 +453,13 @@ app.get("/zapi/associates-with-designation", async (req, res) => {
   try {
     // Fetch all associates
     const associates = await prisma.associate.findMany({
-      select: { id: true, name: true, designation: true, department: true },
+      select: {
+        id: true,
+        name: true,
+        designation: true,
+        department: true,
+        location: true,
+      },
     });
 
     // Map the result to return only the necessary fields
@@ -451,6 +468,7 @@ app.get("/zapi/associates-with-designation", async (req, res) => {
       name: associate.name,
       designation: associate.designation, // This should directly return the enum value
       department: associate.department,
+      location: associate.location,
     }));
 
     // Send the response

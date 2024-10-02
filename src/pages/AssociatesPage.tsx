@@ -46,10 +46,11 @@ const AssociatesPage: React.FC = () => {
     id: string,
     name: string,
     departmentId: string,
-    designation: string
+    designation: string,
+    location: string
   ) => {
     try {
-      await updateAssociate(id, name, departmentId, designation);
+      await updateAssociate(id, name, departmentId, designation, location);
       await fetchAssociatesWithDesignation();
       toast.success("Associate updated successfully");
     } catch (error) {
