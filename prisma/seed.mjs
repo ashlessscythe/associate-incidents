@@ -3,7 +3,13 @@ import csv from "csv-parser";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { rules, occurrenceTypes, notificationLevels } from "./definitions.js";
+import {
+  locations,
+  departments,
+  rules,
+  occurrenceTypes,
+  notificationLevels,
+} from "./definitions.js";
 import { faker } from "@faker-js/faker";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +26,28 @@ async function clearData() {
   await prisma.notificationLevel.deleteMany();
   await prisma.occurrenceType.deleteMany();
   console.log("All data cleared.");
+}
+
+async function upsertLocations() {
+  for (const location of locations) {
+    await prisma.location.upsert({
+      where: { name: location },
+      update: {},
+      create: { name: location },
+    });
+  }
+  console.log("Locations upserted successfully.");
+}
+
+async function upsertDepartments() {
+  for (const department of departments) {
+    await prisma.department.upsert({
+      where: { name: department },
+      update: {},
+      create: { name: department },
+    });
+  }
+  console.log("Departments upserted successfully.");
 }
 
 async function upsertOccurrenceTypes() {
@@ -101,6 +129,12 @@ function generateFakeAssociates(count) {
       currentPoints: 0,
       ssoid: faker.string.alphanumeric(8),
       designation: faker.helpers.arrayElement(designations),
+      locationName: faker.datatype.boolean()
+        ? faker.helpers.arrayElement(locations)
+        : null,
+      departmentName: faker.datatype.boolean()
+        ? faker.helpers.arrayElement(departments)
+        : null,
     });
   }
 
@@ -109,6 +143,23 @@ function generateFakeAssociates(count) {
 
 async function upsertAssociates(associates) {
   for (const associate of associates) {
+    let locationId = null;
+    let departmentId = null;
+
+    if (associate.locationName) {
+      const location = await prisma.location.findUnique({
+        where: { name: associate.locationName },
+      });
+      locationId = location ? location.id : null;
+    }
+
+    if (associate.departmentName) {
+      const department = await prisma.department.findUnique({
+        where: { name: associate.departmentName },
+      });
+      departmentId = department ? department.id : null;
+    }
+
     await prisma.associate.upsert({
       where: {
         name: associate.name,
@@ -116,12 +167,16 @@ async function upsertAssociates(associates) {
       update: {
         ssoid: associate.ssoid || undefined,
         designation: associate.designation || undefined,
+        locationId: locationId,
+        departmentId: departmentId,
       },
       create: {
         name: associate.name,
         currentPoints: associate.currentPoints || 0,
         ssoid: associate.ssoid || null,
         designation: associate.designation || "NONE",
+        locationId: locationId,
+        departmentId: departmentId,
       },
     });
   }
@@ -340,6 +395,8 @@ async function main() {
 
     // Always upsert OccurrenceTypes first
     await upsertOccurrenceTypes();
+    await upsertLocations();
+    await upsertDepartments();
 
     const operations = [];
 

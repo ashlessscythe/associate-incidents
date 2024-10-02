@@ -27,6 +27,10 @@ import {
   exportExcelOcc,
   getExportOccRecords,
   recordOccExport,
+  getLocations,
+  getDepartments,
+  Location,
+  Department,
 } from "@/lib/api";
 import {
   Dialog,
@@ -89,6 +93,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   const handlePrint = useOccurrencePrint();
 
@@ -136,6 +142,23 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       }
     }
   };
+
+  useEffect(() => {
+    const fetchLocationsAndDepartments = async () => {
+      try {
+        const [locationsData, departmentsData] = await Promise.all([
+          getLocations(),
+          getDepartments(),
+        ]);
+        setLocations(locationsData);
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error("Error fetching locations and departments:", error);
+      }
+    };
+
+    fetchLocationsAndDepartments();
+  }, []);
 
   useEffect(() => {
     const fetchPointsAndNotification = async () => {
@@ -469,23 +492,38 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               <Label htmlFor="location" className="text-right">
                 Location
               </Label>
-              <Input
-                id="location"
-                value={exportLocation}
-                onChange={(e) => setExportLocation(e.target.value)}
-                className="col-span-3"
-              />
+              <Select value={exportLocation} onValueChange={setExportLocation}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((location) => (
+                    <SelectItem key={location.id} value={location.name}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">
                 Department
               </Label>
-              <Input
-                id="department"
+              <Select
                 value={exportDepartment}
-                onChange={(e) => setExportDepartment(e.target.value)}
-                className="col-span-3"
-              />
+                onValueChange={setExportDepartment}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((department) => (
+                    <SelectItem key={department.id} value={department.name}>
+                      {department.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

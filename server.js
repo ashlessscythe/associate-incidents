@@ -138,6 +138,39 @@ app.get("/zapi/get-template/:type", async (req, res) => {
   }
 });
 
+// locations and departments
+app.get("/zapi/locations", async (req, res) => {
+  try {
+    const locations = await prisma.location.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    res.json(locations);
+  } catch (e) {
+    console.error("Error fetching locations:", e);
+    res.status(500).json({ error: "Error fetching locations" });
+  }
+});
+
+app.get("/zapi/departments", async (req, res) => {
+  try {
+    const departments = await prisma.department.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { name: "asc" },
+    });
+    res.json(departments);
+  } catch (e) {
+    console.error("Error fetching departments:", e);
+    res.status(500).json({ error: "Error fetching departments." });
+  }
+});
+
 // Associate STUFFS
 
 // Get all associates
@@ -883,11 +916,38 @@ app.post("/zapi/export-excel-ca", async (req, res) => {
       sheet.cell(level.cell).value(cellValue);
     });
 
+    // Reason for CA A13 = Appendix A, A14 = Appendix B (not very scalable, need to update if using other rules and/or types)
+    const r = correctiveAction.rule;
+
+    function formatDescription(description) {
+      if (description.length <= 90) {
+        return description;
+      } else {
+        return `${description.slice(0, 90)}...`;
+      }
+    }
+
+    if (r.code.includes("Appendix A")) {
+      sheet
+        .cell("B13")
+        .value(`(X) ${r.code} // ${formatDescription(r.description)}`);
+      sheet.cell("B14").value("( ) Appendix B");
+    } else if (r.code.includes("Appendix B")) {
+      sheet.cell("B13").value("( ) Appendix A");
+      sheet
+        .cell("B14")
+        .value(`(X) ${r.code} // ${formatDescription(r.description)}`);
+    } else {
+      // If neither Appendix A nor B, leave both unchecked
+      sheet.cell("B13").value("( ) Appendix A");
+      sheet.cell("B14").value("( ) Appendix B");
+    }
+
     // Fill in the corrective action description
     const formattedDate = new Date(correctiveAction.date)
       .toISOString()
       .split("T")[0];
-    const description = `${formattedDate} (${correctiveAction.rule.code}) ${correctiveAction.rule.description}\n\n${correctiveAction.description}`;
+    const description = `${formattedDate} (${correctiveAction.description})`;
 
     const cell = sheet.cell("A17");
     cell.value(description);

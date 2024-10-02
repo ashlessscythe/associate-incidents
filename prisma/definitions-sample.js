@@ -28,6 +28,7 @@ export const rules = [
   },
 ];
 
+// sample types
 export const occurrenceTypes = [
   {
     code: "OccurrenceType A",
@@ -39,4 +40,22 @@ export const occurrenceTypes = [
     description: "Description for OccurrenceType B",
     points: 2,
   },
+];
+
+// sample locations
+export const locations = [
+  "New York",
+  "Los Angeles",
+  "Chicago",
+  "Houston",
+  "Phoenix",
+];
+
+// sample departments
+export const departments = [
+  "Human Resources",
+  "Finance",
+  "Operations",
+  "Marketing",
+  "IT",
 ];

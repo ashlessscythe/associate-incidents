@@ -16,9 +16,25 @@ model Associate {
   ssoid               String?               @unique
   designation         Designation           @default(NONE)
   currentPoints       Float                 @default(0)
+  locationId          String?
+  location            Location?             @relation(fields: [locationId], references: [id])
+  departmentId        String?
+  department          Department?           @relation(fields: [departmentId], references: [id])
   occurrences         AttendanceOccurrence[]
   correctiveActions   CorrectiveAction[]
   exportRecords       ExportRecord[]
+}
+
+model Location {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  associates  Associate[]
+}
+
+model Department {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  associates  Associate[]
 }
 
 model ExportRecord {

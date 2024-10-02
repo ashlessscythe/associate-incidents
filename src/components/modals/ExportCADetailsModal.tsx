@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,9 +6,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getLocations, getDepartments, Location, Department } from "@/lib/api";
 
 interface ExportCADetailsModalProps {
   isOpen: boolean;
@@ -23,6 +30,25 @@ const ExportCADetailsModal: React.FC<ExportCADetailsModalProps> = ({
 }) => {
   const [location, setLocation] = useState("");
   const [department, setDepartment] = useState("");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  useEffect(() => {
+    const fetchLocationsAndDepartments = async () => {
+      try {
+        const [locationsData, departmentsData] = await Promise.all([
+          getLocations(),
+          getDepartments(),
+        ]);
+        setLocations(locationsData);
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error("Error fetching locations and departments:", error);
+      }
+    };
+
+    fetchLocationsAndDepartments();
+  }, []);
 
   const handleExport = () => {
     onExport(location, department);
@@ -40,23 +66,35 @@ const ExportCADetailsModal: React.FC<ExportCADetailsModalProps> = ({
             <Label htmlFor="location" className="text-right">
               Location
             </Label>
-            <Input
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="col-span-3"
-            />
+            <Select value={location} onValueChange={setLocation}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((loc) => (
+                  <SelectItem key={loc.id} value={loc.name}>
+                    {loc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="department" className="text-right">
               Department
             </Label>
-            <Input
-              id="department"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="col-span-3"
-            />
+            <Select value={department} onValueChange={setDepartment}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.name}>
+                    {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>
