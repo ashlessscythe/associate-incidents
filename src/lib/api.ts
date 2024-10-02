@@ -122,6 +122,7 @@ export interface Associate {
   currentPoints?: number;
   correctiveAction?: CorrectiveAction[];
   occurrences?: Occurrence[];
+  department?: Department;
 }
 
 export interface OccurrenceType {
@@ -161,6 +162,21 @@ export async function addAssociate(name: string, currentPoints: number = 0) {
   const res = await api.post<Associate>("/associates", { name, currentPoints });
   return res.data;
 }
+
+// modify associate
+export const updateAssociate = async (
+  id: string,
+  name: string,
+  departmentId: string,
+  designation: string
+): Promise<AssociateAndDesignation> => {
+  const res = await api.put<AssociateAndDesignation>(`/associates/${id}`, {
+    name,
+    departmentId,
+    designation,
+  });
+  return res.data;
+};
 
 // delete associate
 export const deleteAssociate = async (id: string): Promise<void> => {
@@ -237,12 +253,14 @@ export interface AssociateInfo {
   points: number;
   notificationLevel: string;
   designation: string;
+  department?: Department;
 }
 
 export interface AssociateAndDesignation {
   id: string;
   name: string;
   designation: string;
+  department?: Department;
 }
 
 export interface AssociateAndOccurrences {

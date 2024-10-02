@@ -214,6 +214,40 @@ app.post("/zapi/associates", async (req, res) => {
   }
 });
 
+// modify associate
+app.put("/zapi/associates/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, departmentId, designation } = req.body;
+
+    // Validate that the department exists
+    const departmentExists = await prisma.department.findUnique({
+      where: { id: departmentId },
+    });
+
+    if (!departmentExists) {
+      return res.status(400).json({ error: "Invalid department ID" });
+    }
+
+    const updatedAssociate = await prisma.associate.update({
+      where: { id },
+      data: {
+        name,
+        departmentId,
+        designation,
+      },
+      include: {
+        department: true,
+      },
+    });
+
+    res.json(updatedAssociate);
+  } catch (error) {
+    console.error("Error updating associate:", error);
+    res.status(500).json({ error: "Error updating associate" });
+  }
+});
+
 // delete associate
 app.delete("/zapi/associates/:id", async (req, res) => {
   try {
@@ -408,8 +442,7 @@ app.get("/zapi/associates-with-designation", async (req, res) => {
   try {
     // Fetch all associates
     const associates = await prisma.associate.findMany({
-      // Remove the include if designation is not a relation, but a simple field
-      // include is only required for relations, not for enums or basic fields
+      select: { id: true, name: true, designation: true, department: true },
     });
 
     // Map the result to return only the necessary fields
@@ -417,6 +450,7 @@ app.get("/zapi/associates-with-designation", async (req, res) => {
       id: associate.id,
       name: associate.name,
       designation: associate.designation, // This should directly return the enum value
+      department: associate.department,
     }));
 
     // Send the response

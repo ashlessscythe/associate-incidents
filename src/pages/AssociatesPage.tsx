@@ -1,39 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import AssociateSelect from "@/components/AssociateSelect";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
-import {
-  addAssociate,
-  deleteAssociate,
-  AssociateAndDesignation,
-} from "@/lib/api";
+import { addAssociate, deleteAssociate, updateAssociate } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
+import { toast } from "react-hot-toast";
 
 const AssociatesPage: React.FC = () => {
   const {
     associatesWithDesignation,
-    fetchAssociatesWithDesignation,
     loading,
     error,
+    fetchAssociatesWithDesignation,
   } = useAssociatesWithDesignation();
   const [showTable, setShowTable] = useState(false);
-  const [associates, setAssociates] = useState<AssociateAndDesignation[]>([]);
   const { user } = useAuthorizer();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await fetchAssociatesWithDesignation();
-        setAssociates(associatesWithDesignation);
-      } catch (err) {
-        console.error("Error fetching associates:", err);
-      }
-    };
-
     if (showTable) {
-      fetchData();
+      fetchAssociatesWithDesignation();
     }
   }, [showTable, fetchAssociatesWithDesignation]);
 
@@ -52,6 +39,22 @@ const AssociatesPage: React.FC = () => {
       await fetchAssociatesWithDesignation();
     } catch (err) {
       console.error("Error deleting associate:", err);
+    }
+  };
+
+  const handleEditAssociate = async (
+    id: string,
+    name: string,
+    departmentId: string,
+    designation: string
+  ) => {
+    try {
+      await updateAssociate(id, name, departmentId, designation);
+      await fetchAssociatesWithDesignation();
+      toast.success("Associate updated successfully");
+    } catch (error) {
+      console.error("Error updating associate:", error);
+      toast.error("Failed to update associate");
     }
   };
 
@@ -82,8 +85,9 @@ const AssociatesPage: React.FC = () => {
       <div className="flex-grow overflow-y-auto p-4">
         {showTable ? (
           <AssociatesTable
-            associates={associates}
+            associates={associatesWithDesignation}
             onDelete={handleDeleteAssociate}
+            onEdit={handleEditAssociate}
           />
         ) : (
           <AssociateSelect
