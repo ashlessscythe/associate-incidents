@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -50,6 +51,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   associateName,
   notificationType,
 }) => {
+  const { user } = useAuthorizer();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationLevels, setNotificationLevels] = useState<
     NotificationLevel[]
@@ -66,6 +68,14 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const [deletingNotificationId, setDeletingNotificationId] = useState<
     string | null
   >(null);
+
+  const hasEditorRole =
+    user &&
+    Array.isArray(user.roles) &&
+    ((notificationType === NotificationType.OCCURRENCE &&
+      user.roles.includes("att-edit")) ||
+      (notificationType === NotificationType.CORRECTIVE_ACTION &&
+        user.roles.includes("ca-edit")));
 
   useEffect(() => {
     fetchNotifications();
@@ -108,6 +118,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasEditorRole) return;
     await createNotification({
       associateId,
       ...newNotification,
@@ -128,28 +139,28 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   };
 
   const handleEdit = (notification: Notification) => {
+    if (!hasEditorRole) return;
     setEditingNotification(notification);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingNotification) {
-      await updateNotification(editingNotification.id, editingNotification);
-      setEditingNotification(null);
-      fetchNotifications();
-    }
+    if (!hasEditorRole || !editingNotification) return;
+    await updateNotification(editingNotification.id, editingNotification);
+    setEditingNotification(null);
+    fetchNotifications();
   };
 
   const handleDelete = async (id: string) => {
+    if (!hasEditorRole) return;
     setDeletingNotificationId(id);
   };
 
   const confirmDelete = async () => {
-    if (deletingNotificationId) {
-      await deleteNotification(deletingNotificationId);
-      setDeletingNotificationId(null);
-      fetchNotifications();
-    }
+    if (!hasEditorRole || !deletingNotificationId) return;
+    await deleteNotification(deletingNotificationId);
+    setDeletingNotificationId(null);
+    fetchNotifications();
   };
 
   const handleCancel = () => {
@@ -168,16 +179,18 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         Notices for {associateName}
       </h2>
 
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="show-input-fields"
-          checked={showInputFields}
-          onCheckedChange={setShowInputFields}
-        />
-        <Label htmlFor="show-input-fields">Add New</Label>
-      </div>
+      {hasEditorRole && (
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="show-input-fields"
+            checked={showInputFields}
+            onCheckedChange={setShowInputFields}
+          />
+          <Label htmlFor="show-input-fields">Add New</Label>
+        </div>
+      )}
 
-      {showInputFields && (
+      {showInputFields && hasEditorRole && (
         <form
           onSubmit={handleSubmit}
           className="space-y-4 p-4 border rounded-md"
@@ -239,6 +252,9 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               </TableHead>
             )}
             <TableHead className="font-semibold text-lg">Description</TableHead>
+            {hasEditorRole && (
+              <TableHead className="font-semibold text-lg">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -259,27 +275,29 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                 </TableCell>
               )}
               <TableCell>{notification.description || "N/A"}</TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(notification)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(notification.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
+              {hasEditorRole && (
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(notification)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(notification.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      {editingNotification && (
+      {editingNotification && hasEditorRole && (
         <Dialog
           open={!!editingNotification}
           onOpenChange={() => setEditingNotification(null)}
@@ -356,7 +374,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         </Dialog>
       )}
 
-      {deletingNotificationId && (
+      {deletingNotificationId && hasEditorRole && (
         <Dialog
           open={!!deletingNotificationId}
           onOpenChange={() => setDeletingNotificationId(null)}
