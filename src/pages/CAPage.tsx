@@ -29,11 +29,19 @@ function CAPage() {
     error: associatesError,
   } = useAssociatesWithDesignation();
   const [rules, setRules] = useState<Rule[]>([]);
-  const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>([]);
+  const [correctiveActions, setCorrectiveActions] = useState<
+    CorrectiveAction[]
+  >([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
-  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(null);
-  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
-  const [associateInfo, setAssociateInfo] = useState<AssociateInfo | null>(null);
+  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
+    null
+  );
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
+    null
+  );
+  const [associateInfo, setAssociateInfo] = useState<AssociateInfo | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,7 +95,9 @@ function CAPage() {
 
   const fetchAssociateInfo = async (associateId: string) => {
     try {
-      const associateInfoData = await getAssociatePointsAndNotification(associateId);
+      const associateInfoData = await getAssociatePointsAndNotification(
+        associateId
+      );
       setAssociateInfo(associateInfoData);
     } catch (err: unknown) {
       setError(
@@ -174,7 +184,7 @@ function CAPage() {
   return (
     <div className="flex flex-col md:flex-row h-full">
       {/* Sidebar */}
-      <div className="w-full md:w-2/5 lg:w-1/3 xl:w-1/4 p-4 md:h-full overflow-y-auto">
+      <div className="w-full md:w-1/2 lg:w-2/5 xl:w-1/3 p-4 md:h-full overflow-y-auto">
         <div className="sticky top-4 z-10 bg-white dark:bg-gray-800 p-4 shadow-md rounded-lg space-y-4">
           <AssociateSelect
             selectedAssociateId={selectedAssociateId}
@@ -198,9 +208,7 @@ function CAPage() {
             role="alert"
           >
             <p className="font-bold">View Only Mode</p>
-            <p>
-              You do not have permission to add or edit corrective actions.
-            </p>
+            <p>You do not have permission to add or edit corrective actions.</p>
           </div>
         )}
         {associateInfo && (
