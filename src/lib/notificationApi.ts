@@ -36,11 +36,16 @@ export const updateNotification = async (
   notificationId: string,
   data: Partial<Notification>
 ): Promise<Notification> => {
-  // Convert the numeric enum to its string representation if type is being updated
-  const dataWithStringType =
-    data.type !== undefined
-      ? { ...data, type: NotificationType[data.type] }
-      : data;
+  const dataWithStringType = {
+    ...data,
+    type:
+      data.type !== undefined
+        ? typeof data.type === "number"
+          ? NotificationType[data.type]
+          : data.type
+        : undefined,
+  };
+
   const response = await api.put(
     `/notifications/${notificationId}`,
     dataWithStringType

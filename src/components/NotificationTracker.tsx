@@ -17,6 +17,15 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { updateNotification, deleteNotification } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -52,6 +61,11 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     description: "",
   });
   const [showInputFields, setShowInputFields] = useState(false);
+  const [editingNotification, setEditingNotification] =
+    useState<Notification | null>(null);
+  const [deletingNotificationId, setDeletingNotificationId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -111,6 +125,36 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
       totalPoints: notificationType === NotificationType.OCCURRENCE ? "0" : "",
       description: "",
     });
+  };
+
+  const handleEdit = (notification: Notification) => {
+    setEditingNotification(notification);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingNotification) {
+      await updateNotification(editingNotification.id, editingNotification);
+      setEditingNotification(null);
+      fetchNotifications();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingNotificationId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingNotificationId) {
+      await deleteNotification(deletingNotificationId);
+      setDeletingNotificationId(null);
+      fetchNotifications();
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingNotification(null);
+    setDeletingNotificationId(null);
   };
 
   return (
@@ -204,7 +248,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               className="hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <TableCell>
-                {new Date(notification.date).toLocaleDateString()}
+                {new Date(notification.date).toISOString().split("T")[0]}
               </TableCell>
               <TableCell>{notification.level}</TableCell>
               {notificationType === NotificationType.OCCURRENCE && (
@@ -215,10 +259,122 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                 </TableCell>
               )}
               <TableCell>{notification.description || "N/A"}</TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleEdit(notification)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(notification.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {editingNotification && (
+        <Dialog
+          open={!!editingNotification}
+          onOpenChange={() => setEditingNotification(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Notification</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <Select
+                value={editingNotification.level}
+                onValueChange={(value) =>
+                  setEditingNotification({
+                    ...editingNotification,
+                    level: value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select notification level" />
+                </SelectTrigger>
+                <SelectContent>
+                  {notificationLevels.map((level) => (
+                    <SelectItem key={level.levelNumber} value={level.levelText}>
+                      {`${level.levelNumber} - ${level.levelText}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="date"
+                value={
+                  new Date(editingNotification.date).toISOString().split("T")[0]
+                }
+                onChange={(e) =>
+                  setEditingNotification({
+                    ...editingNotification,
+                    date: new Date(e.target.value),
+                  })
+                }
+              />
+              {notificationType === NotificationType.OCCURRENCE && (
+                <Input
+                  type="number"
+                  value={editingNotification.totalPoints || ""}
+                  onChange={(e) =>
+                    setEditingNotification({
+                      ...editingNotification,
+                      totalPoints: parseFloat(e.target.value),
+                    })
+                  }
+                  placeholder="Total Points"
+                />
+              )}
+              <Input
+                type="text"
+                value={editingNotification.description || ""}
+                onChange={(e) =>
+                  setEditingNotification({
+                    ...editingNotification,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="Description"
+              />
+              <DialogFooter>
+                <Button type="submit">Save changes</Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {deletingNotificationId && (
+        <Dialog
+          open={!!deletingNotificationId}
+          onOpenChange={() => setDeletingNotificationId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+            </DialogHeader>
+            <p>Are you sure you want to delete this notification?</p>
+            <DialogFooter>
+              <Button onClick={confirmDelete}>Yes, delete</Button>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
