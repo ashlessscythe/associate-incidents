@@ -29,6 +29,8 @@ import {
   getDepartments,
   Location,
   Department,
+  getNotifications,
+  Notification,
 } from "@/lib/api";
 import {
   Dialog,
@@ -85,6 +87,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportLocation, setExportLocation] = useState("");
   const [exportDepartment, setExportDepartment] = useState("");
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
@@ -166,13 +169,13 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     const fetchPointsAndNotification = async () => {
       if (associateInfo.id) {
         try {
-          const {
-            points,
-            notificationLevel,
-            designation,
-            location,
-            department,
-          } = await getAssociatePointsAndNotification(associateInfo.id);
+          const [
+            { points, notificationLevel, designation, location, department },
+            notificationsData,
+          ] = await Promise.all([
+            getAssociatePointsAndNotification(associateInfo.id),
+            getNotifications(associateInfo.id, "OCCURRENCE"),
+          ]);
           setTotalPoints(points);
           setNotificationLevel(notificationLevel);
           setDesignation(designation);
@@ -182,8 +185,9 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           if (department) {
             setAssociateDepartment(department);
           }
+          setNotifications(notificationsData);
         } catch (e) {
-          console.error("Error fetching associate points and notification:", e);
+          console.error("Error fetching associate data:", e);
         }
       }
     };
@@ -248,12 +252,21 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   };
 
   const handleExcelExport = async () => {
-    if (!associateInfo.department || !associateInfo.location) {
+    if (!associateLocation && !associateDepartment) {
+      alert(
+        "Both location and department are missing. Please update the associate's information before exporting."
+      );
+      return;
+    }
+
+    if (!associateLocation || !associateDepartment) {
+      setExportLocation(associateLocation?.name || "");
+      setExportDepartment(associateDepartment?.name || "");
       setIsExportModalOpen(true);
     } else {
       await executeExcelExport(
-        associateInfo.department.name,
-        associateInfo.location.name
+        associateDepartment.name,
+        associateLocation.name
       );
     }
   };
@@ -267,7 +280,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         department,
         currentDate,
         filteredOccurrences,
-        notificationLevel
+        notificationLevel,
+        notifications
       );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -321,10 +335,10 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                 Designation: {designation}
               </p>
               <p className="font-semibold text-gray-800 dark:text-gray-200">
-                Location: {associateLocation?.name}
+                Location: {associateLocation?.name || "Not set"}
               </p>
               <p className="font-semibold text-gray-800 dark:text-gray-200">
-                Department: {associateDepartment?.name}
+                Department: {associateDepartment?.name || "Not set"}
               </p>
             </div>
           </div>
@@ -526,7 +540,14 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleExcelExport}>Export</Button>
+            <Button
+              onClick={() =>
+                executeExcelExport(exportDepartment, exportLocation)
+              }
+              disabled={!exportLocation || !exportDepartment}
+            >
+              Export
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

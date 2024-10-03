@@ -29,59 +29,107 @@ export async function generateExcelOccurrence(
   department,
   date,
   occurrences,
-  notificationLevel
+  notificationLevel,
+  notifications
 ) {
+  if (!associateName || !location || !department || !date) {
+    throw new Error("Missing required parameters");
+  }
+
   const templatePath = await getTemplate(
     process.env.OCC_TEMPLATE_KEY,
     "occurrence"
   );
-  const workbook = await XlsxPopulate.fromFileAsync(templatePath);
+  let workbook;
+
+  try {
+    workbook = await XlsxPopulate.fromFileAsync(templatePath);
+  } catch (error) {
+    console.error("Error loading Excel template:", error);
+    throw new Error("Failed to load Excel template");
+  }
+
   const sheet = workbook.sheet(0);
 
+  // Fill in basic information
   sheet.cell("A7").value(associateName);
   sheet.cell("F7").value(location);
   sheet.cell("H7").value(department);
   sheet.cell("J7").value(date);
 
-  switch (notificationLevel) {
-    case "Termination":
-      sheet.cell("E10").value("10");
-      break;
-    case "Final Written Notice":
-      sheet.cell("B10").value("7");
-      break;
-    case "2nd Written Notice":
-      sheet.cell("H9").value("5");
-      break;
-    case "1st Written Notice":
-      sheet.cell("E9").value("3");
-      break;
-    case "Verbal Notice":
-      sheet.cell("B9").value("4");
-      break;
-  }
+  // Set notification level
+  const levels = [
+    { text: "Verbal Notice", cell: "B9" },
+    { text: "1st Written Notice", cell: "E9" },
+    { text: "2nd Written Notice", cell: "H9" },
+    { text: "Final Written Notice", cell: "B10" },
+    { text: "Termination", cell: "E10" },
+  ];
 
+  const currentLevel = levels.findIndex(
+    (level) => level.text === notificationLevel
+  );
+
+  levels.forEach((level, index) => {
+    const cellValue =
+      index === currentLevel ? `(X) ${level.text}` : `( ) ${level.text}`;
+    sheet.cell(level.cell).value(cellValue);
+  });
+
+  // Calculate and set total points
   const totalPoints = occurrences.reduce(
-    (sum, occ) => sum + occ.type.points,
+    (sum, occ) => sum + (occ.type?.points || 0),
     0
   );
 
-  const blurb = `Associate ${associateName} has below occurrences. Total points: ${totalPoints} \n\n`;
-
+  // Create misconduct text
+  const blurb = `Associate ${associateName} has the following occurrences. Total points: ${totalPoints}\n\n`;
   const misconduct = occurrences
     .map((occ) => {
       const formattedDate = new Date(occ.date).toISOString().split("T")[0];
-      return `${formattedDate} ${occ.type.code} - ${occ.type.points} pts`;
+      return `${formattedDate} ${occ.type?.code || "Unknown"} - ${
+        occ.type?.points || 0
+      } pts`;
     })
     .join(", ");
-
   const fullMisconductText = blurb + misconduct;
-
   sheet.cell("A14").value(fullMisconductText);
 
-  const excelBuffer = await workbook.outputAsync();
+  // Fill notifications data
+  const notificationCells = [
+    { date: "B24", type: "D24", points: "G24" },
+    { date: "B25", type: "D25", points: "G25" },
+    { date: "B26", type: "D26", points: "G26" },
+    { date: "B27", type: "D27", points: "G27" },
+  ];
 
-  await fs.unlink(templatePath);
+  (notifications || []).slice(0, 4).forEach((notification, index) => {
+    if (notification && notification.date) {
+      sheet
+        .cell(notificationCells[index].date)
+        .value(new Date(notification.date).toISOString().split("T")[0]);
+      sheet
+        .cell(notificationCells[index].type)
+        .value(notification.level || "N/A");
+      sheet
+        .cell(notificationCells[index].points)
+        .value(notification.totalPoints || 0);
+    }
+  });
+
+  let excelBuffer;
+  try {
+    excelBuffer = await workbook.outputAsync();
+  } catch (error) {
+    console.error("Error generating Excel buffer:", error);
+    throw new Error("Failed to generate Excel file");
+  }
+
+  try {
+    await fs.unlink(templatePath);
+  } catch (error) {
+    console.warn("Failed to delete temporary template file:", error);
+  }
 
   return excelBuffer;
 }

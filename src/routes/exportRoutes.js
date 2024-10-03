@@ -17,6 +17,7 @@ router.post("/export-excel-occurrence", async (req, res) => {
       date,
       occurrences,
       notificationLevel,
+      notifications,
     } = req.body;
 
     const excelBuffer = await generateExcelOccurrence(
@@ -25,7 +26,8 @@ router.post("/export-excel-occurrence", async (req, res) => {
       department,
       date,
       occurrences,
-      notificationLevel
+      notificationLevel,
+      notifications
     );
 
     res.setHeader(

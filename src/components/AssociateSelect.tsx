@@ -11,8 +11,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Input } from "@/components/ui/input";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
-import { Designation } from "@/hooks/useAssociates";
-import { AssociateAndDesignation } from "@/lib/api";
+import { AssociateAndDesignation, Designation } from "@/lib/api";
 
 interface AssociateSelectProps {
   selectedAssociateId: string | null;

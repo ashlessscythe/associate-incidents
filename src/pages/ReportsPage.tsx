@@ -15,10 +15,10 @@ import {
   OccurrenceType,
   CorrectiveAction,
   Rule,
+  Designation,
 } from "../lib/api";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Designation } from "@/hooks/useAssociates";
 import { ArrowUpDown } from "lucide-react";
 
 interface CAByTypeData {
@@ -252,6 +252,7 @@ const ReportsPage: React.FC = () => {
               <CAByTypeRow
                 key={associate.id}
                 associate={associate}
+                associateInfo={associate.info}
                 rules={rules}
                 onEditCA={handleEditCA}
                 onDeleteCA={handleDeleteCA}

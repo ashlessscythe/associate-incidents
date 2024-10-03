@@ -65,4 +65,37 @@ router.get("/departments", async (req, res) => {
   }
 });
 
+router.get("/notification-levels", async (req, res) => {
+  try {
+    const { designation } = req.query;
+    let notificationLevels;
+
+    if (designation) {
+      notificationLevels = await prisma.notificationLevel.findMany({
+        where: {
+          designation: designation,
+        },
+        orderBy: {
+          level: "asc",
+        },
+      });
+    } else {
+      notificationLevels = await prisma.notificationLevel.findMany({
+        orderBy: [{ designation: "asc" }, { level: "asc" }],
+      });
+    }
+
+    const formattedLevels = notificationLevels.map((level) => ({
+      designation: level.designation,
+      levelNumber: level.level,
+      levelText: level.name,
+    }));
+
+    res.json(formattedLevels);
+  } catch (error) {
+    console.error("Error fetching notification levels:", error);
+    res.status(500).json({ error: "Error fetching notification levels" });
+  }
+});
+
 export default router;

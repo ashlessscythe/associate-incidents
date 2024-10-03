@@ -8,6 +8,7 @@ import {
   getAssociatePointsAndNotification,
   AssociateInfo,
   NotificationType,
+  Designation,
 } from "@/lib/api";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
@@ -168,11 +169,12 @@ function OccurrencePage() {
             occurrenceTypes={occurrenceTypes}
           />
         )}
-        
+
         {/* Add NotificationTracker */}
         {selectedAssociateId && associateInfo && (
           <NotificationTracker
             associateId={selectedAssociateId}
+            associateDesignation={associateInfo.designation as Designation}
             associateName={associateInfo.name}
             notificationType={NotificationType.OCCURRENCE}
           />

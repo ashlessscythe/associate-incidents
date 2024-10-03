@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
+  Designation,
   Notification,
   NotificationType,
+  NotificationLevel,
   createNotification,
+  getNotificationLevels,
   getNotifications,
 } from "@/lib/api";
 import {
@@ -27,36 +30,21 @@ import { Label } from "@/components/ui/label";
 
 interface NotificationTrackerProps {
   associateId: string;
+  associateDesignation: Designation;
   associateName: string;
   notificationType: NotificationType;
 }
 
-const notificationLevels = {
-  [NotificationType.OCCURRENCE]: [
-    {
-      value: "Verbal Disciplinary Notice",
-      label: "Verbal Disciplinary Notice",
-    },
-    { value: "First Written Notice", label: "First Written Notice" },
-    { value: "Second Written Notice", label: "Second Written Notice" },
-    { value: "Final Written Notice", label: "Final Written Notice" },
-    { value: "Termination", label: "Termination" },
-  ],
-  [NotificationType.CORRECTIVE_ACTION]: [
-    { value: "Coaching", label: "Coaching" },
-    { value: "Documented Verbal Warning", label: "Documented Verbal Warning" },
-    { value: "Written Warning", label: "Written Warning" },
-    { value: "Final Written Warning", label: "Final Written Warning" },
-    { value: "Termination", label: "Termination" },
-  ],
-};
-
 export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   associateId,
+  associateDesignation,
   associateName,
   notificationType,
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationLevels, setNotificationLevels] = useState<
+    NotificationLevel[]
+  >([]);
   const [newNotification, setNewNotification] = useState({
     level: "",
     date: new Date().toISOString().split("T")[0],
@@ -67,18 +55,24 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
 
   useEffect(() => {
     fetchNotifications();
-  }, [associateId, notificationType]);
+    fetchNotificationLevels();
+  }, [associateId, notificationType, associateDesignation]);
 
-  const nTypeAsString = async (nType: NotificationType) => {
+  const nTypeAsString = (nType: NotificationType) => {
     return NotificationType[nType].toUpperCase();
   };
 
   const fetchNotifications = async () => {
     const fetchedNotifications = await getNotifications(
       associateId,
-      await nTypeAsString(notificationType)
+      nTypeAsString(notificationType)
     );
     setNotifications(fetchedNotifications);
+  };
+
+  const fetchNotificationLevels = async () => {
+    const levels = await getNotificationLevels(associateDesignation);
+    setNotificationLevels(levels);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +115,8 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Separator */}
+      <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
       <h2 className="text-2xl font-bold">
         {notificationType === NotificationType.OCCURRENCE
           ? "Occurrence"
@@ -151,9 +147,9 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               <SelectValue placeholder="Select notification level" />
             </SelectTrigger>
             <SelectContent>
-              {notificationLevels[notificationType].map((level) => (
-                <SelectItem key={level.value} value={level.value}>
-                  {level.label}
+              {notificationLevels.map((level) => (
+                <SelectItem key={level.levelNumber} value={level.levelText}>
+                  {`${level.levelNumber} - ${level.levelText}`}
                 </SelectItem>
               ))}
             </SelectContent>

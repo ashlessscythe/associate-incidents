@@ -200,4 +200,143 @@ router.get("/associates-data", async (req, res) => {
   }
 });
 
+// Get all associates with occurrences
+router.get("/all-with-occurrences", async (req, res) => {
+  try {
+    const associates = await prisma.associate.findMany({
+      include: {
+        occurrences: {
+          include: {
+            type: true,
+          },
+          orderBy: {
+            date: "desc",
+          },
+        },
+        department: true,
+        location: true,
+      },
+    });
+
+    const associatesWithDetails = await Promise.all(
+      associates.map(async (associate) => {
+        const points = associate.occurrences.reduce(
+          (sum, occurrence) => sum + (occurrence.type?.points || 0),
+          0
+        );
+
+        // Fetch notification levels for the associate's designation
+        const notificationLevels = await prisma.notificationLevel.findMany({
+          where: {
+            designation: associate.designation,
+          },
+          orderBy: [{ level: "desc" }, { pointThreshold: "desc" }],
+        });
+
+        // Determine the current notification level
+        let notificationLevel = "None";
+        for (const level of notificationLevels) {
+          if (points >= level.pointThreshold) {
+            notificationLevel = level.name;
+            break;
+          }
+        }
+
+        // Structure the data according to AssociateAndOccurrences interface
+        return {
+          id: associate.id,
+          name: associate.name,
+          occurrences: associate.occurrences.map((occ) => ({
+            id: occ.id,
+            date: occ.date,
+            notes: occ.notes,
+            type: occ.type,
+            associateId: occ.associateId,
+          })),
+          info: {
+            id: associate.id,
+            name: associate.name,
+            points: points,
+            notificationLevel: notificationLevel,
+            designation: associate.designation,
+            department: associate.department,
+            location: associate.location,
+          },
+        };
+      })
+    );
+
+    res.json(associatesWithDetails);
+  } catch (error) {
+    console.error("Error fetching all associates with occurrences:", error);
+    res.status(500).json({ error: "Error fetching associates data" });
+  }
+});
+
+// Get associate points and notification
+router.get("/associates/:id/points-and-notification", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const associate = await prisma.associate.findUnique({
+      where: { id },
+      include: {
+        department: true,
+        location: true,
+        occurrences: {
+          select: {
+            type: {
+              select: {
+                points: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!associate) {
+      return res.status(404).json({ error: "Associate not found" });
+    }
+
+    const points = associate.occurrences.reduce(
+      (sum, occurrence) => sum + occurrence.type.points,
+      0
+    );
+
+    // Fetch notification levels from the database for the associate's designation
+    const notificationLevels = await prisma.notificationLevel.findMany({
+      where: {
+        designation: associate.designation,
+      },
+      orderBy: [{ level: "desc" }, { pointThreshold: "desc" }],
+    });
+
+    // Determine the current notification level based on points and designation
+    let notificationLevel = "None";
+    for (const level of notificationLevels) {
+      if (points >= level.pointThreshold) {
+        notificationLevel = level.name;
+        break;
+      }
+    }
+
+    const associateInfo = {
+      id: associate.id,
+      name: associate.name,
+      points: points,
+      notificationLevel: notificationLevel,
+      designation: associate.designation,
+      department: associate.department,
+      location: associate.location,
+    };
+
+    res.json(associateInfo);
+  } catch (error) {
+    console.error("Error fetching associate points and notification:", error);
+    res
+      .status(500)
+      .json({ error: "Error fetching associate points and notification" });
+  }
+});
+
 export default router;

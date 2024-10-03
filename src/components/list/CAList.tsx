@@ -1,12 +1,13 @@
 import React from "react";
-import { Associate, CorrectiveAction, Rule } from "@/lib/api";
+import { Associate, AssociateInfo, CorrectiveAction, Rule } from "@/lib/api";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CAItem from "./CAItem";
 import { useCAPrint } from "@/hooks/useCAPrint";
 
 interface CAListProps {
-  associate: Associate | null;
+  associate: Associate;
+  associateInfo: AssociateInfo;
   correctiveActions: CorrectiveAction[];
   rules: Rule[];
   onEditCA: (ca: CorrectiveAction) => void;
@@ -15,6 +16,7 @@ interface CAListProps {
 
 const CAList: React.FC<CAListProps> = ({
   associate,
+  associateInfo,
   correctiveActions,
   rules,
   onEditCA,
@@ -101,7 +103,8 @@ const CAList: React.FC<CAListProps> = ({
                         rules={rules}
                         onEditCA={onEditCA}
                         onDeleteCA={onDeleteCA}
-                        associateName={associate?.name || "Unknown"}
+                        associate={associate}
+                        associateInfo={associateInfo}
                         level={ca.level}
                         associateLocation={associate?.location?.name}
                         associateDepartment={associate?.department?.name}

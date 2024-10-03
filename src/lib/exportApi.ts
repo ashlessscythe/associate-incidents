@@ -1,6 +1,11 @@
 import axios from "axios";
 import api from "./apiConfig";
-import { ExportOccRecord, Occurrence, CorrectiveAction } from "./types";
+import {
+  Notification,
+  ExportOccRecord,
+  Occurrence,
+  CorrectiveAction,
+} from "./types";
 
 const getTemplate = async (type: "ca" | "occurrence"): Promise<Blob | null> => {
   try {
@@ -28,7 +33,8 @@ export async function exportExcelOcc(
   department: string,
   date: string,
   occurrences: Occurrence[],
-  notificationLevel: string
+  notificationLevel: string,
+  notifications: Notification[]
 ): Promise<Blob> {
   try {
     const templateBlob = await getTemplate("occurrence");
@@ -42,6 +48,7 @@ export async function exportExcelOcc(
         date,
         occurrences,
         notificationLevel,
+        notifications,
       },
       {
         responseType: "blob",

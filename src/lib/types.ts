@@ -1,3 +1,9 @@
+export enum Designation {
+  NONE = "NONE",
+  MH = "MH",
+  CLERK = "CLERK",
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -90,4 +96,36 @@ export interface ExportOccRecord {
   exportedAt: Date;
   location: string;
   department: string;
+}
+
+export enum NotificationType {
+  OCCURRENCE,
+  CORRECTIVE_ACTION,
+}
+
+export interface Notification {
+  id: string;
+  associateId: string;
+  date: Date;
+  type: NotificationType;
+  level: string;
+  totalPoints?: number;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NotificationLevel {
+  designation: Designation;
+  levelNumber: number;
+  levelText: string;
+}
+
+export interface CreateNotificationData {
+  associateId: string;
+  date: Date;
+  type: NotificationType;
+  level: string;
+  totalPoints?: number;
+  description?: string;
 }

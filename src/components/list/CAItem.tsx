@@ -1,17 +1,27 @@
 import React, { useState } from "react";
-import { CorrectiveAction, Rule, exportExcelCA } from "@/lib/api";
+import {
+  // NotificationType,
+  // Designation,
+  CorrectiveAction,
+  Rule,
+  exportExcelCA,
+  Associate,
+  AssociateInfo,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Edit2, Trash2 } from "lucide-react";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import ExportCADetailsModal from "../modals/ExportCADetailsModal";
+// import { NotificationTracker } from "@/components/NotificationTracker";
 
 interface CAItemProps {
   ca: CorrectiveAction;
   rules: Rule[];
   onEditCA: (ca: CorrectiveAction) => void;
   onDeleteCA: (id: string) => Promise<void>;
-  associateName: string;
   level: number;
+  associate: Associate;
+  associateInfo: AssociateInfo;
   associateLocation?: string;
   associateDepartment?: string;
 }
@@ -21,7 +31,8 @@ const CAItem: React.FC<CAItemProps> = ({
   rules,
   onEditCA,
   onDeleteCA,
-  associateName,
+  associate,
+  // associateInfo,
   level,
   associateLocation,
   associateDepartment,
@@ -63,7 +74,7 @@ const CAItem: React.FC<CAItemProps> = ({
     const department = associateDepartment || selectedDepartment;
     try {
       const blob = await exportExcelCA(
-        associateName,
+        associate.name,
         location,
         department,
         new Date().toISOString().split("T")[0], // current date
@@ -74,7 +85,7 @@ const CAItem: React.FC<CAItemProps> = ({
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = `${associateName}_corrective_action.xlsx`;
+      a.download = `${associate.name}_corrective_action.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -100,6 +111,16 @@ const CAItem: React.FC<CAItemProps> = ({
           <p>{getLevelDescription(level)}</p>
           <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
           <p>Description: {ca.description}</p>
+          {/* <div>
+            {associate.id && (
+              <NotificationTracker
+                associateId={associate.id}
+                associateDesignation={associateInfo.designation as Designation}
+                associateName={associateInfo.name}
+                notificationType={NotificationType.CORRECTIVE_ACTION}
+              />
+            )}
+          </div> */}
         </div>
         <div className="flex space-x-2">
           <Button

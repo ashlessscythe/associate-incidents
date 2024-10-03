@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CAList from "@/components/list/CAList";
-import { CorrectiveAction, Rule } from "../../lib/api";
+import { AssociateInfo, CorrectiveAction, Rule } from "../../lib/api";
 
 interface CAByTypeRowProps {
   associate: {
@@ -10,6 +10,7 @@ interface CAByTypeRowProps {
     name: string;
     correctiveActions: CorrectiveAction[];
   };
+  associateInfo: AssociateInfo;
   rules: Rule[];
   onEditCA: (ca: CorrectiveAction) => void;
   onDeleteCA: (id: string) => Promise<void>;
@@ -17,6 +18,7 @@ interface CAByTypeRowProps {
 
 const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
   associate,
+  associateInfo,
   rules,
   onEditCA,
   onDeleteCA,
@@ -77,6 +79,7 @@ const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
         <div className="mt-2 p-4">
           <CAList
             associate={associate}
+            associateInfo={associateInfo}
             correctiveActions={associate.correctiveActions}
             rules={rules}
             onDeleteCA={onDeleteCA}

@@ -8,7 +8,6 @@ import {
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
-  NotificationType,
   getAssociatePointsAndNotification,
   AssociateInfo,
 } from "@/lib/api";
@@ -18,7 +17,6 @@ import CAList from "../components/list/CAList";
 import CAEditModal from "@/components/modals/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
-import { NotificationTracker } from "@/components/NotificationTracker";
 
 function CAPage() {
   const { user } = useAuthorizer();
@@ -211,20 +209,14 @@ function CAPage() {
             <p>You do not have permission to add or edit corrective actions.</p>
           </div>
         )}
-        {associateInfo && (
+        {associateInfo && selectedAssociate && (
           <CAList
             associate={selectedAssociate}
+            associateInfo={associateInfo}
             correctiveActions={correctiveActions}
             rules={rules}
             onDeleteCA={handleDeleteCA}
             onEditCA={handleEditCA}
-          />
-        )}
-        {selectedAssociateId && associateInfo && (
-          <NotificationTracker
-            associateId={selectedAssociateId}
-            associateName={associateInfo.name}
-            notificationType={NotificationType.CORRECTIVE_ACTION}
           />
         )}
       </div>
