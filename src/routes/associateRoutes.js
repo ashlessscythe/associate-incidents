@@ -203,9 +203,16 @@ router.get("/associates-data", async (req, res) => {
 // Get all associates with occurrences
 router.get("/all-with-occurrences", async (req, res) => {
   try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const associates = await prisma.associate.findMany({
       include: {
         occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo,
+            },
+          },
           include: {
             type: true,
           },
@@ -277,18 +284,27 @@ router.get("/all-with-occurrences", async (req, res) => {
 router.get("/associates/:id/points-and-notification", async (req, res) => {
   try {
     const { id } = req.params;
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
     const associate = await prisma.associate.findUnique({
       where: { id },
       include: {
         department: true,
         location: true,
         occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo,
+            },
+          },
           select: {
             type: {
               select: {
                 points: true,
               },
             },
+            date: true,
           },
         },
       },
