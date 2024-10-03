@@ -7,12 +7,14 @@ import {
   addOccurrence,
   getAssociatePointsAndNotification,
   AssociateInfo,
+  NotificationType,
 } from "@/lib/api";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import AssociateSelect from "@/components/AssociateSelect";
 import OccurrenceForm from "@/components/form/OccurrenceForm";
 import OccurrenceList from "@/components/list/OccurrenceList";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
+import { NotificationTracker } from "@/components/NotificationTracker";
 
 function OccurrencePage() {
   const { user } = useAuthorizer();
@@ -164,6 +166,15 @@ function OccurrencePage() {
             onDelete={handleDelete}
             onUpdate={handleUpdate}
             occurrenceTypes={occurrenceTypes}
+          />
+        )}
+        
+        {/* Add NotificationTracker */}
+        {selectedAssociateId && associateInfo && (
+          <NotificationTracker
+            associateId={selectedAssociateId}
+            associateName={associateInfo.name}
+            notificationType={NotificationType.OCCURRENCE}
           />
         )}
       </div>

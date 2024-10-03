@@ -23,6 +23,7 @@ model Associate {
   occurrences         AttendanceOccurrence[]
   correctiveActions   CorrectiveAction[]
   exportRecords       ExportRecord[]
+  notifications       Notification[]
 }
 
 model Location {
@@ -86,6 +87,24 @@ model NotificationLevel {
 
   // for upsert
   @@unique([designation, level])
+}
+
+model Notification {
+  id            String         @id @default(uuid())
+  associateId   String
+  associate     Associate      @relation(fields: [associateId], references: [id])
+  date          DateTime
+  type          NotificationType
+  level         String
+  totalPoints   Float?
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum NotificationType {
+  OCCURRENCE
+  CORRECTIVE_ACTION
 }
 
 enum Designation {

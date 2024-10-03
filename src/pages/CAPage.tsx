@@ -8,6 +8,9 @@ import {
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
+  NotificationType,
+  getAssociatePointsAndNotification,
+  AssociateInfo,
 } from "@/lib/api";
 import AssociateSelect from "@/components/AssociateSelect";
 import CAForm from "../components/form/CAForm";
@@ -15,6 +18,7 @@ import CAList from "../components/list/CAList";
 import CAEditModal from "@/components/modals/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
+import { NotificationTracker } from "@/components/NotificationTracker";
 
 function CAPage() {
   const { user } = useAuthorizer();
@@ -25,16 +29,11 @@ function CAPage() {
     error: associatesError,
   } = useAssociatesWithDesignation();
   const [rules, setRules] = useState<Rule[]>([]);
-  const [correctiveActions, setCorrectiveActions] = useState<
-    CorrectiveAction[]
-  >([]);
+  const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
-  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
-    null
-  );
-  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
-    ""
-  );
+  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(null);
+  const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(null);
+  const [associateInfo, setAssociateInfo] = useState<AssociateInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,30 +61,19 @@ function CAPage() {
   }, [fetchAssociatesWithDesignation]);
 
   useEffect(() => {
-    const fetchRules = async () => {
-      try {
-        const rulesData = await getRules();
-        setRules(rulesData);
-      } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRules();
-  }, []);
-
-  useEffect(() => {
-    fetchCorrectiveActions();
-  }, [selectedAssociate?.id]);
+    if (selectedAssociateId) {
+      fetchCorrectiveActions();
+      fetchAssociateInfo(selectedAssociateId);
+    } else {
+      setCorrectiveActions([]);
+      setAssociateInfo(null);
+    }
+  }, [selectedAssociateId]);
 
   const fetchCorrectiveActions = async () => {
-    if (selectedAssociate?.id) {
+    if (selectedAssociateId) {
       try {
-        const caData = await getCorrectiveActions(selectedAssociate.id);
+        const caData = await getCorrectiveActions(selectedAssociateId);
         setCorrectiveActions(caData);
       } catch (err: unknown) {
         setError(
@@ -94,6 +82,17 @@ function CAPage() {
       }
     } else {
       setCorrectiveActions([]);
+    }
+  };
+
+  const fetchAssociateInfo = async (associateId: string) => {
+    try {
+      const associateInfoData = await getAssociatePointsAndNotification(associateId);
+      setAssociateInfo(associateInfoData);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
     }
   };
 
@@ -123,8 +122,10 @@ function CAPage() {
         (a) => a.id === associateId
       );
       setSelectedAssociate(selectedAssociate || null);
+      fetchAssociateInfo(associateId);
     } else {
       setSelectedAssociate(null);
+      setAssociateInfo(null);
     }
   };
 
@@ -141,6 +142,8 @@ function CAPage() {
           associateId: selectedAssociateId,
         });
         await fetchCorrectiveActions();
+        await fetchAssociateInfo(selectedAssociateId);
+        await fetchAssociatesWithDesignation();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "An unknown error occurred");
       }
@@ -169,35 +172,38 @@ function CAPage() {
     return <div>Error: {associatesError || error}</div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <div className="flex-grow flex flex-col lg:flex-row">
-        <div className="w-full lg:w-1/3 xl:w-1/4 p-4 lg:overflow-y-auto">
-          <div className="sticky top-0 lg:top-4 z-10 bg-gray-100 dark:bg-gray-900 p-4 shadow-md">
-            <AssociateSelect
-              selectedAssociateId={selectedAssociateId}
-              onAssociateSelect={handleAssociateSelect}
+    <div className="flex flex-col md:flex-row h-full">
+      {/* Sidebar */}
+      <div className="w-full md:w-2/5 lg:w-1/3 xl:w-1/4 p-4 md:h-full overflow-y-auto">
+        <div className="sticky top-4 z-10 bg-white dark:bg-gray-800 p-4 shadow-md rounded-lg space-y-4">
+          <AssociateSelect
+            selectedAssociateId={selectedAssociateId}
+            onAssociateSelect={handleAssociateSelect}
+          />
+          {hasEditorRole && (
+            <CAForm
+              rules={rules}
+              associateId={selectedAssociateId}
+              onAddCorrectiveAction={handleAddCorrectiveAction}
             />
-            {hasEditorRole && (
-              <CAForm
-                rules={rules}
-                associateId={selectedAssociateId}
-                onAddCorrectiveAction={handleAddCorrectiveAction}
-              />
-            )}
-          </div>
-        </div>
-        <div className="lg:w-2/3 xl:w-3/4 p-4 overflow-y-auto">
-          {!hasEditorRole && (
-            <div
-              className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4"
-              role="alert"
-            >
-              <p className="font-bold">View Only Mode</p>
-              <p>
-                You do not have permission to add or edit corrective actions.
-              </p>
-            </div>
           )}
+        </div>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-grow p-4 md:h-full overflow-y-auto">
+        {!hasEditorRole && (
+          <div
+            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-lg"
+            role="alert"
+          >
+            <p className="font-bold">View Only Mode</p>
+            <p>
+              You do not have permission to add or edit corrective actions.
+            </p>
+          </div>
+        )}
+        {associateInfo && (
           <CAList
             associate={selectedAssociate}
             correctiveActions={correctiveActions}
@@ -205,7 +211,14 @@ function CAPage() {
             onDeleteCA={handleDeleteCA}
             onEditCA={handleEditCA}
           />
-        </div>
+        )}
+        {selectedAssociateId && associateInfo && (
+          <NotificationTracker
+            associateId={selectedAssociateId}
+            associateName={associateInfo.name}
+            notificationType={NotificationType.CORRECTIVE_ACTION}
+          />
+        )}
       </div>
       {editingCA && (
         <CAEditModal
