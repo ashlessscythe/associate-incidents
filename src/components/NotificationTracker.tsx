@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -37,6 +39,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     totalPoints: notificationType === NotificationType.OCCURRENCE ? '0' : '',
     description: '',
   });
+  const [showInputFields, setShowInputFields] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -91,53 +94,65 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">
         {notificationType === NotificationType.OCCURRENCE ? "Occurrence" : "Corrective Action"}
-        {" "}Notifications for {associateName}
+        {" "}Notices for {associateName}
       </h2>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Select
-          value={newNotification.level}
-          onValueChange={(value) => handleSelectChange('level', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select notification level" />
-          </SelectTrigger>
-          <SelectContent>
-            {notificationLevels[notificationType].map((level) => (
-              <SelectItem key={level.value} value={level.value}>
-                {level.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Input
-          type="date"
-          name="date"
-          value={newNotification.date}
-          onChange={handleInputChange}
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="show-input-fields"
+          checked={showInputFields}
+          onCheckedChange={setShowInputFields}
         />
+        <Label htmlFor="show-input-fields">Add New</Label>
+      </div>
 
-        {notificationType === NotificationType.OCCURRENCE && (
+      {showInputFields && (
+        <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-md">
+          <h3 className="text-lg font-semibold">Enter new notice record:</h3>
+          <Select
+            value={newNotification.level}
+            onValueChange={(value) => handleSelectChange('level', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select notification level" />
+            </SelectTrigger>
+            <SelectContent>
+              {notificationLevels[notificationType].map((level) => (
+                <SelectItem key={level.value} value={level.value}>
+                  {level.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="date"
+            name="date"
+            value={newNotification.date}
+            onChange={handleInputChange}
+          />
+
+          {notificationType === NotificationType.OCCURRENCE && (
+            <Input
+              type="text"
+              name="totalPoints"
+              value={newNotification.totalPoints}
+              onChange={handleInputChange}
+              placeholder="Total Points"
+            />
+          )}
+
           <Input
             type="text"
-            name="totalPoints"
-            value={newNotification.totalPoints}
+            name="description"
+            value={newNotification.description}
             onChange={handleInputChange}
-            placeholder="Total Points"
+            placeholder="Description"
           />
-        )}
 
-        <Input
-          type="text"
-          name="description"
-          value={newNotification.description}
-          onChange={handleInputChange}
-          placeholder="Description"
-        />
-
-        <Button type="submit">Add Notification</Button>
-      </form>
+          <Button type="submit">Add Notification</Button>
+        </form>
+      )}
 
       <Table>
         <TableHeader>
@@ -149,8 +164,17 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {notifications.map((notification) => (
-            <TableRow key={notification.id}>
+          {notifications.map((notification, index) => (
+            <React.Fragment key={notification.id}>
+            {index > 0 && (
+              <TableRow>
+                <TableCell 
+                  colSpan={notificationType === NotificationType.OCCURRENCE ? 4 : 3} 
+                  className="h-px bg-gray-200 dark:bg-gray-700"
+                />
+              </TableRow>
+            )}
+            <TableRow className="hover:bg-gray-50 dark:hover:bg-gray-800">
               <TableCell>{new Date(notification.date).toLocaleDateString()}</TableCell>
               <TableCell>{notification.level}</TableCell>
               {notificationType === NotificationType.OCCURRENCE && 
@@ -162,6 +186,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               }
               <TableCell>{notification.description || 'N/A'}</TableCell>
             </TableRow>
+          </React.Fragment>
           ))}
         </TableBody>
       </Table>
