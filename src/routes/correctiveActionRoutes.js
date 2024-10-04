@@ -35,8 +35,17 @@ router.get("/corrective-actions/:associateId", async (req, res) => {
 // Add a new corrective action
 router.post("/corrective-actions", async (req, res) => {
   const { associateId, ruleId, description, level, date } = req.body;
-  if (!associateId || !ruleId || !description || !level) {
+
+  // Check if required fields are present
+  if (!associateId || !ruleId || !description || level === undefined) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Validate level
+  if (!Number.isInteger(level) || level < 0 || level > 4) {
+    return res
+      .status(400)
+      .json({ error: "Level must be an integer between 0 and 4" });
   }
 
   try {
@@ -46,7 +55,7 @@ router.post("/corrective-actions", async (req, res) => {
         ruleId,
         description,
         level,
-        date,
+        date: date ? new Date(date) : new Date(), // Use current date if not provided
       },
       include: { rule: true },
     });
