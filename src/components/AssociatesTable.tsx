@@ -31,6 +31,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useAuthorizer } from "@authorizerdev/authorizer-react";
 
 interface AssociatesTableProps {
   associates: AssociateAndDesignation[];
@@ -46,6 +47,8 @@ interface AssociatesTableProps {
 
 type SortKey = "name" | "department" | "designation" | "location";
 type SortOrder = "asc" | "desc";
+
+const EDITOR_ROLES = ["att-edit", "user-edit"];
 
 const AssociatesTable: React.FC<AssociatesTableProps> = ({
   associates,
@@ -64,6 +67,9 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuthorizer();
+
+  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.some(role => EDITOR_ROLES.includes(role));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +102,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   };
 
   const handleEditClick = (associate: AssociateAndDesignation) => {
+    if (!hasEditorRole) return;
     setEditingAssociate(associate.id);
     setEditName(associate.name);
     setEditDepartmentId(associate.department?.id || "");
@@ -104,6 +111,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   };
 
   const handleSaveEdit = (id: string) => {
+    if (!hasEditorRole) return;
     onEdit(id, editName, editDepartmentId, editDesignation, editLocation);
     setEditingAssociate(null);
   };
@@ -304,19 +312,23 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                         Save
                       </button>
                     ) : (
+                      hasEditorRole && (
+                        <button
+                          onClick={() => handleEditClick(associate)}
+                          className="text-blue-500 hover:text-blue-700 mr-2"
+                        >
+                          <Pencil className="h-5 w-5 inline" />
+                        </button>
+                      )
+                    )}
+                    {hasEditorRole && (
                       <button
-                        onClick={() => handleEditClick(associate)}
-                        className="text-blue-500 hover:text-blue-700 mr-2"
+                        onClick={() => handleDeleteClick(associate.id)}
+                        className="text-red-500 hover:text-red-700"
                       >
-                        <Pencil className="h-5 w-5 inline" />
+                        <Trash2 className="h-5 w-5 inline" />
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDeleteClick(associate.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-5 w-5 inline" />
-                    </button>
                   </>
                 )}
               </TableCell>
