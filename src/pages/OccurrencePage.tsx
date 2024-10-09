@@ -37,7 +37,8 @@ function OccurrencePage() {
   const [error, setError] = useState<string | null>(null);
 
   const hasEditorRole =
-    user && Array.isArray(user.roles) && user.roles.includes("att-edit");
+    (user && Array.isArray(user.roles) && user.roles.includes("att-edit")) ||
+    false;
 
   const location = useLocation();
 
@@ -178,6 +179,7 @@ function OccurrencePage() {
             onDelete={handleDelete}
             onUpdate={handleUpdate}
             occurrenceTypes={occurrenceTypes}
+            allowEdit={hasEditorRole} // Pass the allowEdit prop
           />
         )}
 

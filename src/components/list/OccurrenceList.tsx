@@ -65,6 +65,7 @@ interface OccurrenceListProps {
   onDelete: (occurrenceId: string) => void;
   onUpdate: (occurenceId: string) => void;
   occurrenceTypes: OccurrenceType[];
+  allowEdit?: boolean; // New prop
 }
 
 type SortColumn = "type" | "description" | "date" | "points";
@@ -76,6 +77,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   onUpdate,
   onDelete,
   occurrenceTypes,
+  allowEdit, // New prop
 }) => {
   const { user } = useAuthorizer();
   const [totalPoints, setTotalPoints] = useState<number>(0);
@@ -105,6 +107,9 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
+
+  // Determine if edit actions should be shown
+  const showEditActions = allowEdit !== undefined ? allowEdit : hasEditorRole;
 
   const handleDelete = async (occurrenceId: string) => {
     const isConfirmed = window.confirm("Are you sure you want to delete?");
@@ -423,7 +428,9 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                     Points {renderSortIcon("points")}
                   </Button>
                 </TableHead>
-                <TableHead className="w-32">Actions</TableHead>
+                {showEditActions && (
+                  <TableHead className="w-32">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -455,32 +462,26 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="w-32">
-                      {hasEditorRole ? (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDelete(occurrence.id)}
-                            aria-label="Delete occurrence"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setEditingOccurrence(occurrence)}
-                            aria-label="Edit occurrence"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </>
-                      ) : (
-                        <span className="text-gray-400">
-                          No actions available
-                        </span>
-                      )}
-                    </TableCell>
+                    {showEditActions && (
+                      <TableCell className="w-32">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(occurrence.id)}
+                          aria-label="Delete occurrence"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setEditingOccurrence(occurrence)}
+                          aria-label="Edit occurrence"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}

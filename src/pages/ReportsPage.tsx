@@ -237,6 +237,7 @@ const ReportsPage: React.FC = () => {
                     occurrenceTypes={occurrenceTypes}
                     onDeleteOccurrence={handleDeleteOccurrence}
                     onUpdateOccurrence={handleUpdateOccurrence}
+                    allowEdit={false} // false for reports page
                   />
                 ))
               ) : (

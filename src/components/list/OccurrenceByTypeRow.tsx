@@ -10,6 +10,7 @@ interface OccurrenceByTypeRowProps {
   occurrenceTypes: OccurrenceType[];
   onDeleteOccurrence: (occurrenceId: string) => void;
   onUpdateOccurrence: (associateId: string) => void;
+  allowEdit?: boolean; // New prop
 }
 
 const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
@@ -18,6 +19,7 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
   occurrenceTypes,
   onDeleteOccurrence,
   onUpdateOccurrence,
+  allowEdit,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -81,6 +83,7 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
             onDelete={onDeleteOccurrence}
             onUpdate={onUpdateOccurrence}
             occurrenceTypes={occurrenceTypes}
+            allowEdit={allowEdit} // Pass the allowEdit prop
           />
         </div>
       )}
