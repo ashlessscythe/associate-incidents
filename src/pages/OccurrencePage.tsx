@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   OccurrenceType,
   Occurrence,
@@ -37,6 +38,16 @@ function OccurrencePage() {
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const associateId = searchParams.get("associateId");
+    if (associateId) {
+      setSelectedAssociateId(associateId);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchOccurrenceTypes = async () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   getRules,
   getCorrectiveActions,
@@ -45,6 +46,16 @@ function CAPage() {
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const associateId = searchParams.get("associateId");
+    if (associateId) {
+      handleAssociateSelect(associateId);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchInitialData = async () => {

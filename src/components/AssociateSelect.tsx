@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
-import { Input } from "@/components/ui/input";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { AssociateAndDesignation, Designation } from "@/lib/api";
 
@@ -25,7 +24,6 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const { associatesWithDesignation, fetchAssociatesWithDesignation } =
     useAssociatesWithDesignation();
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedDesignation, setSelectedDesignation] = useState<
     Designation | "ALL"
   >("ALL");
@@ -83,46 +81,37 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
         ))}
       </RadioGroup>
 
-      <Select
-        onValueChange={handleChange}
-        value={selectedAssociateId || "SELECT_ASSOCIATE"}
-        open={isOpen}
-        onOpenChange={(open) => setIsOpen(open)}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select an associate" />
-        </SelectTrigger>
-        <SelectContent className="w-full">
-          <div className="flex items-center px-3 py-2 sticky top-0 bg-white dark:bg-gray-800 z-10 border-b">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              ref={inputRef}
-              placeholder="Search associates..."
-              className="h-8 w-full bg-transparent focus:outline-none focus:ring-0 border-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" ||
-                  e.key === "ArrowDown" ||
-                  e.key === "ArrowUp"
-                ) {
-                  e.preventDefault();
-                }
-              }}
-              onKeyUp={(e) => e.stopPropagation()}
-            />
-          </div>
-          <div className="max-h-[200px] overflow-y-auto">
-            <SelectItem value="SELECT_ASSOCIATE">Select Associate</SelectItem>
-            {filteredAssociates.map((associate) => (
-              <SelectItem key={associate.id} value={associate.id}>
-                {associate.name} - [{associate.designation}]
-              </SelectItem>
-            ))}
-          </div>
-        </SelectContent>
-      </Select>
+      <div className="relative">
+        <div className="flex items-center px-3 py-2 border rounded-md mb-2">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <input
+            ref={inputRef}
+            placeholder="Search associates..."
+            className="w-full bg-transparent focus:outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <Select
+          onValueChange={handleChange}
+          value={selectedAssociateId || "SELECT_ASSOCIATE"}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select an associate" />
+          </SelectTrigger>
+          <SelectContent className="w-full">
+            <div className="max-h-[200px] overflow-y-auto">
+              <SelectItem value="SELECT_ASSOCIATE">Select Associate</SelectItem>
+              {filteredAssociates.map((associate) => (
+                <SelectItem key={associate.id} value={associate.id}>
+                  {associate.name} - [{associate.designation}]
+                </SelectItem>
+              ))}
+            </div>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 };

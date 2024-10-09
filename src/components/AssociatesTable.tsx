@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { Link } from "react-router-dom";
 
 interface AssociatesTableProps {
   associates: AssociateAndDesignation[];
@@ -69,7 +70,10 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const { user } = useAuthorizer();
 
-  const hasEditorRole = user && Array.isArray(user.roles) && user.roles.some(role => EDITOR_ROLES.includes(role));
+  const hasEditorRole =
+    user &&
+    Array.isArray(user.roles) &&
+    user.roles.some((role) => EDITOR_ROLES.includes(role));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -228,7 +232,20 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                     className="border rounded px-2 py-1 dark:bg-gray-800 dark:text-gray-200"
                   />
                 ) : (
-                  associate.name
+                  <>
+                    <Link
+                      to={`/attendance?associateId=${associate.id}`}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mr-2"
+                    >
+                      {associate.name}
+                    </Link>
+                    <Link
+                      to={`/ca?associateId=${associate.id}`}
+                      className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                    >
+                      (CA)
+                    </Link>
+                  </>
                 )}
               </TableCell>
               <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
