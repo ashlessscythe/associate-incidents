@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OccurrenceList from "@/components/list/OccurrenceList";
@@ -10,12 +11,12 @@ interface OccurrenceByTypeRowProps {
   occurrenceTypes: OccurrenceType[];
   onDeleteOccurrence: (occurrenceId: string) => void;
   onUpdateOccurrence: (associateId: string) => void;
-  allowEdit?: boolean; // New prop
+  allowEdit?: boolean;
 }
 
 const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
   associateInfo,
-  occurrences = [], // Default to empty array if undefined
+  occurrences = [],
   occurrenceTypes,
   onDeleteOccurrence,
   onUpdateOccurrence,
@@ -23,10 +24,8 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Toggle expanded state
   const toggleExpand = () => setIsExpanded((prev) => !prev);
 
-  // Calculate occurrence counts using useMemo to prevent recalculations on each render
   const occurrenceCounts = useMemo(() => {
     return occurrences.reduce((acc, occurrence) => {
       const typeCode = occurrence.type.code;
@@ -42,6 +41,18 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
           <span className="font-semibold text-gray-800 dark:text-white">
             {associateInfo.name}
           </span>
+          <Link
+            to={`/attendance?associateId=${associateInfo.id}`}
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mr-2"
+          >
+            Occurrences
+          </Link>
+          <Link
+            to={`/ca?associateId=${associateInfo.id}`}
+            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+          >
+            CA
+          </Link>
           <ArrowRight size={20} className="text-gray-400 dark:text-gray-500" />
           <div className="flex items-center space-x-2">
             {Object.keys(occurrenceCounts).length > 0 ? (
@@ -83,7 +94,7 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
             onDelete={onDeleteOccurrence}
             onUpdate={onUpdateOccurrence}
             occurrenceTypes={occurrenceTypes}
-            allowEdit={allowEdit} // Pass the allowEdit prop
+            allowEdit={allowEdit}
           />
         </div>
       )}
