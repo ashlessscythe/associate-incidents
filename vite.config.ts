@@ -11,12 +11,23 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000', // This should be the URL where your backend is running
+      "/api": {
+        target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
-  }
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          // Add other large dependencies here
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000, // Increased from default 500
+  },
 });

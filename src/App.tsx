@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -9,14 +9,16 @@ import {
   AuthorizerProvider,
   useAuthorizer,
 } from "@authorizerdev/authorizer-react";
-import LoginModal from "@/components/modals/LoginModal";
-import OccurencePage from "./pages/OccurrencePage";
-import CAPage from "./pages/CAPage";
-import Header from "@/components/Header";
-import AssociatesPage from "@/pages/AssociatesPage";
-import ReportsPage from "@/pages/ReportsPage";
-import PendingPage from "@/pages/PendingPage";
-import "@/components/authorizer-custom.css";
+import LoginModal from "./components/modals/LoginModal";
+import Header from "./components/Header";
+import "./components/authorizer-custom.css";
+
+// Lazy load page components
+const OccurencePage = React.lazy(() => import("./pages/OccurrencePage"));
+const CAPage = React.lazy(() => import("./pages/CAPage"));
+const AssociatesPage = React.lazy(() => import("./pages/AssociatesPage"));
+const ReportsPage = React.lazy(() => import("./pages/ReportsPage"));
+const PendingPage = React.lazy(() => import("./pages/PendingPage"));
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
 
@@ -39,7 +41,6 @@ const Profile = () => {
       </div>
     );
   }
-  return null;
 };
 
 const ProtectedRoute = ({
@@ -56,10 +57,9 @@ const ProtectedRoute = ({
 
   if (!user.roles) {
     console.error("User has no roles or roles not found");
-    return;
+    return null;
   }
 
-  // Check if the user has at least one of the allowed roles
   const userHasRole = user.roles.some((role: string) =>
     allowedRoles.includes(role)
   );
@@ -139,60 +139,62 @@ function AppContent() {
           onToggleDarkMode={toggleDarkMode}
         />
         <main className="container flex-1 overflow-y-auto p-4">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <div className="text-center mt-10">
-                  <h2 className="text-2xl font-bold mb-4 dark:text-white">
-                    Welcome to the Incident Tracker
-                  </h2>
-                  <Profile />
-                </div>
-              }
-            />
-            <Route
-              path="/pending"
-              element={
-                <ProtectedRoute allowedRoles={["pending"]}>
-                  <PendingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/attendance"
-              element={
-                <ProtectedRoute allowedRoles={["viewer", "att-edit"]}>
-                  <OccurencePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ca"
-              element={
-                <ProtectedRoute allowedRoles={["viewer", "ca-edit"]}>
-                  <CAPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/associates"
-              element={
-                <ProtectedRoute allowedRoles={["viewer", "user-edit"]}>
-                  <AssociatesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute allowedRoles={["viewer", "report-edit"]}>
-                  <ReportsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<div>Loading...</div>}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <div className="text-center mt-10">
+                    <h2 className="text-2xl font-bold mb-4 dark:text-white">
+                      Welcome to the Incident Tracker
+                    </h2>
+                    <Profile />
+                  </div>
+                }
+              />
+              <Route
+                path="/pending"
+                element={
+                  <ProtectedRoute allowedRoles={["pending"]}>
+                    <PendingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={["viewer", "att-edit"]}>
+                    <OccurencePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ca"
+                element={
+                  <ProtectedRoute allowedRoles={["viewer", "ca-edit"]}>
+                    <CAPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/associates"
+                element={
+                  <ProtectedRoute allowedRoles={["viewer", "user-edit"]}>
+                    <AssociatesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute allowedRoles={["viewer", "report-edit"]}>
+                    <ReportsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
       <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
