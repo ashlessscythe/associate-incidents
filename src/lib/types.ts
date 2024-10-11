@@ -70,6 +70,8 @@ export interface AssociateAndOccurrences {
 export enum RuleType {
   SAFETY = "SAFETY",
   WORK = "WORK",
+  OPERATIONS = "OPERATIONS",
+  SIGNAL = "SIGNAL",
 }
 
 export interface Rule {

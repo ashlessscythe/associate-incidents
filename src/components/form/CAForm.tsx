@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Rule } from "@/lib/api";
+import { Rule, RuleType } from "@/lib/api";
 
 interface CAFormProps {
   rules: Rule[];
@@ -29,7 +29,7 @@ const CAForm: React.FC<CAFormProps> = ({
   associateId,
   onAddCorrectiveAction,
 }) => {
-  const [ruleType, setRuleType] = useState<"SAFETY" | "WORK" | null>(null);
+  const [ruleType, setRuleType] = useState<RuleType | null>(null);
   const [ruleId, setRuleId] = useState("");
   const [description, setDescription] = useState("");
   const [level, setLevel] = useState("1");
@@ -37,13 +37,13 @@ const CAForm: React.FC<CAFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const [ruleTypes, setRuleTypes] = useState<("SAFETY" | "WORK")[]>([]);
+  const [ruleTypes, setRuleTypes] = useState<RuleType[]>([]);
   const [filteredRules, setFilteredRules] = useState<Rule[]>([]);
 
   useEffect(() => {
     // Extract unique rule types from the rules
     const types = Array.from(new Set(rules.map((rule) => rule.type)));
-    setRuleTypes(types as ("SAFETY" | "WORK")[]);
+    setRuleTypes(types as RuleType[]);
   }, [rules]);
 
   useEffect(() => {
@@ -102,9 +102,7 @@ const CAForm: React.FC<CAFormProps> = ({
       <h2 className="text-xl font-semibold mb-2">Add Corrective Action</h2>
       <div className="space-y-4">
         <RadioGroup
-          onValueChange={(value: string) =>
-            setRuleType(value as "SAFETY" | "WORK")
-          }
+          onValueChange={(value: string) => setRuleType(value as RuleType)}
           value={ruleType || undefined}
         >
           <div className="flex space-x-2">

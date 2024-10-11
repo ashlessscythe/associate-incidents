@@ -20,6 +20,8 @@ dist-ssr
 prisma/definitions.js
 prisma/associates.csv
 prisma/occurrences.csv
+prisma/*.dump
+prisma/*.sql
 
 # excel
 excel/occurrence.xlsx

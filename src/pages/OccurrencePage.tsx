@@ -35,6 +35,7 @@ function OccurrencePage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const hasEditorRole =
     (user && Array.isArray(user.roles) && user.roles.includes("att-edit")) ||
@@ -136,15 +137,23 @@ function OccurrencePage() {
     );
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   if (associatesLoading || loading) return <div>Loading...</div>;
   if (associatesError || error)
     return <div>Error: {associatesError || error}</div>;
 
   return (
-    <div className="flex flex-col md:flex-row h-full">
+    <div className="flex flex-col md:flex-row h-full relative">
       {/* Sidebar */}
-      <div className="w-full md:w-2/5 lg:w-1/3 xl:w-1/4 p-4 md:h-full overflow-y-auto">
-        <div className="sticky top-4 z-10 bg-white dark:bg-gray-800 p-4 shadow-md rounded-lg space-y-4">
+      <div
+        className={`${
+          isSidebarOpen ? "w-full md:w-2/5 lg:w-1/3 xl:w-1/4" : "w-0"
+        } transition-all duration-300 ease-in-out overflow-hidden md:h-full bg-white dark:bg-gray-800 shadow-md`}
+      >
+        <div className="sticky top-0 z-10 p-4 space-y-4">
           <AssociateSelect
             selectedAssociateId={selectedAssociateId}
             onAssociateSelect={handleAssociateSelect}
@@ -159,8 +168,24 @@ function OccurrencePage() {
         </div>
       </div>
 
+      {/* Toggle button */}
+      <button
+        onClick={toggleSidebar}
+        className={`fixed top-4 z-20 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-r-md shadow-md transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? "left-[calc(41.66%-1rem)] md:left-[calc(33.33%-1rem)] lg:left-[calc(25%-1rem)]"
+            : "left-0"
+        }`}
+      >
+        {isSidebarOpen ? "←" : "→"}
+      </button>
+
       {/* Main content area */}
-      <div className="flex-grow p-4 md:h-full overflow-y-auto">
+      <div
+        className={`flex-grow p-4 md:h-full overflow-y-auto transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "md:ml-4" : "md:ml-0"
+        }`}
+      >
         {!hasEditorRole && (
           <div
             className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-lg"
@@ -179,7 +204,7 @@ function OccurrencePage() {
             onDelete={handleDelete}
             onUpdate={handleUpdate}
             occurrenceTypes={occurrenceTypes}
-            allowEdit={hasEditorRole} // Pass the allowEdit prop
+            allowEdit={hasEditorRole}
           />
         )}
 

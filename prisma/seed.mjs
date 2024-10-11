@@ -121,7 +121,7 @@ async function readAssociatesFromCSV(filePath) {
 
 function generateFakeAssociates(count) {
   const associates = [];
-  const designations = ["MH", "NONE", "CLERK"];
+  const designations = ["MH", "NONE", "BRUH", "CLERK"];
 
   for (let i = 0; i < count; i++) {
     associates.push({
@@ -430,7 +430,7 @@ async function main() {
       operations.push(async (associates) => {
         let occurrences;
         if (fakerCount > 0) {
-          occurrences = generateFakeOccurrences(associates, fakerCount * 2); // Generate twice as many occurrences as associates
+          occurrences = generateFakeOccurrences(associates, fakerCount * 4); // Generate twice as many occurrences as associates
         } else {
           const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
           occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
@@ -452,7 +452,7 @@ async function main() {
       const correctiveActions = generateFakeCorrectiveActions(
         associates,
         rules,
-        fakerCount * 2
+        fakerCount * 4
       ); // Generate twice as many corrective actions
       if (correctiveActions.length > 0) {
         await upsertCorrectiveActions(correctiveActions);
