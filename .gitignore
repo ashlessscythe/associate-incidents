@@ -21,10 +21,6 @@ prisma/occurrences.csv
 excel/occurrence.xlsx
 excel/ca.xlsx
 
-# sql
-*.sql
-*.dump
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
