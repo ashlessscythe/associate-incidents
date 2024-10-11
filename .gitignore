@@ -12,16 +12,10 @@ dist
 dist-ssr
 *.local
 
-# env
-.env
-.env.local
-
 # prisma
 prisma/definitions.js
 prisma/associates.csv
 prisma/occurrences.csv
-prisma/*.dump
-prisma/*.sql
 
 # excel
 excel/occurrence.xlsx
@@ -42,3 +36,4 @@ excel/ca.xlsx
 *.sln
 *.sw?
 .env
+.env.local

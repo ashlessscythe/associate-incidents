@@ -111,12 +111,15 @@ enum Designation {
   MH
   CLERK
   INACTIVE
+  BRUH
   NONE
 }
 
 enum RuleType {
   SAFETY
   WORK
+  OPERATIONS
+  SIGNAL
 }
 
 model CorrectiveAction {

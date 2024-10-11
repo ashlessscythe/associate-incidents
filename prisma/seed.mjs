@@ -20,6 +20,11 @@ const occurrencesFileName = "occurrences.csv";
 const prisma = new PrismaClient();
 
 async function clearData() {
+  await prisma.notification.deleteMany(); // clear notifications, mmmmm
+  await prisma.exportRecord.deleteMany(); // clear export records, bruh
+  await prisma.location.deleteMany(); // clear locs
+  await prisma.department.deleteMany(); // bruh
+  await prisma.rule.deleteMany(); // again
   await prisma.attendanceOccurrence.deleteMany();
   await prisma.correctiveAction.deleteMany();
   await prisma.associate.deleteMany();
@@ -309,19 +314,21 @@ async function upsertOccurrences(occurrences) {
 // Function to generate fake corrective actions
 function generateFakeCorrectiveActions(associates, rules, count) {
   const correctiveActions = [];
-  const levels = [1, 2, 3, 4]; // Possible levels for corrective actions (based on your schema)
+  const levels = [1, 2, 3, 4];
 
   for (let i = 0; i < count; i++) {
     const associate = faker.helpers.arrayElement(associates);
     const rule = faker.helpers.arrayElement(rules);
 
-    correctiveActions.push({
-      associateId: associate.id, // Referencing Associate's id
-      ruleId: rule.id, // Referencing Rule's id
-      description: faker.lorem.sentence(), // Fake description for corrective action
-      level: faker.helpers.arrayElement(levels), // Random level between 1 and 4
-      date: faker.date.past(), // Random past date for corrective action
-    });
+    if (associate && associate.id && rule && rule.id) {
+      correctiveActions.push({
+        associateId: associate.id,
+        ruleId: rule.id,
+        description: faker.lorem.sentence(),
+        level: faker.helpers.arrayElement(levels),
+        date: faker.date.past(),
+      });
+    }
   }
 
   return correctiveActions;
@@ -333,7 +340,13 @@ async function upsertCorrectiveActions(correctiveActions) {
 
   for (const correctiveAction of correctiveActions) {
     try {
-      // Step 1: Find existing corrective action by associateId and ruleId
+      if (!correctiveAction.associateId || !correctiveAction.ruleId) {
+        console.error("Missing associateId or ruleId. Skipping.");
+        skippedCount++;
+        continue;
+      }
+
+      // Find an existing correctiveAction
       const existingCorrectiveAction = await prisma.correctiveAction.findFirst({
         where: {
           associateId: correctiveAction.associateId,
@@ -342,7 +355,7 @@ async function upsertCorrectiveActions(correctiveActions) {
       });
 
       if (existingCorrectiveAction) {
-        // Step 2: Update the existing corrective action
+        // If it exists, update it
         await prisma.correctiveAction.update({
           where: { id: existingCorrectiveAction.id },
           data: {
@@ -352,7 +365,7 @@ async function upsertCorrectiveActions(correctiveActions) {
           },
         });
       } else {
-        // Step 3: Create a new corrective action
+        // If it doesn't exist, create a new one
         await prisma.correctiveAction.create({
           data: {
             associateId: correctiveAction.associateId,
@@ -366,9 +379,7 @@ async function upsertCorrectiveActions(correctiveActions) {
 
       upsertedCount++;
     } catch (error) {
-      console.error(
-        `Error processing corrective action: ${error.message}. Skipping.`
-      );
+      console.error(`Error processing corrective action: ${error.message}`);
       skippedCount++;
     }
   }
@@ -393,132 +404,97 @@ async function main() {
       await clearData();
     }
 
-    // Always upsert OccurrenceTypes first
-    await upsertOccurrenceTypes();
-    await upsertLocations();
-    await upsertDepartments();
-
-    const operations = [];
-
-    if (notificationsOnly) {
-      operations.push(upsertNotificationLevels);
+    // Always upsert these unless a specific --only flag is used
+    if (
+      !occurrencesOnly &&
+      !rulesOnly &&
+      !usersOnly &&
+      !caOnly &&
+      !notificationsOnly
+    ) {
+      await upsertOccurrenceTypes();
+      await upsertLocations();
+      await upsertDepartments();
+      await upsertNotificationLevels();
+      await upsertRules();
+    } else {
+      if (occurrencesOnly) await upsertOccurrenceTypes();
+      if (rulesOnly) await upsertRules();
+      if (notificationsOnly) await upsertNotificationLevels();
     }
 
-    if (rulesOnly) {
-      operations.push(upsertRules);
-    }
-
-    if (usersOnly || fakerCount > 0) {
-      operations.push(async () => {
-        let associates;
-        if (fakerCount > 0) {
-          associates = generateFakeAssociates(fakerCount);
-        } else {
-          const csvPath = path.join(__dirname, associatesFileName);
-          associates = await readAssociatesFromCSV(csvPath);
-        }
-        if (associates.length > 0) {
-          await upsertAssociates(associates);
-        } else {
-          console.log("No associates found.");
-        }
-        return associates;
-      });
-    }
-
-    if (occurrencesOnly || fakerCount > 0) {
-      operations.push(async (associates) => {
-        let occurrences;
-        if (fakerCount > 0) {
-          occurrences = generateFakeOccurrences(associates, fakerCount * 4); // Generate twice as many occurrences as associates
-        } else {
-          const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
-          occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
-        }
-        if (occurrences.length > 0) {
-          await upsertOccurrences(occurrences);
-        } else {
-          console.log("No occurrences found.");
-        }
-      });
-    }
-
-    // needed for CA
-    const associates = await prisma.associate.findMany();
-    const rules = await prisma.rule.findMany();
-
-    // If only generating CorrectiveActions (with faker)
-    if (caOnly || fakerCount > 0) {
-      const correctiveActions = generateFakeCorrectiveActions(
-        associates,
-        rules,
-        fakerCount * 4
-      ); // Generate twice as many corrective actions
-      if (correctiveActions.length > 0) {
-        await upsertCorrectiveActions(correctiveActions);
+    let associates = [];
+    if (
+      usersOnly ||
+      (!occurrencesOnly && !rulesOnly && !caOnly && !notificationsOnly)
+    ) {
+      if (fakerCount > 0) {
+        associates = generateFakeAssociates(fakerCount);
       } else {
-        console.log("No corrective actions generated.");
+        const csvPath = path.join(__dirname, associatesFileName);
+        associates = await readAssociatesFromCSV(csvPath);
+      }
+      if (associates.length > 0) {
+        await upsertAssociates(associates);
+      } else {
+        console.log("No associates found or generated.");
       }
     }
 
-    // If no specific flag is set, perform all operations
-    if (operations.length === 0) {
-      operations.push(
-        upsertNotificationLevels,
-        upsertRules,
-        async () => {
-          let associates;
-          if (fakerCount > 0) {
-            associates = generateFakeAssociates(fakerCount);
-          } else {
-            const csvPath = path.join(__dirname, associatesFileName);
-            associates = await readAssociatesFromCSV(csvPath);
-          }
-          if (associates.length > 0) {
-            await upsertAssociates(associates);
-          } else {
-            console.log("No associates found.");
-          }
-          return associates;
-        },
-        async (associates) => {
-          let occurrences;
-          if (fakerCount > 0) {
-            occurrences = generateFakeOccurrences(associates, fakerCount * 2);
-          } else {
-            const occurrencesCsvPath = path.join(
-              __dirname,
-              occurrencesFileName
-            );
-            occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
-          }
-          if (occurrences.length > 0) {
-            await upsertOccurrences(occurrences);
-          } else {
-            console.log("No occurrences found.");
-          }
-        },
-        async (associates) => {
-          let correctiveActions;
-          if (fakerCount > 0) {
-            correctiveActions = generateFakeCorrectiveActions(
-              associates,
-              fakerCount * 2
-            );
-          } else {
-            console.log("No corrective actions data to process.");
-            return;
-          }
-          if (correctiveActions.length > 0) {
-            await upsertCorrectiveActions(correctiveActions);
-          }
-        }
-      );
+    if (
+      occurrencesOnly ||
+      (!usersOnly && !rulesOnly && !caOnly && !notificationsOnly)
+    ) {
+      if (associates.length === 0) {
+        associates = await prisma.associate.findMany();
+      }
+      let occurrences;
+      if (fakerCount > 0) {
+        occurrences = generateFakeOccurrences(associates, fakerCount * 5);
+      } else {
+        const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+        occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+      }
+      if (occurrences.length > 0) {
+        await upsertOccurrences(occurrences);
+      } else {
+        console.log("No occurrences found or generated.");
+      }
     }
 
-    let lastResult;
-    for (const operation of operations) {
-      lastResult = await operation(lastResult);
+    if (
+      caOnly ||
+      (!usersOnly && !occurrencesOnly && !rulesOnly && !notificationsOnly)
+    ) {
+      if (associates.length === 0) {
+        associates = await prisma.associate.findMany();
+      }
+      const rules = await prisma.rule.findMany();
+
+      if (associates.length === 0 || rules.length === 0) {
+        console.log(
+          "No associates or rules found. Cannot generate corrective actions."
+        );
+      } else {
+        let correctiveActions;
+        if (fakerCount > 0) {
+          correctiveActions = generateFakeCorrectiveActions(
+            associates,
+            rules,
+            fakerCount * 5
+          );
+        } else {
+          console.log(
+            "No source for corrective actions data. Use --use-faker to generate them."
+          );
+          return;
+        }
+        if (correctiveActions.length > 0) {
+          await upsertCorrectiveActions(correctiveActions);
+        } else {
+          console.log("No corrective actions generated.");
+        }
+      }
     }
 
     console.log("Seed completed successfully.");
