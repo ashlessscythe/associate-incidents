@@ -1,0 +1,14 @@
+url1: https://penskelogistics.net/DCMYardMVC/MVCYardReport/CustomerTrailerReportGenerate/?FPK=50000&FacilityTimeZone=NAMDT&TrailerType=Empty&ReportType=Excel
+
+[save_name]="empty_trls.xls"
+
+url3: https://penskelogistics.net/DCMYardMVC/MVCYardReport/YardCheckReportGenerate/?FPK=50000&FacilityTimeZone=NAMST&SortOrder=Yard&ReportType=Excel&FacilityName=430801%20Aptiv%20-%20El%20Paso%20TX.&LocID=430801
+
+url4: https://penskelogistics.net/DCMYardMVC/MVCYardReport/CustomerTrailerReportGenerate/?FPK=50000&FacilityTimeZone=NAMST&TrailerType=All&ReportType=Excel
+
+url5: https://penskelogistics.net/DCMYardMVC/MVCYardReport/CheckInOutReportGenerate/?FPK=50000&FacilityTimeZone=NAMST&FromDate=10-12-2024&IncludePortal=N&ReportType=CheckIn&ReportFormat=Excel
+
+url6: https://penskelogistics.net/DCMYardMVC/MVCYardReport/MoveRequestReportGenerate/?FPK=50000&FacilityTimeZone=NAMST&FromDate=10-12-2024&ReportLevel=Detail&ReportType=Excel&FacilityName=430801%20Aptiv%20-%20El%20Paso%20TX.&LocID=430801
+
+
+

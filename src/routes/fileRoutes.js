@@ -14,7 +14,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded." });
   }
 
-  const { originalname, filename, mimetype } = req.file;
+  const { originalname, filename, mimetype, size } = req.file;
   const { associateId } = req.body;
 
   try {
@@ -24,6 +24,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         path: filename,
         associateId: associateId,
         mimetype: mimetype,
+        size: size,
       },
     });
 
@@ -45,6 +46,7 @@ router.get("/files/:associateId", async (req, res) => {
         filename: true,
         createdAt: true,
         mimetype: true,
+        size: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -56,8 +58,8 @@ router.get("/files/:associateId", async (req, res) => {
   }
 });
 
-// Download a file
-router.get("/download/:fileId", async (req, res) => {
+// Download a file (updated route)
+router.get("/files/download/:fileId", async (req, res) => {
   try {
     const { fileId } = req.params;
     const file = await prisma.file.findUnique({

@@ -131,3 +131,11 @@ export interface CreateNotificationData {
   totalPoints?: number;
   description?: string;
 }
+
+export interface UploadedFile {
+  id: string;
+  filename: string;
+  uploadDate: string;
+  mimetype: string;
+  size: number;
+}

@@ -1,11 +1,5 @@
 import api from "./apiConfig";
-
-export interface UploadedFile {
-  id: string;
-  filename: string;
-  uploadDate: string;
-  mimetype: string;
-}
+import { UploadedFile } from "./types";
 
 export const uploadFile = async (formData: FormData): Promise<void> => {
   try {
@@ -25,9 +19,31 @@ export const getUploadedFiles = async (
 ): Promise<UploadedFile[]> => {
   try {
     const response = await api.get(`/files/${associateId}`);
-    return response.data;
+
+    // Map the response to match the UploadedFile interface
+    const files: UploadedFile[] = response.data.map((file: any) => ({
+      id: file.id,
+      filename: file.filename,
+      uploadDate: file.createdAt, // Assuming createdAt is the upload date
+      mimetype: file.mimetype,
+      size: file.size || 0,
+    }));
+
+    return files;
   } catch (error) {
     console.error("Error fetching uploaded files:", error);
+    throw error;
+  }
+};
+
+export const downloadFile = async (fileId: string): Promise<Blob> => {
+  try {
+    const response = await api.get(`/files/download/${fileId}`, {
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error downloading file:", error);
     throw error;
   }
 };

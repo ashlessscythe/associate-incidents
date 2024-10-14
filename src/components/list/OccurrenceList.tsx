@@ -35,7 +35,9 @@ import {
   Notification,
   Occurrence,
   uploadFile,
+  UploadedFile,
   getUploadedFiles,
+  downloadFile,
 } from "@/lib/api";
 import {
   Dialog,
@@ -74,12 +76,6 @@ interface OccurrenceListProps {
 
 type SortColumn = "type" | "description" | "date" | "points";
 type SortDirection = "asc" | "desc";
-
-interface UploadedFile {
-  id: string;
-  filename: string;
-  uploadDate: string;
-}
 
 const OccurrenceList: React.FC<OccurrenceListProps> = ({
   occurrences,
@@ -127,6 +123,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           const formData = new FormData();
           formData.append("file", file);
           formData.append("associateId", associateInfo.id);
+          formData.append("size", file.size.toString()); // Add file size to FormData
           await uploadFile(formData);
           fetchUploadedFiles();
         } catch (error) {
@@ -149,9 +146,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   const handleDownload = async (fileId: string, filename: string) => {
     try {
-      const response = await fetch(`/api/download/${fileId}`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const file = await downloadFile(fileId);
+      const url = window.URL.createObjectURL(file);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
@@ -574,7 +570,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   <TableRow key={file.id}>
                     <TableCell>{file.filename}</TableCell>
                     <TableCell>
-                      {new Date(file.uploadDate).toLocaleDateString()}
+                      {
+                        new Date(file.uploadDate)
+                          .toLocaleDateString()
+                          .split("T")[0]
+                      }
                     </TableCell>
                     <TableCell>
                       <Button
