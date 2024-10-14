@@ -34,14 +34,17 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
 
   useEffect(() => {
     const fetchData = async () => {
-      if (cachedAssociates.length === 0 || selectedDesignation !== "ALL") {
+      if (cachedAssociates.length === 0) {
         await fetchAssociatesWithDesignation();
-        setCachedAssociates(associatesWithDesignation);
       }
     };
 
     fetchData();
-  }, [cachedAssociates, fetchAssociatesWithDesignation, selectedDesignation]);
+  }, []);
+
+  useEffect(() => {
+    setCachedAssociates(associatesWithDesignation);
+  }, [associatesWithDesignation]);
 
   useEffect(() => {
     setSearchTerm("");
