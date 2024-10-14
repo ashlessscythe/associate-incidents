@@ -24,9 +24,9 @@ async function clearData() {
   await prisma.exportRecord.deleteMany(); // clear export records, bruh
   await prisma.location.deleteMany(); // clear locs
   await prisma.department.deleteMany(); // bruh
+  await prisma.correctiveAction.deleteMany();
   await prisma.rule.deleteMany(); // again
   await prisma.attendanceOccurrence.deleteMany();
-  await prisma.correctiveAction.deleteMany();
   await prisma.associate.deleteMany();
   await prisma.notificationLevel.deleteMany();
   await prisma.occurrenceType.deleteMany();

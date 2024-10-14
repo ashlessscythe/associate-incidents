@@ -12,6 +12,7 @@ import correctiveActionRoutes from "./routes/correctiveActionRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
 import utilRoutes from "./routes/utilRoutes.js";
+import fileRoutes from "./routes/fileRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ app.use("/zapi", correctiveActionRoutes);
 app.use("/zapi", notificationRoutes);
 app.use("/zapi", exportRoutes);
 app.use("/zapi", utilRoutes);
+app.use("/zapi", fileRoutes);
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

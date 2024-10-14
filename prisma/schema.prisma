@@ -24,6 +24,7 @@ model Associate {
   correctiveActions   CorrectiveAction[]
   exportRecords       ExportRecord[]
   notifications       Notification[]
+  files               File[]
 }
 
 model Location {
@@ -67,9 +68,9 @@ model AttendanceOccurrence {
   pointsAtTime    Float
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  files           File[]
 }
 
-// new CA models
 model Rule {
   id          String   @id @default(uuid())
   code        String   @unique
@@ -102,6 +103,36 @@ model Notification {
   updatedAt     DateTime       @updatedAt
 }
 
+model CorrectiveAction {
+  id          String    @id @default(uuid())
+  associateId String
+  associate   Associate @relation(fields: [associateId], references: [id])
+  ruleId      String
+  rule        Rule      @relation(fields: [ruleId], references: [id])
+  level       Int       // 1 to 4, representing the notification level
+  description String    @default("")
+  date        DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  files       File[]
+}
+
+model File {
+  id                    String               @id @default(uuid())
+  filename              String
+  path                  String
+  mimetype              String
+  size                  Int
+  associate             Associate?           @relation(fields: [associateId], references: [id])
+  associateId           String?
+  attendanceOccurrence  AttendanceOccurrence? @relation(fields: [attendanceOccurrenceId], references: [id])
+  attendanceOccurrenceId String?
+  correctiveAction      CorrectiveAction?    @relation(fields: [correctiveActionId], references: [id])
+  correctiveActionId    String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+}
+
 enum NotificationType {
   OCCURRENCE
   CORRECTIVE_ACTION
@@ -120,17 +151,4 @@ enum RuleType {
   WORK
   OPERATIONS
   SIGNAL
-}
-
-model CorrectiveAction {
-  id          String    @id @default(uuid())
-  associateId String
-  associate   Associate @relation(fields: [associateId], references: [id])
-  ruleId      String
-  rule        Rule      @relation(fields: [ruleId], references: [id])
-  level       Int       // 1 to 4, representing the notification level
-  description String    @default("")
-  date        DateTime
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
