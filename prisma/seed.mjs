@@ -19,6 +19,11 @@ const occurrencesFileName = "occurrences.csv";
 
 const prisma = new PrismaClient();
 
+async function clearFiles() {
+  await prisma.file.deleteMany();
+  console.log("Files deleted from db");
+}
+
 async function clearData() {
   await prisma.notification.deleteMany(); // clear notifications, mmmmm
   await prisma.exportRecord.deleteMany(); // clear export records, bruh
@@ -391,6 +396,7 @@ async function upsertCorrectiveActions(correctiveActions) {
 async function main() {
   try {
     const clearFlag = process.argv.includes("--clear");
+    const clearFilesFlag = process.argv.includes("--clear-files");
     const occurrencesOnly = process.argv.includes("--occurrences-only");
     const rulesOnly = process.argv.includes("--rules-only");
     const usersOnly = process.argv.includes("--users-only");
@@ -399,6 +405,10 @@ async function main() {
     const useFakerFlag = process.argv.findIndex((arg) => arg === "--use-faker");
     const fakerCount =
       useFakerFlag !== -1 ? parseInt(process.argv[useFakerFlag + 1], 10) : 0;
+
+    if (clearFilesFlag) {
+      await clearFiles();
+    }
 
     if (clearFlag) {
       await clearData();
