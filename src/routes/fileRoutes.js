@@ -6,11 +6,19 @@ const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Maximum file size (1MB)
+const MAX_FILE_SIZE = 1024 * 1024;
+
 // Upload a file
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
     const { associateId, notificationId } = req.body;
     const { originalname, buffer, mimetype, size } = req.file;
+
+    // Check file size
+    if (size > MAX_FILE_SIZE) {
+      return res.status(400).json({ error: "File size exceeds 1MB limit" });
+    }
 
     const file = await prisma.file.create({
       data: {

@@ -11,6 +11,7 @@ import {
   deleteNotification,
   uploadFile,
   downloadFile,
+  deleteFile,
   UploadedFile,
 } from "../lib/api";
 import {
@@ -41,7 +42,7 @@ import {
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { toast } from "react-hot-toast"; // Import toast for notifications
+import { toast } from "react-hot-toast";
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -73,6 +74,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const [deletingNotificationId, setDeletingNotificationId] = useState<
     string | null
   >(null);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
   const hasEditorRole =
     user &&
@@ -107,7 +109,6 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "totalPoints") {
-      // Allow only numbers and a single decimal point
       const regex = /^\d*\.?\d*$/;
       if (regex.test(value) || value === "") {
         setNewNotification((prev) => ({ ...prev, [name]: value }));
@@ -134,7 +135,6 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         : undefined,
     });
     fetchNotifications();
-    // Reset form
     setNewNotification({
       level: "",
       date: new Date().toISOString().split("T")[0],
@@ -171,6 +171,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const handleCancel = () => {
     setEditingNotification(null);
     setDeletingNotificationId(null);
+    setDeletingFileId(null);
   };
 
   const handleUpload = async (notificationId: string, associateId: string) => {
@@ -180,6 +181,12 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
+        if (file.size > 1024 * 1024) {
+          toast.error(
+            "File size exceeds 1MB limit. Please choose a smaller file."
+          );
+          return;
+        }
         try {
           const formData = new FormData();
           formData.append("file", file);
@@ -188,11 +195,11 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
 
           const result = await uploadFile(formData);
           console.log("File uploaded successfully:", result);
-          toast.success(result.message); // Show success notification
+          toast.success(result.message);
           fetchNotifications();
         } catch (error) {
           console.error("Error uploading file:", error);
-          toast.error("Failed to upload file. Please try again."); // Show error notification
+          toast.error("Failed to upload file. Please try again.");
         }
       }
     };
@@ -212,13 +219,30 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading file:", error);
-      alert("Failed to download file. Please try again.");
+      toast.error("Failed to download file. Please try again.");
+    }
+  };
+
+  const handleDeleteFile = (fileId: string) => {
+    if (!hasEditorRole) return;
+    setDeletingFileId(fileId);
+  };
+
+  const confirmDeleteFile = async () => {
+    if (!hasEditorRole || !deletingFileId) return;
+    try {
+      await deleteFile(deletingFileId);
+      toast.success("File deleted successfully");
+      setDeletingFileId(null);
+      fetchNotifications();
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Failed to delete file. Please try again.");
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Separator */}
       <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
       <h2 className="text-2xl font-bold">
         {notificationType === NotificationType.OCCURRENCE
@@ -328,16 +352,27 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               <TableCell>
                 {notification.files && notification.files.length > 0 ? (
                   notification.files.map((file: UploadedFile) => (
-                    <Button
-                      key={file.id}
-                      onClick={() => handleDownload(file.id, file.filename)}
-                      variant="ghost"
-                      size="sm"
-                      className="mr-2 mb-2"
-                    >
-                      <Download size={16} className="mr-2" />
-                      {file.filename}
-                    </Button>
+                    <div key={file.id} className="flex items-center mb-2">
+                      <Button
+                        onClick={() => handleDownload(file.id, file.filename)}
+                        variant="ghost"
+                        size="sm"
+                        className="mr-2"
+                      >
+                        <Download size={16} className="mr-2" />
+                        {file.filename}
+                      </Button>
+                      {hasEditorRole && (
+                        <Button
+                          onClick={() => handleDeleteFile(file.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                    </div>
                   ))
                 ) : (
                   <span className="text-gray-500">No files</span>
@@ -347,7 +382,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                     onClick={() => handleUpload(notification.id, associateId)}
                     variant="outline"
                     size="sm"
-                    className="ml-2"
+                    className="mt-2"
                   >
                     <Upload size={16} className="mr-2" />
                     Upload
@@ -466,6 +501,23 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
             <p>Are you sure you want to delete this notification?</p>
             <DialogFooter>
               <Button onClick={confirmDelete}>Yes, delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {deletingFileId && hasEditorRole && (
+        <Dialog
+          open={!!deletingFileId}
+          onOpenChange={() => setDeletingFileId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm File Deletion</DialogTitle>
+            </DialogHeader>
+            <p>Are you sure you want to delete this file?</p>
+            <DialogFooter>
+              <Button onClick={confirmDeleteFile}>Yes, delete</Button>
               <Button variant="outline" onClick={handleCancel}>
                 Cancel
               </Button>
