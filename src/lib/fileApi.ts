@@ -1,13 +1,12 @@
 import api from "./apiConfig";
-import { UploadedFile } from "./types";
+import { UploadedFile } from "./api";
 
-export const uploadFile = async (formData: FormData): Promise<void> => {
+export const uploadFile = async (
+  formData: FormData
+): Promise<{ message: string; fileId: string }> => {
   try {
-    await api.post("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await api.post("/upload", formData);
+    return response.data;
   } catch (error) {
     console.error("Error uploading file:", error);
     throw error;
@@ -24,7 +23,7 @@ export const getUploadedFiles = async (
     const files: UploadedFile[] = response.data.map((file: any) => ({
       id: file.id,
       filename: file.filename,
-      uploadDate: file.createdAt, // Assuming createdAt is the upload date
+      uploadDate: file.createdAt,
       mimetype: file.mimetype,
       size: file.size || 0,
     }));

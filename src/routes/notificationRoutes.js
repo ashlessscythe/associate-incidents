@@ -13,6 +13,9 @@ router.get("/notifications/:associateId", async (req, res) => {
         associateId,
         type: type,
       },
+      include: {
+        files: true,
+      },
       orderBy: { date: "desc" },
     });
     res.json(notifications);

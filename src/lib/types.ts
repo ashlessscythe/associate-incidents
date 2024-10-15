@@ -115,6 +115,7 @@ export interface Notification {
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+  files?: UploadedFile[];
 }
 
 export interface NotificationLevel {

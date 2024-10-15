@@ -1,37 +1,34 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { prisma } from "../server.js";
+import multer from "multer";
 
 const router = express.Router();
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Upload a file
 router.post("/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded." });
-  }
-
-  const { originalname, filename, mimetype, size } = req.file;
-  const { associateId } = req.body;
-
   try {
-    const newFile = await prisma.file.create({
+    const { associateId, notificationId } = req.body;
+    const { originalname, buffer, mimetype, size } = req.file;
+
+    const file = await prisma.file.create({
       data: {
         filename: originalname,
-        path: filename,
-        associateId: associateId,
+        content: buffer,
         mimetype: mimetype,
         size: size,
+        associateId: associateId,
+        notificationId: notificationId,
       },
     });
 
-    res.status(201).json(newFile);
+    res.json({ message: "File uploaded successfully", fileId: file.id });
   } catch (error) {
     console.error("Error uploading file:", error);
-    res.status(500).json({ error: "Error uploading file" });
+    res
+      .status(500)
+      .json({ error: "Failed to upload file", details: error.message });
   }
 });
 
@@ -58,7 +55,7 @@ router.get("/files/:associateId", async (req, res) => {
   }
 });
 
-// Download a file (updated route)
+// Download a file
 router.get("/files/download/:fileId", async (req, res) => {
   try {
     const { fileId } = req.params;
@@ -70,14 +67,12 @@ router.get("/files/download/:fileId", async (req, res) => {
       return res.status(404).json({ error: "File not found" });
     }
 
-    const filePath = path.join(process.cwd(), "uploads", file.path);
-
-    if (fs.existsSync(filePath)) {
-      res.setHeader("Content-Type", file.mimetype);
-      res.download(filePath, file.filename);
-    } else {
-      res.status(404).json({ error: "File not found on server" });
-    }
+    res.setHeader("Content-Type", file.mimetype);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${file.filename}"`
+    );
+    res.send(file.content);
   } catch (error) {
     console.error("Error downloading file:", error);
     res.status(500).json({ error: "Error downloading file" });
@@ -88,20 +83,6 @@ router.get("/files/download/:fileId", async (req, res) => {
 router.delete("/files/:fileId", async (req, res) => {
   try {
     const { fileId } = req.params;
-    const file = await prisma.file.findUnique({
-      where: { id: fileId },
-    });
-
-    if (!file) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
-    const filePath = path.join(process.cwd(), "uploads", file.path);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-
     await prisma.file.delete({
       where: { id: fileId },
     });

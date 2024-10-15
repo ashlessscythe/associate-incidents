@@ -7,25 +7,29 @@ import {
   createNotification,
   getNotificationLevels,
   getNotifications,
-} from "@/lib/api";
+  updateNotification,
+  deleteNotification,
+  uploadFile,
+  downloadFile,
+  UploadedFile,
+} from "../lib/api";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+} from "./ui/select";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Pencil, Trash2, Upload, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { updateNotification, deleteNotification } from "@/lib/api";
+} from "./ui/dialog";
 import {
   Table,
   TableBody,
@@ -33,10 +37,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+} from "./ui/table";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { toast } from "react-hot-toast"; // Import toast for notifications
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -168,6 +173,49 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     setDeletingNotificationId(null);
   };
 
+  const handleUpload = async (notificationId: string, associateId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.doc,.docx,.txt";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("associateId", associateId);
+          formData.append("notificationId", notificationId);
+
+          const result = await uploadFile(formData);
+          console.log("File uploaded successfully:", result);
+          toast.success(result.message); // Show success notification
+          fetchNotifications();
+        } catch (error) {
+          console.error("Error uploading file:", error);
+          toast.error("Failed to upload file. Please try again."); // Show error notification
+        }
+      }
+    };
+    input.click();
+  };
+
+  const handleDownload = async (fileId: string, filename: string) => {
+    try {
+      const file = await downloadFile(fileId);
+      const url = window.URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      alert("Failed to download file. Please try again.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Separator */}
@@ -217,15 +265,16 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
             name="date"
             value={newNotification.date}
             onChange={handleInputChange}
+            required
           />
 
           {notificationType === NotificationType.OCCURRENCE && (
             <Input
               type="text"
               name="totalPoints"
-              value={newNotification.totalPoints}
               onChange={handleInputChange}
               placeholder="Total Points"
+              required
             />
           )}
 
@@ -252,6 +301,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
               </TableHead>
             )}
             <TableHead className="font-semibold text-lg">Description</TableHead>
+            <TableHead className="font-semibold text-lg">Files</TableHead>
             {hasEditorRole && (
               <TableHead className="font-semibold text-lg">Actions</TableHead>
             )}
@@ -275,6 +325,35 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                 </TableCell>
               )}
               <TableCell>{notification.description || "N/A"}</TableCell>
+              <TableCell>
+                {notification.files && notification.files.length > 0 ? (
+                  notification.files.map((file: UploadedFile) => (
+                    <Button
+                      key={file.id}
+                      onClick={() => handleDownload(file.id, file.filename)}
+                      variant="ghost"
+                      size="sm"
+                      className="mr-2 mb-2"
+                    >
+                      <Download size={16} className="mr-2" />
+                      {file.filename}
+                    </Button>
+                  ))
+                ) : (
+                  <span className="text-gray-500">No files</span>
+                )}
+                {hasEditorRole && (
+                  <Button
+                    onClick={() => handleUpload(notification.id, associateId)}
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                  >
+                    <Upload size={16} className="mr-2" />
+                    Upload
+                  </Button>
+                )}
+              </TableCell>
               {hasEditorRole && (
                 <TableCell>
                   <Button
@@ -297,6 +376,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
           ))}
         </TableBody>
       </Table>
+
       {editingNotification && hasEditorRole && (
         <Dialog
           open={!!editingNotification}

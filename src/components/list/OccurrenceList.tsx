@@ -15,8 +15,6 @@ import {
   ArrowUp,
   ArrowDown,
   FileSpreadsheet,
-  Upload,
-  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -34,10 +32,6 @@ import {
   getNotifications,
   Notification,
   Occurrence,
-  uploadFile,
-  UploadedFile,
-  getUploadedFiles,
-  downloadFile,
 } from "@/lib/api";
 import {
   Dialog,
@@ -108,58 +102,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     useState<Department | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const handlePrint = useOccurrencePrint();
-
-  const handleUpload = async () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".pdf,.doc,.docx,.txt";
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("associateId", associateInfo.id);
-          formData.append("size", file.size.toString()); // Add file size to FormData
-          await uploadFile(formData);
-          fetchUploadedFiles();
-        } catch (error) {
-          console.error("Error uploading file:", error);
-          alert("Failed to upload file. Please try again.");
-        }
-      }
-    };
-    input.click();
-  };
-
-  const fetchUploadedFiles = async () => {
-    try {
-      const files = await getUploadedFiles(associateInfo.id);
-      setUploadedFiles(files);
-    } catch (error) {
-      console.error("Error fetching uploaded files:", error);
-    }
-  };
-
-  const handleDownload = async (fileId: string, filename: string) => {
-    try {
-      const file = await downloadFile(fileId);
-      const url = window.URL.createObjectURL(file);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error downloading file:", error);
-      alert("Failed to download file. Please try again.");
-    }
-  };
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
@@ -246,7 +190,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             setAssociateDepartment(department);
           }
           setNotifications(notificationsData);
-          fetchUploadedFiles();
         } catch (e) {
           console.error("Error fetching associate data:", e);
         }
@@ -448,15 +391,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             >
               <FileSpreadsheet size={20} />
             </Button>
-            <Button
-              onClick={handleUpload}
-              className="text-light-500 hover:text-light-700"
-              variant="ghost"
-              size="icon"
-              aria-label="Upload File"
-            >
-              <Upload size={20} />
-            </Button>
           </div>
         )}
         <div className="overflow-x-auto">
@@ -552,48 +486,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             No occurrences recorded
           </p>
         )}
-
-        {/* Uploaded Files Section */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4">Uploaded Files</h3>
-          {uploadedFiles.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Filename</TableHead>
-                  <TableHead>Upload Date</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uploadedFiles.map((file) => (
-                  <TableRow key={file.id}>
-                    <TableCell>{file.filename}</TableCell>
-                    <TableCell>
-                      {
-                        new Date(file.uploadDate)
-                          .toLocaleDateString()
-                          .split("T")[0]
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        onClick={() => handleDownload(file.id, file.filename)}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        <Download size={16} className="mr-2" />
-                        Download
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center text-gray-500">No files uploaded yet</p>
-          )}
-        </div>
       </div>
 
       {/* Export Modal */}
