@@ -33,3 +33,5 @@ excel/ca.xlsx
 *.sw?
 .env
 .env.local
+prisma/definitions-real.js
+prisma/real-definitions.js
