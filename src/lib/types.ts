@@ -89,6 +89,7 @@ export interface CorrectiveAction {
   level: number;
   description: string;
   date: Date;
+  files?: UploadedFile[];
 }
 
 export interface ExportOccRecord {

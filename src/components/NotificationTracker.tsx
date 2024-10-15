@@ -12,7 +12,6 @@ import {
   uploadFile,
   downloadFile,
   deleteFile,
-  UploadedFile,
 } from "../lib/api";
 import {
   Select,
@@ -23,7 +22,7 @@ import {
 } from "./ui/select";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Pencil, Trash2, Upload, Download } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +42,7 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { toast } from "react-hot-toast";
+import UploadedFiles from "./UploadedFiles";
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -75,6 +75,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     string | null
   >(null);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [viewFiles, setViewFiles] = useState<{ [key: string]: boolean }>({});
 
   const hasEditorRole =
     user &&
@@ -99,6 +100,14 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
       nTypeAsString(notificationType)
     );
     setNotifications(fetchedNotifications);
+    const initialViewFiles = fetchedNotifications.reduce(
+      (acc, notification) => {
+        acc[notification.id] = false;
+        return acc;
+      },
+      {} as { [key: string]: boolean }
+    );
+    setViewFiles(initialViewFiles);
   };
 
   const fetchNotificationLevels = async () => {
@@ -241,6 +250,13 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     }
   };
 
+  const toggleViewFiles = (notificationId: string) => {
+    setViewFiles((prev) => ({
+      ...prev,
+      [notificationId]: !prev[notificationId],
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
@@ -333,81 +349,89 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         </TableHeader>
         <TableBody>
           {notifications.map((notification) => (
-            <TableRow
-              key={notification.id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <TableCell>
-                {new Date(notification.date).toISOString().split("T")[0]}
-              </TableCell>
-              <TableCell>{notification.level}</TableCell>
-              {notificationType === NotificationType.OCCURRENCE && (
+            <React.Fragment key={notification.id}>
+              <TableRow className="hover:bg-gray-50 dark:hover:bg-gray-800">
                 <TableCell>
-                  {typeof notification.totalPoints === "number"
-                    ? notification.totalPoints.toFixed(1)
-                    : "N/A"}
+                  {new Date(notification.date).toISOString().split("T")[0]}
                 </TableCell>
-              )}
-              <TableCell>{notification.description || "N/A"}</TableCell>
-              <TableCell>
-                {notification.files && notification.files.length > 0 ? (
-                  notification.files.map((file: UploadedFile) => (
-                    <div key={file.id} className="flex items-center mb-2">
-                      <Button
-                        onClick={() => handleDownload(file.id, file.filename)}
-                        variant="ghost"
-                        size="sm"
-                        className="mr-2"
-                      >
-                        <Download size={16} className="mr-2" />
-                        {file.filename}
-                      </Button>
-                      {hasEditorRole && (
-                        <Button
-                          onClick={() => handleDeleteFile(file.id)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      )}
+                <TableCell>{notification.level}</TableCell>
+                {notificationType === NotificationType.OCCURRENCE && (
+                  <TableCell>
+                    {typeof notification.totalPoints === "number"
+                      ? notification.totalPoints.toFixed(1)
+                      : "N/A"}
+                  </TableCell>
+                )}
+                <TableCell>{notification.description || "N/A"}</TableCell>
+                <TableCell>
+                  {notification.files && notification.files.length > 0 ? (
+                    <div className="flex items-center space-x-2">
+                      <span>{notification.files.length} file(s)</span>
+                      <Switch
+                        id={`view-files-${notification.id}`}
+                        checked={viewFiles[notification.id]}
+                        onCheckedChange={() => toggleViewFiles(notification.id)}
+                      />
+                      <Label htmlFor={`view-files-${notification.id}`}>
+                        View Files
+                      </Label>
                     </div>
-                  ))
-                ) : (
-                  <span className="text-gray-500">No files</span>
-                )}
-                {hasEditorRole && (
-                  <Button
-                    onClick={() => handleUpload(notification.id, associateId)}
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                  >
-                    <Upload size={16} className="mr-2" />
-                    Upload
-                  </Button>
-                )}
-              </TableCell>
-              {hasEditorRole && (
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(notification)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(notification.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  ) : (
+                    <span className="text-gray-500 mr-2">No files</span>
+                  )}
+                  {hasEditorRole && (
+                    <Button
+                      onClick={() => handleUpload(notification.id, associateId)}
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                    >
+                      <Upload size={16} className="mr-2" />
+                      Upload
+                    </Button>
+                  )}
                 </TableCell>
-              )}
-            </TableRow>
+                {hasEditorRole && (
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(notification)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(notification.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+              {viewFiles[notification.id] &&
+                notification.files &&
+                notification.files.length > 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <UploadedFiles
+                        files={notification.files}
+                        onDownload={(fileId) => {
+                          const file = notification.files?.find(
+                            (f) => f.id === fileId
+                          );
+                          if (file) {
+                            handleDownload(fileId, file.filename);
+                          }
+                        }}
+                        onDelete={handleDeleteFile}
+                        hasEditorRole={hasEditorRole}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>

@@ -110,14 +110,6 @@ const ReportsPage: React.FC = () => {
     setError(null);
   };
 
-  const handleEditCA = async (ca: CorrectiveAction) => {
-    console.log("Edit CA:", ca);
-  };
-
-  const handleDeleteCA = async (id: string) => {
-    console.log("Delete CA:", id);
-  };
-
   const handleDeleteOccurrence = async (occurrenceId: string) => {
     console.log("Delete Occurrence:", occurrenceId);
   };
@@ -255,8 +247,6 @@ const ReportsPage: React.FC = () => {
                 associate={associate}
                 associateInfo={associate.info}
                 rules={rules}
-                onEditCA={handleEditCA}
-                onDeleteCA={handleDeleteCA}
               />
             ))}
           </ul>

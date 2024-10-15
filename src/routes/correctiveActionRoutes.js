@@ -21,7 +21,10 @@ router.get("/corrective-actions/:associateId", async (req, res) => {
     const correctiveActions = await prisma.correctiveAction.findMany({
       where: { associateId: associateId },
       orderBy: { date: "desc" },
-      include: { rule: true },
+      include: {
+        rule: true,
+        files: true,
+      },
     });
     res.json(correctiveActions);
   } catch (error) {

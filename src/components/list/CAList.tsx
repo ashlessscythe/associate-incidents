@@ -10,8 +10,11 @@ interface CAListProps {
   associateInfo: AssociateInfo;
   correctiveActions: CorrectiveAction[];
   rules: Rule[];
-  onEditCA: (ca: CorrectiveAction) => void;
-  onDeleteCA: (id: string) => Promise<void>;
+  onEditCA?: (ca: CorrectiveAction) => void;
+  onDeleteCA?: (id: string) => Promise<void>;
+  onUploadFile?: (caId: string, file: File) => Promise<void>;
+  onDownloadFile?: (fileId: string, filename: string) => Promise<void>;
+  onDeleteFile?: (fileId: string) => Promise<void>;
 }
 
 const CAList: React.FC<CAListProps> = ({
@@ -21,6 +24,9 @@ const CAList: React.FC<CAListProps> = ({
   rules,
   onEditCA,
   onDeleteCA,
+  onUploadFile,
+  onDownloadFile,
+  onDeleteFile,
 }) => {
   // Group CAs by rule type and code
   const groupedCAs = correctiveActions.reduce((acc, ca) => {
@@ -103,6 +109,9 @@ const CAList: React.FC<CAListProps> = ({
                         rules={rules}
                         onEditCA={onEditCA}
                         onDeleteCA={onDeleteCA}
+                        onUploadFile={onUploadFile}
+                        onDownloadFile={onDownloadFile}
+                        onDeleteFile={onDeleteFile}
                         associate={associate}
                         associateInfo={associateInfo}
                         level={ca.level}

@@ -13,16 +13,12 @@ interface CAByTypeRowProps {
   };
   associateInfo: AssociateInfo;
   rules: Rule[];
-  onEditCA: (ca: CorrectiveAction) => void;
-  onDeleteCA: (id: string) => Promise<void>;
 }
 
 const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
   associate,
   associateInfo,
   rules,
-  onEditCA,
-  onDeleteCA,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -94,8 +90,6 @@ const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
             associateInfo={associateInfo}
             correctiveActions={associate.correctiveActions}
             rules={rules}
-            onDeleteCA={onDeleteCA}
-            onEditCA={onEditCA}
           />
         </div>
       )}

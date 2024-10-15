@@ -18,6 +18,8 @@ import CAList from "../components/list/CAList";
 import CAEditModal from "@/components/modals/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
+import { uploadFile, downloadFile, deleteFile } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 function CAPage() {
   const { user } = useAuthorizer();
@@ -187,6 +189,52 @@ function CAPage() {
     }
   };
 
+  const handleUploadFile = async (caId: string, file: File) => {
+    if (selectedAssociateId) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("associateId", selectedAssociateId);
+        formData.append("correctiveActionId", caId);
+
+        const result = await uploadFile(formData);
+        toast.success(result.message);
+        await fetchCorrectiveActions();
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast.error("Failed to upload file. Please try again.");
+      }
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string, filename: string) => {
+    try {
+      const file = await downloadFile(fileId);
+      const url = window.URL.createObjectURL(file);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file. Please try again.");
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await deleteFile(fileId);
+      toast.success("File deleted successfully");
+      await fetchCorrectiveActions();
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Failed to delete file. Please try again.");
+    }
+  };
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -253,6 +301,9 @@ function CAPage() {
             rules={rules}
             onDeleteCA={handleDeleteCA}
             onEditCA={handleEditCA}
+            onUploadFile={handleUploadFile}
+            onDownloadFile={handleDownloadFile}
+            onDeleteFile={handleDeleteFile}
           />
         )}
       </div>

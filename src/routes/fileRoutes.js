@@ -12,7 +12,7 @@ const MAX_FILE_SIZE = 1024 * 1024;
 // Upload a file
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    const { associateId, notificationId } = req.body;
+    const { associateId, notificationId, correctiveActionId } = req.body;
     const { originalname, buffer, mimetype, size } = req.file;
 
     // Check file size
@@ -28,6 +28,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         size: size,
         associateId: associateId,
         notificationId: notificationId,
+        correctiveActionId: correctiveActionId,
       },
     });
 
