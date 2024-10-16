@@ -139,7 +139,7 @@ export async function generateExcelCA(
   location,
   department,
   date,
-  correctiveAction,
+  correctiveActions,
   notificationLevel
 ) {
   const templatePath = await getTemplate(process.env.CA_TEMPLATE_KEY, "ca");
@@ -167,8 +167,6 @@ export async function generateExcelCA(
     sheet.cell(level.cell).value(cellValue);
   });
 
-  const r = correctiveAction.rule;
-
   function formatDescription(description) {
     if (description.length <= 90) {
       return description;
@@ -176,6 +174,10 @@ export async function generateExcelCA(
       return `${description.slice(0, 90)}...`;
     }
   }
+
+  // Handle the current corrective action
+  const currentCA = correctiveActions[0];
+  const r = currentCA.rule;
 
   if (r.code.includes("Appendix A")) {
     sheet
@@ -188,19 +190,36 @@ export async function generateExcelCA(
       .cell("B14")
       .value(`(X) ${r.code} // ${formatDescription(r.description)}`);
   } else {
-    sheet.cell("B13").value("( ) Appendix A");
-    sheet.cell("B14").value("( ) Appendix B");
+    sheet.cell("B13").value(`Type: ${r.type}`);
+    sheet.cell("B14").value(`Code: ${r.code}`);
   }
 
-  const formattedDate = new Date(correctiveAction.date)
-    .toISOString()
-    .split("T")[0];
-  const description = `${formattedDate} (${correctiveAction.description})`;
+  const formattedDate = new Date(currentCA.date).toISOString().split("T")[0];
+  const description = `${formattedDate} (${currentCA.description})`;
 
   const cell = sheet.cell("A17");
   cell.value(description);
   cell.style("wrapText", true);
   cell.style("verticalAlignment", "top");
+  cell.style("horizontalAlignment", "left");
+
+  // Handle previous corrective actions
+  const caCells = [
+    { date: "B28", type: "D28", reason: "G28" },
+    { date: "B29", type: "D29", reason: "G29" },
+    { date: "B30", type: "D30", reason: "G30" },
+  ];
+
+  correctiveActions.slice(1).forEach((ca, index) => {
+    if (index < caCells.length) {
+      const cells = caCells[index];
+      sheet
+        .cell(cells.date)
+        .value(new Date(ca.date).toISOString().split("T")[0]);
+      sheet.cell(cells.type).value(ca.rule.code);
+      sheet.cell(cells.reason).value(formatDescription(ca.description));
+    }
+  });
 
   const excelBuffer = await workbook.outputAsync();
 

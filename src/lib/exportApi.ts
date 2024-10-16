@@ -101,7 +101,7 @@ export async function exportExcelCA(
   location: string,
   department: string,
   date: string,
-  correctiveAction: CorrectiveAction,
+  correctiveActions: CorrectiveAction[],
   notificationLevel: string
 ): Promise<Blob> {
   try {
@@ -114,7 +114,7 @@ export async function exportExcelCA(
         location,
         department,
         date,
-        correctiveAction,
+        correctiveActions,
         notificationLevel,
       },
       {

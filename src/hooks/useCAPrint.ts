@@ -3,10 +3,17 @@ import { Associate, CorrectiveAction } from "@/lib/api";
 interface CAPrintData {
   associate: Associate | null;
   correctiveActions: CorrectiveAction[];
+  totalCorrectiveActions: number;
+  safetyCumulativeCount: number;
 }
 
 export const useCAPrint = () => {
-  const handlePrint = ({ associate, correctiveActions }: CAPrintData) => {
+  const handlePrint = ({
+    associate,
+    correctiveActions,
+    totalCorrectiveActions,
+    safetyCumulativeCount,
+  }: CAPrintData) => {
     const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
@@ -86,6 +93,15 @@ export const useCAPrint = () => {
             <h1>Corrective Action List for ${associate?.name}</h1>
             <div class="summary">
               <h2>Summary</h2>
+              <p><strong>Name:</strong> ${associate?.name || "N/A"}</p>
+              <p><strong>Department:</strong> ${
+                associate?.department?.name || "N/A"
+              }</p>
+              <p><strong>Location:</strong> ${
+                associate?.location?.name || "N/A"
+              }</p>
+              <p><strong>Total Corrective Actions:</strong> ${totalCorrectiveActions}</p>
+              <p><strong>Cumulative Count (Safety):</strong> ${safetyCumulativeCount}</p>
             </div>
             <table>
               <thead>

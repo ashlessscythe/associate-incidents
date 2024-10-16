@@ -1,9 +1,16 @@
 import React from "react";
-import { Associate, AssociateInfo, CorrectiveAction, Rule } from "@/lib/api";
-import { Printer } from "lucide-react";
+import {
+  Associate,
+  AssociateInfo,
+  CorrectiveAction,
+  Rule,
+  exportExcelCA,
+} from "@/lib/api";
+import { Printer, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CAItem from "./CAItem";
 import { useCAPrint } from "@/hooks/useCAPrint";
+import { toast } from "react-hot-toast";
 
 interface CAListProps {
   associate: Associate;
@@ -54,6 +61,54 @@ const CAList: React.FC<CAListProps> = ({
     return latestDateB.getTime() - latestDateA.getTime();
   });
 
+  // Count safety and operations CAs
+  const safetyCumulativeCount = correctiveActions.filter((ca) => {
+    const rule = rules.find((r) => r.id === ca.ruleId);
+    return rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
+  }).length;
+
+  const handleExport = async () => {
+    try {
+      const exportCAs = correctiveActions.filter((ca) => {
+        const rule = rules.find((r) => r.id === ca.ruleId);
+        return rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
+      });
+
+      if (exportCAs.length === 0) {
+        exportCAs.push(correctiveActions[0]); // If no safety/operations CAs, export the most recent one
+      }
+
+      // Remove file items from the corrective actions
+      const exportCAsWithoutFiles = exportCAs.map((ca) => {
+        const { files, ...caWithoutFiles } = ca;
+        return caWithoutFiles;
+      });
+
+      const blob = await exportExcelCA(
+        associate.name,
+        associate.location?.name || "",
+        associate.department?.name || "",
+        new Date().toISOString().split("T")[0],
+        exportCAsWithoutFiles,
+        "Multiple Corrective Actions" // You might want to adjust this based on your needs
+      );
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `${associate.name}_corrective_actions.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      toast.error(
+        "An error occurred while exporting to Excel. Please try again."
+      );
+    }
+  };
+
   return (
     <div className="mt-6 flex flex-col md:flex-row">
       <div className="w-full">
@@ -77,16 +132,36 @@ const CAList: React.FC<CAListProps> = ({
         <div className="flex justify-between items-center mb-4">
           <p className="mb-4 font-medium">
             Total Corrective Actions: {correctiveActions.length}
+            <br />
+            Cumulative Count: {safetyCumulativeCount}
+          </p>
+          <div>
             <Button
-              onClick={() => handlePrint({ associate, correctiveActions })}
-              className="text-blue-500 hover:text-blue-700"
+              onClick={() =>
+                handlePrint({
+                  associate,
+                  correctiveActions,
+                  totalCorrectiveActions: correctiveActions.length,
+                  safetyCumulativeCount,
+                })
+              }
+              className="text-blue-500 hover:text-blue-700 mr-2"
               variant="ghost"
               size="icon"
-              aria-label="Print corrective action"
+              aria-label="Print corrective actions"
             >
               <Printer size={20} />
             </Button>
-          </p>
+            <Button
+              onClick={handleExport}
+              className="text-green-500 hover:text-green-700"
+              variant="ghost"
+              size="icon"
+              aria-label="Export corrective actions to Excel"
+            >
+              <FileSpreadsheet size={20} />
+            </Button>
+          </div>
         </div>
         {sortedGroups.length === 0 ? (
           <p>No corrective actions found.</p>

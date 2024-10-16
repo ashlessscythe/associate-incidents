@@ -9,9 +9,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Edit2, Trash2, Upload } from "lucide-react";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import ExportCADetailsModal from "../modals/ExportCADetailsModal";
+import ExportCADetailsModal from "@/components/modals/ExportCADetailsModal";
 import { toast } from "react-hot-toast";
-import UploadedFiles from "../UploadedFiles";
+import UploadedFiles from "@/components/UploadedFiles";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -80,12 +80,15 @@ const CAItem: React.FC<CAItemProps> = ({
     const location = associateLocation || selectedLocation;
     const department = associateDepartment || selectedDepartment;
     try {
+      // Remove file items from the corrective action
+      const { files, ...caWithoutFiles } = ca;
+
       const blob = await exportExcelCA(
         associate.name,
         location,
         department,
         new Date().toISOString().split("T")[0], // current date
-        ca, // single CA
+        [caWithoutFiles], // Pass an array containing the single CA without files
         getLevelDescription(level) // notification level
       );
       const url = window.URL.createObjectURL(blob);
@@ -171,12 +174,17 @@ const CAItem: React.FC<CAItemProps> = ({
     }
   };
 
+  const rule = rules.find((r) => r.id === ca.ruleId);
+  // TODO: get these from db instead of static
+  const isSafetyOrOperations =
+    rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
+
   return (
     <li className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold">{getRuleDescription(ca.ruleId)}</p>
-          <p>{getLevelDescription(level)}</p>
+          {!isSafetyOrOperations && <p>{getLevelDescription(level)}</p>}
           <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
           <p>Description: {ca.description}</p>
         </div>

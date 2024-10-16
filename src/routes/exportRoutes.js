@@ -53,12 +53,18 @@ router.post("/export-excel-ca", async (req, res) => {
       location,
       department,
       date,
-      correctiveAction,
+      correctiveActions,
       notificationLevel,
     } = req.body;
 
-    if (!associateName || !correctiveAction) {
-      throw new Error("Missing required fields");
+    if (
+      !associateName ||
+      !correctiveActions ||
+      correctiveActions.length === 0
+    ) {
+      throw new Error(
+        "Missing required fields or no corrective actions provided"
+      );
     }
 
     const excelBuffer = await generateExcelCA(
@@ -66,7 +72,7 @@ router.post("/export-excel-ca", async (req, res) => {
       location,
       department,
       date,
-      correctiveAction,
+      correctiveActions,
       notificationLevel
     );
 
