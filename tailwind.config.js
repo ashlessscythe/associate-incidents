@@ -71,13 +71,13 @@ module.exports = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
-      backgroundImage: {
-        "light-mode-gradient":
-          "linear-gradient(to bottom right, #eceff1, #e0e5f5, #d1d6e8, #c2c6da, #b3b8cc)",
-        "dark-mode-gradient":
-          "linear-gradient(to bottom right, #031B3C, #062A56, #0A3D6B, #045b8e, #0573a6)",
-      },
     },
   },
   plugins: [require("tailwindcss-animate")],
+  variants: {
+    extend: {
+      backgroundColor: ["blue", "green"],
+      textColor: ["blue", "green"],
+    },
+  },
 };

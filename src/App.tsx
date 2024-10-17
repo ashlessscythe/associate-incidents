@@ -9,9 +9,11 @@ import {
   AuthorizerProvider,
   useAuthorizer,
 } from "@authorizerdev/authorizer-react";
+import { ThemeProvider, useTheme } from "next-themes";
 import LoginModal from "./components/modals/LoginModal";
 import Header from "./components/Header";
 import "./components/authorizer-custom.css";
+import "./themes.css";
 
 // Lazy load page components
 const OccurencePage = React.lazy(() => import("./pages/OccurrencePage"));
@@ -26,14 +28,14 @@ const Profile = () => {
   const { user } = useAuthorizer();
   if (user) {
     return (
-      <div>
+      <div className="text-foreground">
         <p className="mb-2">Logged in as: {user.email}</p>
         <p>Please select a module from the options above to get started.</p>
       </div>
     );
   } else {
     return (
-      <div>
+      <div className="text-foreground">
         <p>
           Please log in to access the platform. If you don't have an account,
           you can create one.
@@ -52,7 +54,7 @@ const ProtectedRoute = ({
 }) => {
   const { user, loading } = useAuthorizer();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-foreground">Loading...</div>;
   if (!user) return <Navigate to="/" />;
 
   if (!user.roles) {
@@ -78,11 +80,24 @@ const ProtectedRoute = ({
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedMode = localStorage.getItem("darkMode");
-    return savedMode ? JSON.parse(savedMode) : false;
-  });
   const { loading, user, logout } = useAuthorizer();
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    // Apply the theme class to the html element
+    const htmlElement = document.documentElement;
+    htmlElement.classList.remove(
+      "light",
+      "dark",
+      "ocean",
+      "nature",
+      "volcano",
+      "sky"
+    );
+    if (theme) {
+      htmlElement.classList.add(theme);
+    }
+  }, [theme]);
 
   const handlePageSelect = (page: PageType) => {
     setCurrentPage(page);
@@ -98,54 +113,34 @@ function AppContent() {
     }
   };
 
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    localStorage.setItem("darkMode", JSON.stringify(newMode));
-  };
-
   useEffect(() => {
     if (user) {
       setIsLoginOpen(false);
     }
   }, [user]);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-foreground">Loading...</div>;
 
   return (
     <Router>
-      <div
-        className={`flex flex-col h-screen min-h-screen transition-colors duration-300 ${
-          isDarkMode
-            ? "dark bg-dark-mode-gradient backdrop-blur-md"
-            : "bg-gray-100"
-        }`}
-      >
+      <div className="flex flex-col h-screen min-h-screen transition-colors duration-300 bg-background text-foreground">
         <Header
           currentPage={currentPage}
           onPageSelect={handlePageSelect}
           user={user}
           onLoginClick={() => setIsLoginOpen(true)}
-          onLogOut={() => handleLogOut()}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
+          onLogOut={handleLogOut}
         />
         <main className="container flex-1 overflow-y-auto p-4">
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense
+            fallback={<div className="text-foreground">Loading...</div>}
+          >
             <Routes>
               <Route
                 path="/"
                 element={
                   <div className="text-center mt-10">
-                    <h2 className="text-2xl font-bold mb-4 dark:text-white">
+                    <h2 className="text-2xl font-bold mb-4 text-foreground">
                       Welcome to the Incident Tracker
                     </h2>
                     <Profile />
@@ -204,15 +199,29 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthorizerProvider
-      config={{
-        authorizerURL: import.meta.env.VITE_AUTHORIZER_URL,
-        redirectURL: window.location.origin,
-        clientID: import.meta.env.VITE_AUTHORIZER_CLIENT_ID,
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      value={{
+        light: "light",
+        dark: "dark",
+        ocean: "ocean",
+        nature: "nature",
+        volcano: "volcano",
+        sky: "sky",
       }}
     >
-      <AppContent />
-    </AuthorizerProvider>
+      <AuthorizerProvider
+        config={{
+          authorizerURL: import.meta.env.VITE_AUTHORIZER_URL,
+          redirectURL: window.location.origin,
+          clientID: import.meta.env.VITE_AUTHORIZER_CLIENT_ID,
+        }}
+      >
+        <AppContent />
+      </AuthorizerProvider>
+    </ThemeProvider>
   );
 }
 

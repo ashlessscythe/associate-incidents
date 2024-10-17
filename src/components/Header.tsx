@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Moon, Sun, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
+import ThemeSelector from "./ThemeSelector";
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | null;
 
@@ -11,8 +12,6 @@ interface HeaderProps {
   user: any;
   onLoginClick: () => void;
   onLogOut: () => Promise<void>;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -21,8 +20,6 @@ const Header: React.FC<HeaderProps> = ({
   user,
   onLoginClick,
   onLogOut,
-  isDarkMode,
-  onToggleDarkMode,
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -36,8 +33,8 @@ const Header: React.FC<HeaderProps> = ({
         to="/"
         className={`px-4 py-2 rounded ${
           currentPage === null
-            ? "bg-blue-500 text-white"
-            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:text-primary"
         }`}
         onClick={() => onPageSelect(null)}
       >
@@ -47,8 +44,8 @@ const Header: React.FC<HeaderProps> = ({
         to="/attendance"
         className={`px-4 py-2 rounded ${
           currentPage === "attendance"
-            ? "bg-blue-500 text-white"
-            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:text-primary"
         }`}
         onClick={() => onPageSelect("attendance")}
       >
@@ -58,8 +55,8 @@ const Header: React.FC<HeaderProps> = ({
         to="/ca"
         className={`px-4 py-2 rounded ${
           currentPage === "ca"
-            ? "bg-blue-500 text-white"
-            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:text-primary"
         }`}
         onClick={() => onPageSelect("ca")}
       >
@@ -69,8 +66,8 @@ const Header: React.FC<HeaderProps> = ({
         to="/associates"
         className={`px-4 py-2 rounded ${
           currentPage === "associates"
-            ? "bg-blue-500 text-white"
-            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:text-primary"
         }`}
         onClick={() => onPageSelect("associates")}
       >
@@ -80,8 +77,8 @@ const Header: React.FC<HeaderProps> = ({
         to="/reports"
         className={`px-4 py-2 rounded ${
           currentPage === "reports"
-            ? "bg-blue-500 text-white"
-            : "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:text-primary"
         }`}
         onClick={() => onPageSelect("reports")}
       >
@@ -91,10 +88,10 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md z-10">
+    <header className="bg-background text-foreground shadow-md z-10">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Incident Tracker
           </h1>
           <div className="flex items-center">
@@ -103,25 +100,13 @@ const Header: React.FC<HeaderProps> = ({
                 {user && user.role !== "pending" && <NavLinks />}
               </ul>
             </nav>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Toggle Dark Mode"
-              onClick={onToggleDarkMode}
-              className="ml-4 mr-4"
-            >
-              {isDarkMode ? (
-                <Sun className="h-[1.2rem] w-[1.2rem]" />
-              ) : (
-                <Moon className="h-[1.2rem] w-[1.2rem]" />
-              )}
-            </Button>
+            <ThemeSelector />
             {user ? (
-              <Button onClick={onLogOut} variant="outline">
+              <Button onClick={onLogOut} variant="outline" className="ml-4">
                 Log out
               </Button>
             ) : (
-              <Button onClick={onLoginClick} variant="outline">
+              <Button onClick={onLoginClick} variant="outline" className="ml-4">
                 Log in
               </Button>
             )}
