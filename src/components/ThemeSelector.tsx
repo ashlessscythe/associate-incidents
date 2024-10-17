@@ -10,8 +10,9 @@ import {
 
 const themes = [
   { name: "System", value: "system" },
-  { name: "Light", value: "light" },
-  { name: "Dark", value: "dark" },
+  { name: "Day", value: "day" },
+  { name: "Night", value: "night" },
+  { name: "Corporate", value: "corporate" },
   { name: "Ocean", value: "ocean" },
   { name: "Nature", value: "nature" },
   { name: "Volcano", value: "volcano" },

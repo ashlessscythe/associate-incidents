@@ -13,7 +13,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import LoginModal from "./components/modals/LoginModal";
 import Header from "./components/Header";
 import "./components/authorizer-custom.css";
-import "./themes.css";
+import "./index.css";
 
 // Lazy load page components
 const OccurencePage = React.lazy(() => import("./pages/OccurrencePage"));
@@ -86,17 +86,22 @@ function AppContent() {
   useEffect(() => {
     // Apply the theme class to the html element
     const htmlElement = document.documentElement;
+    const themeClass =
+      theme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "night"
+          : "day"
+        : theme || "day"; // Provide a default value if theme is undefined
     htmlElement.classList.remove(
-      "light",
-      "dark",
+      "day",
+      "night",
+      "corporate",
       "ocean",
       "nature",
       "volcano",
       "sky"
     );
-    if (theme) {
-      htmlElement.classList.add(theme);
-    }
+    htmlElement.classList.add(themeClass);
   }, [theme]);
 
   const handlePageSelect = (page: PageType) => {
@@ -204,8 +209,9 @@ function App() {
       defaultTheme="system"
       enableSystem
       value={{
-        light: "light",
-        dark: "dark",
+        day: "day",
+        night: "night",
+        corporate: "corporate",
         ocean: "ocean",
         nature: "nature",
         volcano: "volcano",
