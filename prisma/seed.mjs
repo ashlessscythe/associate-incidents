@@ -11,6 +11,8 @@ import {
   notificationLevels,
 } from "./definitions.js";
 import { faker } from "@faker-js/faker";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -393,34 +395,211 @@ async function upsertCorrectiveActions(correctiveActions) {
   console.log(`${skippedCount} corrective actions skipped due to errors.`);
 }
 
+// Modified function to generate fake notifications
+function generateFakeNotifications(associates, count) {
+  const notifications = [];
+  const notificationTypes = ["OCCURRENCE"];
+
+  for (let i = 0; i < count; i++) {
+    const associate = faker.helpers.arrayElement(associates);
+    if (associate && associate.id) {
+      notifications.push({
+        associateId: associate.id,
+        date: faker.date.past(),
+        type: faker.helpers.arrayElement(notificationTypes),
+        level: faker.number.int({ min: 1, max: 4 }).toString(),
+        totalPoints: faker.number.float({ min: 0, max: 10, multipleOf: 0.1 }),
+        description: faker.lorem.sentence(),
+      });
+    }
+  }
+
+  return notifications;
+}
+
+// Modified function to generate fake file data with relationships
+async function generateFakeFiles(count) {
+  const files = [];
+  const mimeTypes = [
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "text/plain",
+  ];
+
+  // Fetch existing associates, notifications, and corrective actions
+  const associates = await prisma.associate.findMany();
+  const notifications = await prisma.notification.findMany();
+  const correctiveActions = await prisma.correctiveAction.findMany();
+
+  if (associates.length === 0) {
+    console.log("No associates found. Cannot generate files.");
+    return files;
+  }
+
+  if (notifications.length === 0 && correctiveActions.length === 0) {
+    console.log(
+      "No notifications or corrective actions found. Cannot generate files."
+    );
+    return files;
+  }
+
+  for (let i = 0; i < count; i++) {
+    const associate = faker.helpers.arrayElement(associates);
+    const isNotification = faker.datatype.boolean();
+
+    let fileData = {
+      filename: faker.system.fileName(),
+      mimetype: faker.helpers.arrayElement(mimeTypes),
+      content: Buffer.from(faker.lorem.paragraphs(3)), // Generate fake binary data
+      size: faker.number.int({ min: 1000, max: 1000000 }),
+      associateId: associate.id,
+    };
+
+    if (isNotification && notifications.length > 0) {
+      const notification = faker.helpers.arrayElement(notifications);
+      fileData.notificationId = notification.id;
+    } else if (correctiveActions.length > 0) {
+      const correctiveAction = faker.helpers.arrayElement(correctiveActions);
+      fileData.correctiveActionId = correctiveAction.id;
+    } else if (notifications.length > 0) {
+      // Fallback to notification if no corrective actions are available
+      const notification = faker.helpers.arrayElement(notifications);
+      fileData.notificationId = notification.id;
+    } else {
+      // Skip this file if we can't assign either a notification or corrective action
+      continue;
+    }
+
+    files.push(fileData);
+  }
+
+  return files;
+}
+
+// Modified function to upsert files with relationships
+async function upsertFiles(files) {
+  let upsertedCount = 0;
+  let skippedCount = 0;
+
+  for (const file of files) {
+    try {
+      if (
+        !file.associateId ||
+        (!file.notificationId && !file.correctiveActionId)
+      ) {
+        console.error(
+          "File must have an associateId and either a notificationId or correctiveActionId. Skipping file."
+        );
+        skippedCount++;
+        continue;
+      }
+
+      await prisma.file.create({
+        data: file,
+      });
+      upsertedCount++;
+    } catch (error) {
+      console.error(`Error processing file: ${error.message}`);
+      skippedCount++;
+    }
+  }
+
+  console.log(`${upsertedCount} files upserted.`);
+  console.log(`${skippedCount} files skipped due to errors.`);
+}
+async function upsertNotifications(notifications) {
+  let upsertedCount = 0;
+  let skippedCount = 0;
+
+  for (const notification of notifications) {
+    try {
+      if (!notification.associateId) {
+        console.error("Missing associateId. Skipping notification.");
+        skippedCount++;
+        continue;
+      }
+    } catch (error) {
+      console.error("Error upserting notifications", error);
+    }
+
+    await prisma.notification.create({
+      data: notification,
+    });
+  }
+}
+
+// New function to fetch existing associates
+async function fetchExistingAssociates(count) {
+  const totalAssociates = await prisma.associate.count();
+  const skip =
+    totalAssociates > count
+      ? Math.floor(Math.random() * (totalAssociates - count))
+      : 0;
+  return prisma.associate.findMany({
+    take: count,
+    skip: skip,
+  });
+}
+
 async function main() {
   try {
-    const clearFlag = process.argv.includes("--clear");
-    const clearFilesFlag = process.argv.includes("--clear-files");
-    const occurrencesOnly = process.argv.includes("--occurrences-only");
-    const rulesOnly = process.argv.includes("--rules-only");
-    const usersOnly = process.argv.includes("--users-only");
-    const caOnly = process.argv.includes("--ca-only");
-    const notificationsOnly = process.argv.includes("--notifications-only");
-    const useFakerFlag = process.argv.findIndex((arg) => arg === "--use-faker");
-    const fakerCount =
-      useFakerFlag !== -1 ? parseInt(process.argv[useFakerFlag + 1], 10) : 0;
+    const argv = yargs(hideBin(process.argv))
+      .option("clear", {
+        type: "boolean",
+        description: "Clear all data before seeding",
+      })
+      .option("clear-files", {
+        type: "boolean",
+        description: "Clear all files before seeding",
+      })
+      .option("occurrences-only", {
+        type: "boolean",
+        description: "Seed only occurrences",
+      })
+      .option("rules-only", {
+        type: "boolean",
+        description: "Seed only rules",
+      })
+      .option("users-only", {
+        type: "boolean",
+        description: "Seed only users",
+      })
+      .option("ca-only", {
+        type: "boolean",
+        description: "Seed only corrective actions",
+      })
+      .option("notifications-only", {
+        type: "boolean",
+        description: "Seed only notifications",
+      })
+      .option("files-only", {
+        type: "boolean",
+        description: "Seed only files",
+      })
+      .option("use-faker", {
+        type: "number",
+        description:
+          "Use faker to generate data, specify the number of records",
+      })
+      .help().argv;
 
-    if (clearFilesFlag) {
+    if (argv.clearFiles) {
       await clearFiles();
     }
 
-    if (clearFlag) {
+    if (argv.clear) {
       await clearData();
     }
 
     // Always upsert these unless a specific --only flag is used
     if (
-      !occurrencesOnly &&
-      !rulesOnly &&
-      !usersOnly &&
-      !caOnly &&
-      !notificationsOnly
+      !argv.occurrencesOnly &&
+      !argv.rulesOnly &&
+      !argv.usersOnly &&
+      !argv.caOnly &&
+      !argv.notificationsOnly &&
+      !argv.filesOnly
     ) {
       await upsertOccurrenceTypes();
       await upsertLocations();
@@ -428,39 +607,47 @@ async function main() {
       await upsertNotificationLevels();
       await upsertRules();
     } else {
-      if (occurrencesOnly) await upsertOccurrenceTypes();
-      if (rulesOnly) await upsertRules();
-      if (notificationsOnly) await upsertNotificationLevels();
+      if (argv.occurrencesOnly) await upsertOccurrenceTypes();
+      if (argv.rulesOnly) await upsertRules();
+      if (argv.notificationsOnly) await upsertNotificationLevels();
     }
 
     let associates = [];
-    if (
-      usersOnly ||
-      (!occurrencesOnly && !rulesOnly && !caOnly && !notificationsOnly)
-    ) {
-      if (fakerCount > 0) {
-        associates = generateFakeAssociates(fakerCount);
+    const useFaker = argv.useFaker > 0;
+    const onlyFlagUsed =
+      argv.occurrencesOnly ||
+      argv.rulesOnly ||
+      argv.caOnly ||
+      argv.notificationsOnly ||
+      argv.filesOnly;
+
+    if (argv.usersOnly || (!onlyFlagUsed && useFaker)) {
+      if (useFaker) {
+        associates = generateFakeAssociates(argv.useFaker);
+        await upsertAssociates(associates);
       } else {
         const csvPath = path.join(__dirname, associatesFileName);
         associates = await readAssociatesFromCSV(csvPath);
+        if (associates.length > 0) {
+          await upsertAssociates(associates);
+        } else {
+          console.log("No associates found in CSV.");
+        }
       }
-      if (associates.length > 0) {
-        await upsertAssociates(associates);
-      } else {
-        console.log("No associates found or generated.");
+    } else if (useFaker && onlyFlagUsed) {
+      associates = await fetchExistingAssociates(argv.useFaker);
+      if (associates.length === 0) {
+        console.log(
+          "No existing associates found. Please seed users first or use --users-only flag."
+        );
+        return;
       }
     }
 
-    if (
-      occurrencesOnly ||
-      (!usersOnly && !rulesOnly && !caOnly && !notificationsOnly)
-    ) {
-      if (associates.length === 0) {
-        associates = await prisma.associate.findMany();
-      }
+    if (argv.occurrencesOnly || (!onlyFlagUsed && useFaker)) {
       let occurrences;
-      if (fakerCount > 0) {
-        occurrences = generateFakeOccurrences(associates, fakerCount * 5);
+      if (useFaker) {
+        occurrences = generateFakeOccurrences(associates, argv.useFaker * 5);
       } else {
         const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
         occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
@@ -472,26 +659,19 @@ async function main() {
       }
     }
 
-    if (
-      caOnly ||
-      (!usersOnly && !occurrencesOnly && !rulesOnly && !notificationsOnly)
-    ) {
-      if (associates.length === 0) {
-        associates = await prisma.associate.findMany();
-      }
+    if (argv.caOnly || (!onlyFlagUsed && useFaker)) {
       const rules = await prisma.rule.findMany();
-
       if (associates.length === 0 || rules.length === 0) {
         console.log(
           "No associates or rules found. Cannot generate corrective actions."
         );
       } else {
         let correctiveActions;
-        if (fakerCount > 0) {
+        if (useFaker) {
           correctiveActions = generateFakeCorrectiveActions(
             associates,
             rules,
-            fakerCount * 5
+            argv.useFaker * 2
           );
         } else {
           console.log(
@@ -504,6 +684,37 @@ async function main() {
         } else {
           console.log("No corrective actions generated.");
         }
+      }
+    }
+
+    if (argv.notificationsOnly || (!onlyFlagUsed && useFaker)) {
+      if (useFaker && associates.length > 0) {
+        const fakeNotifications = generateFakeNotifications(
+          associates,
+          argv.useFaker * 3
+        );
+        await upsertNotifications(fakeNotifications);
+      } else {
+        console.log(
+          "No associates found or no faker count provided. Skipping notification generation."
+        );
+      }
+    }
+
+    if (argv.filesOnly || (!onlyFlagUsed && useFaker)) {
+      if (useFaker) {
+        const fakeFiles = await generateFakeFiles(argv.useFaker * 2);
+        if (fakeFiles.length > 0) {
+          await upsertFiles(fakeFiles);
+        } else {
+          console.log(
+            "No files generated. Make sure there are associates, notifications, or corrective actions in the database."
+          );
+        }
+      } else {
+        console.log(
+          "No source for file data. Use --use-faker to generate them."
+        );
       }
     }
 

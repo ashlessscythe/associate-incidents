@@ -75,7 +75,7 @@ module.exports = {
         "light-mode-gradient":
           "linear-gradient(to bottom right, #eceff1, #e0e5f5, #d1d6e8, #c2c6da, #b3b8cc)",
         "dark-mode-gradient":
-          "linear-gradient(to bottom right, #0a0e27, #10163a, #1b1448, #2b0e4f, #1b0927)",
+          "linear-gradient(to bottom right, #031B3C, #062A56, #0A3D6B, #045b8e, #0573a6)",
       },
     },
   },
