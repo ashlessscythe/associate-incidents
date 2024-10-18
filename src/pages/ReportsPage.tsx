@@ -91,7 +91,6 @@ const ReportsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch corrective actions by type with associate info in a single call
       const caDataWithInfo = await getCAByTypeWithAssociateInfo();
       setCAByTypeData(caDataWithInfo);
       setActiveReport("ca");
@@ -142,7 +141,6 @@ const ReportsPage: React.FC = () => {
     });
   }, [caByTypeData, filter, selectedDesignation]);
 
-  // sorting stuffs
   const sortedAndFilteredAssociatesData = useMemo(() => {
     return filteredAssociatesData.sort((a, b) => {
       if (sortField === "name") {
@@ -191,30 +189,22 @@ const ReportsPage: React.FC = () => {
           <div>
             <div className="grid grid-cols-4 gap-4 mb-2 font-bold text-sm">
               <div
-                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => handleSort("name")}
               >
-                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  Name
-                </span>{" "}
-                {renderSortIcon("name")}
+                <span>Name</span> {renderSortIcon("name")}
               </div>
               <div
-                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => handleSort("points")}
               >
-                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  Points
-                </span>{" "}
-                {renderSortIcon("points")}
+                <span>Points</span> {renderSortIcon("points")}
               </div>
               <div
-                className="cursor-pointer p-2 rounded group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out"
+                className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => handleSort("notificationLevel")}
               >
-                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                  Notification Level
-                </span>{" "}
+                <span>Notification Level</span>{" "}
                 {renderSortIcon("notificationLevel")}
               </div>
               <div className="p-2">Actions</div>
@@ -229,7 +219,7 @@ const ReportsPage: React.FC = () => {
                     occurrenceTypes={occurrenceTypes}
                     onDeleteOccurrence={handleDeleteOccurrence}
                     onUpdateOccurrence={handleUpdateOccurrence}
-                    allowEdit={false} // false for reports page
+                    allowEdit={false}
                   />
                 ))
               ) : (
@@ -257,8 +247,8 @@ const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-      <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-md">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-10 bg-card text-card-foreground shadow-md">
         <div className="container mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold mb-4">Reports</h1>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -287,13 +277,12 @@ const ReportsPage: React.FC = () => {
             >
               Clear Report
             </Button>
-            {/* Filter input field */}
             <Input
               type="text"
               placeholder="Filter by Associate Name"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md dark:border-gray-600"
+              className="w-full sm:w-auto"
             />
           </div>
           <RadioGroup
@@ -314,7 +303,7 @@ const ReportsPage: React.FC = () => {
               </div>
             ))}
           </RadioGroup>
-          {error && <p className="text-red-500 mt-2 mb-4">{error}</p>}
+          {error && <p className="text-destructive mt-2 mb-4">{error}</p>}
         </div>
       </header>
       <main className="flex-grow overflow-y-auto p-4">

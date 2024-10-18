@@ -112,20 +112,22 @@ const CAList: React.FC<CAListProps> = ({
   return (
     <div className="mt-6 flex flex-col md:flex-row">
       <div className="w-full">
-        <h2 className="text-xl font-semibold mb-2">Corrective Actions</h2>
-        {/* New Summary Section */}
-        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-4">
+        <h2 className="text-2xl font-semibold mb-4">Corrective Actions</h2>
+        {/* Updated Summary Section */}
+        <div className="bg-muted p-4 rounded-lg mb-4">
           <h3 className="text-lg font-semibold mb-2">Associate Summary</h3>
           <div className="grid grid-cols-2 gap-2">
             <p>
-              <strong>Name:</strong> {associate?.name || "N/A"}
+              <span className="font-medium">Name:</span>{" "}
+              {associate?.name || "N/A"}
             </p>
             <p>
-              <strong>Department:</strong>{" "}
+              <span className="font-medium">Department:</span>{" "}
               {associate?.department?.name || "N/A"}
             </p>
             <p>
-              <strong>Location:</strong> {associate?.location?.name || "N/A"}
+              <span className="font-medium">Location:</span>{" "}
+              {associate?.location?.name || "N/A"}
             </p>
           </div>
         </div>
@@ -145,17 +147,16 @@ const CAList: React.FC<CAListProps> = ({
                   safetyCumulativeCount,
                 })
               }
-              className="text-blue-500 hover:text-blue-700 mr-2"
-              variant="ghost"
+              variant="outline"
               size="icon"
+              className="mr-2"
               aria-label="Print corrective actions"
             >
               <Printer size={20} />
             </Button>
             <Button
               onClick={handleExport}
-              className="text-green-500 hover:text-green-700"
-              variant="ghost"
+              variant="outline"
               size="icon"
               aria-label="Export corrective actions to Excel"
             >
@@ -164,7 +165,7 @@ const CAList: React.FC<CAListProps> = ({
           </div>
         </div>
         {sortedGroups.length === 0 ? (
-          <p>No corrective actions found.</p>
+          <p className="text-muted-foreground">No corrective actions found.</p>
         ) : (
           sortedGroups.map(([groupKey, groupCAs]) => {
             const [ruleType, ruleCode] = groupKey.split("-");

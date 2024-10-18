@@ -40,12 +40,15 @@ router.post("/corrective-actions", async (req, res) => {
   const { associateId, ruleId, description, level, date } = req.body;
 
   // Check if required fields are present
-  if (!associateId || !ruleId || !description || level === undefined) {
+  if (!associateId || !ruleId || !description) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Validate level
-  if (!Number.isInteger(level) || level < 0 || level > 4) {
+  // Validate level if provided
+  if (
+    level !== undefined &&
+    (!Number.isInteger(level) || level < 0 || level > 4)
+  ) {
     return res
       .status(400)
       .json({ error: "Level must be an integer between 0 and 4" });
@@ -57,8 +60,8 @@ router.post("/corrective-actions", async (req, res) => {
         associateId,
         ruleId,
         description,
-        level,
-        date: date ? new Date(date) : new Date(), // Use current date if not provided
+        level: level ?? 0,
+        date: date ? new Date(date) : new Date(),
       },
       include: { rule: true },
     });
@@ -75,8 +78,18 @@ router.put("/corrective-actions/:id", async (req, res) => {
     const { id } = req.params;
     const { ruleId, description, level, date } = req.body;
 
-    if (!ruleId || !description || !level) {
+    if (!ruleId || !description) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Validate level if provided
+    if (
+      level !== undefined &&
+      (!Number.isInteger(level) || level < 0 || level > 4)
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Level must be an integer between 0 and 4" });
     }
 
     const updatedCorrectiveAction = await prisma.correctiveAction.update({
@@ -84,8 +97,8 @@ router.put("/corrective-actions/:id", async (req, res) => {
       data: {
         ruleId,
         description,
-        level,
-        date,
+        level: level ?? 0,
+        date: date ? new Date(date) : undefined,
       },
       include: { rule: true },
     });

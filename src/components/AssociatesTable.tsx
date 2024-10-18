@@ -185,70 +185,64 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
         onChange={(e) => setSearchTerm(e.target.value)}
         className="mb-4"
       />
-      <Table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50 dark:bg-gray-800">
+          <TableRow>
             <TableHead
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+              className="cursor-pointer"
               onClick={() => handleSort("name")}
             >
               Name <SortIcon columnKey="name" />
             </TableHead>
             <TableHead
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+              className="cursor-pointer"
               onClick={() => handleSort("department")}
             >
               Department <SortIcon columnKey="department" />
             </TableHead>
             <TableHead
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+              className="cursor-pointer"
               onClick={() => handleSort("designation")}
             >
               Designation <SortIcon columnKey="designation" />
             </TableHead>
             <TableHead
-              className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+              className="cursor-pointer"
               onClick={() => handleSort("location")}
             >
               Location <SortIcon columnKey="location" />
             </TableHead>
-            <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-              Actions
-            </TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+        <TableBody>
           {filteredAndSortedAssociates.map((associate) => (
-            <TableRow
-              key={associate.id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+            <TableRow key={associate.id}>
+              <TableCell>
                 {editingAssociate === associate.id ? (
-                  <input
+                  <Input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="border rounded px-2 py-1 dark:bg-gray-800 dark:text-gray-200"
                   />
                 ) : (
                   <>
                     <Link
                       to={`/attendance?associateId=${associate.id}`}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mr-2"
+                      className="text-primary hover:text-primary/80 mr-2"
                     >
                       {associate.name}
                     </Link>
                     <Link
                       to={`/ca?associateId=${associate.id}`}
-                      className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                      className="text-secondary hover:text-secondary/80"
                     >
                       (CA)
                     </Link>
                   </>
                 )}
               </TableCell>
-              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+              <TableCell>
                 {editingAssociate === associate.id ? (
                   <Select
                     value={editDepartmentId}
@@ -269,19 +263,18 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                   associate.department?.name
                 )}
               </TableCell>
-              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+              <TableCell>
                 {editingAssociate === associate.id ? (
-                  <input
+                  <Input
                     type="text"
                     value={editDesignation}
                     onChange={(e) => setEditDesignation(e.target.value)}
-                    className="border rounded px-2 py-1 dark:bg-gray-800 dark:text-gray-200"
                   />
                 ) : (
                   associate.designation
                 )}
               </TableCell>
-              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+              <TableCell>
                 {editingAssociate === associate.id ? (
                   <Select
                     value={editLocation}
@@ -302,49 +295,57 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                   associate.location?.name
                 )}
               </TableCell>
-              <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+              <TableCell>
                 {confirmingDelete === associate.id ? (
                   <div>
                     <span className="mr-2">Are you sure?</span>
-                    <button
+                    <Button
                       onClick={() => handleConfirmDelete(associate.id)}
-                      className="text-red-500 hover:text-red-700 mr-2"
+                      variant="destructive"
+                      size="sm"
+                      className="mr-2"
                     >
                       Yes
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setConfirmingDelete(null)}
-                      className="text-gray-500 hover:text-gray-700"
+                      variant="secondary"
+                      size="sm"
                     >
                       No
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <>
                     {editingAssociate === associate.id ? (
-                      <button
+                      <Button
                         onClick={() => handleSaveEdit(associate.id)}
-                        className="text-green-500 hover:text-green-700 mr-2"
+                        variant="default"
+                        size="sm"
+                        className="mr-2"
                       >
                         Save
-                      </button>
+                      </Button>
                     ) : (
                       hasEditorRole && (
-                        <button
+                        <Button
                           onClick={() => handleEditClick(associate)}
-                          className="text-blue-500 hover:text-blue-700 mr-2"
+                          variant="outline"
+                          size="sm"
+                          className="mr-2"
                         >
-                          <Pencil className="h-5 w-5 inline" />
-                        </button>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       )
                     )}
                     {hasEditorRole && (
-                      <button
+                      <Button
                         onClick={() => handleDeleteClick(associate.id)}
-                        className="text-red-500 hover:text-red-700"
+                        variant="destructive"
+                        size="sm"
                       >
-                        <Trash2 className="h-5 w-5 inline" />
-                      </button>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     )}
                   </>
                 )}
@@ -354,7 +355,6 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
         </TableBody>
       </Table>
 
-      {/* Dialog */}
       <Dialog open={!!errorMessage} onOpenChange={() => setErrorMessage(null)}>
         <DialogContent>
           <DialogHeader>

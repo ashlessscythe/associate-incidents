@@ -20,7 +20,7 @@ interface CAItemProps {
   rules: Rule[];
   onEditCA?: (ca: CorrectiveAction) => void;
   onDeleteCA?: (id: string) => Promise<void>;
-  level: number;
+  level: number | undefined;
   associate: Associate;
   associateInfo: AssociateInfo;
   associateLocation?: string;
@@ -56,7 +56,7 @@ const CAItem: React.FC<CAItemProps> = ({
       : "Unknown Rule";
   };
 
-  const getLevelDescription = (level: number) => {
+  const getLevelDescription = (level: number | undefined) => {
     switch (level) {
       case 0:
         return "0 - Coaching";
@@ -68,6 +68,8 @@ const CAItem: React.FC<CAItemProps> = ({
         return "3 - Final Written Warning";
       case 4:
         return "4 - Termination";
+      case undefined:
+        return "0 - Coaching";
       default:
         return `${level} - Unknown Level`;
     }
@@ -80,16 +82,15 @@ const CAItem: React.FC<CAItemProps> = ({
     const location = associateLocation || selectedLocation;
     const department = associateDepartment || selectedDepartment;
     try {
-      // Remove file items from the corrective action
       const { files, ...caWithoutFiles } = ca;
 
       const blob = await exportExcelCA(
         associate.name,
         location,
         department,
-        new Date().toISOString().split("T")[0], // current date
-        [caWithoutFiles], // Pass an array containing the single CA without files
-        getLevelDescription(level) // notification level
+        new Date().toISOString().split("T")[0],
+        [caWithoutFiles],
+        getLevelDescription(level)
       );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -175,12 +176,11 @@ const CAItem: React.FC<CAItemProps> = ({
   };
 
   const rule = rules.find((r) => r.id === ca.ruleId);
-  // TODO: get these from db instead of static
   const isSafetyOrOperations =
     rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
 
   return (
-    <li className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+    <li className="bg-card text-card-foreground p-4 rounded-lg shadow mb-4">
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold">{getRuleDescription(ca.ruleId)}</p>
@@ -191,7 +191,6 @@ const CAItem: React.FC<CAItemProps> = ({
         <div className="flex space-x-2">
           <Button
             onClick={handleExportClick}
-            className="text-green-500 hover:text-green-700"
             variant="ghost"
             size="icon"
             aria-label="Export corrective action"
@@ -202,15 +201,14 @@ const CAItem: React.FC<CAItemProps> = ({
             <>
               <Button
                 onClick={handleEdit}
-                className="text-blue-500 hover:text-blue-700"
                 variant="ghost"
                 size="icon"
+                aria-label="Edit corrective action"
               >
                 <Edit2 size={20} />
               </Button>
               <Button
                 onClick={handleDelete}
-                className="text-red-500 hover:text-red-700"
                 variant="ghost"
                 size="icon"
                 aria-label="Delete corrective action"
@@ -219,7 +217,6 @@ const CAItem: React.FC<CAItemProps> = ({
               </Button>
               <Button
                 onClick={handleUpload}
-                className="text-purple-500 hover:text-purple-700"
                 variant="ghost"
                 size="icon"
                 aria-label="Upload file"
@@ -242,7 +239,7 @@ const CAItem: React.FC<CAItemProps> = ({
             <Label htmlFor={`view-files-${ca.id}`}>View Files</Label>
           </div>
         ) : (
-          <span className="text-gray-500">No files</span>
+          <span className="text-muted-foreground">No files</span>
         )}
       </div>
       {viewFiles && ca.files && ca.files.length > 0 && (

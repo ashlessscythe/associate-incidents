@@ -44,42 +44,35 @@ const CAByTypeRow: React.FC<CAByTypeRowProps> = ({
   }, [associate.correctiveActions, rules]);
 
   return (
-    <li className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden transition-colors duration-200">
-      <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150">
+    <li className="bg-card text-card-foreground rounded-lg shadow overflow-hidden">
+      <div className="flex justify-between items-center p-4 bg-muted hover:bg-muted/80 transition-colors duration-150">
         <div className="flex items-center space-x-4">
-          <span className="font-semibold text-gray-800 dark:text-white">
-            {associate.name}
-          </span>
+          <span className="font-semibold">{associate.name}</span>
           <Link
             to={`/attendance?associateId=${associate.id}`}
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 mr-2"
+            className="text-primary hover:text-primary/80 mr-2"
           >
             Occurrences
           </Link>
           <Link
             to={`/ca?associateId=${associate.id}`}
-            className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+            className="text-secondary hover:text-secondary/80"
           >
             CA
           </Link>
-          <ArrowRight size={20} className="text-gray-400 dark:text-gray-500" />
+          <ArrowRight size={20} className="text-muted-foreground" />
           <div className="flex items-center space-x-2">
             {Object.entries(sortedCaTotals).map(([code, count]) => (
               <span
                 key={code}
-                className="text-sm bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-2 py-1 rounded"
+                className="text-sm bg-accent text-accent-foreground px-2 py-1 rounded"
               >
                 {code}: {count}
               </span>
             ))}
           </div>
         </div>
-        <Button
-          onClick={toggleExpand}
-          variant="ghost"
-          size="sm"
-          className="text-gray-800 dark:text-white"
-        >
+        <Button onClick={toggleExpand} variant="ghost" size="sm">
           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </Button>
       </div>

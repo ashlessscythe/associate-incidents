@@ -63,11 +63,11 @@ const AssociatesPage: React.FC = () => {
     (user && Array.isArray(user.roles) && user.roles.includes("user-edit")) ||
     false;
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="text-foreground">Loading...</div>;
+  if (error) return <div className="text-foreground">Error: {error}</div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <div className="p-4">
         <h1 className="text-2xl font-bold mb-4">Associates</h1>
         <div className="flex flex-col sm:flex-row justify-between mb-4">

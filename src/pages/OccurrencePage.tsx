@@ -146,12 +146,12 @@ function OccurrencePage() {
     return <div>Error: {associatesError || error}</div>;
 
   return (
-    <div className="flex flex-col md:flex-row h-full relative">
+    <div className="flex flex-col md:flex-row h-full relative bg-background text-foreground">
       {/* Sidebar */}
       <div
         className={`${
-          isSidebarOpen ? "w-full md:w-2/5 lg:w-1/3 xl:w-1/4" : "w-0"
-        } transition-all duration-300 ease-in-out overflow-hidden md:h-full bg-white dark:bg-gray-800 shadow-md`}
+          isSidebarOpen ? "w-full md:w-1/2 lg:w-2/5 xl:w-1/3" : "w-0"
+        } transition-all duration-300 ease-in-out overflow-hidden md:h-full bg-card text-card-foreground shadow-md`}
       >
         <div className="sticky top-0 z-10 p-4 space-y-4">
           <AssociateSelect
@@ -171,9 +171,9 @@ function OccurrencePage() {
       {/* Toggle button */}
       <button
         onClick={toggleSidebar}
-        className={`fixed top-4 z-20 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-r-md shadow-md transition-all duration-300 ease-in-out ${
+        className={`fixed top-4 z-20 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-r-md shadow-md transition-all duration-300 ease-in-out ${
           isSidebarOpen
-            ? "left-[calc(41.66%-1rem)] md:left-[calc(33.33%-1rem)] lg:left-[calc(25%-1rem)]"
+            ? "left-[calc(50%-1rem)] md:left-[calc(40%-1rem)] lg:left-[calc(33.33%-1rem)]"
             : "left-0"
         }`}
       >
@@ -188,7 +188,7 @@ function OccurrencePage() {
       >
         {!hasEditorRole && (
           <div
-            className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-lg"
+            className="bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 p-4 mb-4 rounded-lg"
             role="alert"
           >
             <p className="font-bold">View Only Mode</p>
