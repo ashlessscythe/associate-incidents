@@ -13,6 +13,9 @@ Check out the `schema.prisma` file to get more information on how the data model
 🕒 **Attendance Management**: Keep track of attendance occurrences and points.
 🖱️ **User-Friendly Interface**: Sleek, responsive design with keyboard navigation support.
 📜 **Rule-Based Corrective Actions**: Manage and apply rules for corrective actions.
+🎨 **Theme Selector**: Choose between different themes, including a dark mode option.
+🖋️ **Improved Corrective Action Editing**: Enhanced functionality for editing Corrective Actions.
+📊 **Optimized Excel Exports**: Improved Excel export functionality, now excluding file objects for better performance.
 
 ## 🛠️ Technologies Used
 
@@ -116,15 +119,12 @@ In addition to `associates.csv` and `definitions.js`, the system also supports p
 ```csv
 SSO,name,date,code,comment
 332333244,Bob Jones,2024-01-01,c02,Some Reason for the c02
-
 ```
 
 3. Run the seeding script:
 
 ```
-
 node seed.mjs
-
 ```
 
 This will populate your database with the sample associates, notification levels, rules, and occurrence types, giving you a starting point to work with the system.
@@ -151,6 +151,10 @@ After starting the development server, open your browser and navigate to `http:/
 
 Use the associate search functionality to find and select associates. You can then view their details, log incidents, or manage their attendance records.
 
+### 🎨 Theme Selection
+
+The application now features a theme selector, allowing users to choose between different visual themes, including a dark mode option. This enhances user experience by providing personalized visual preferences.
+
 ## 🤝 Contributing
 
 We welcome contributions to the Associate Management System! Please feel free to submit issues, fork the repository and send pull requests!
@@ -168,7 +172,3 @@ We welcome contributions to the Associate Management System! Please feel free to
 ---
 
 Built with ❤️ by Some Dude
-
-```
-
-```
