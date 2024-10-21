@@ -5,20 +5,20 @@ import {
   getCorrectiveActions,
   addCorrectiveAction,
   updateCorrectiveAction,
-  Associate,
   Rule,
   CorrectiveAction,
   deleteCorrectiveAction,
   getAssociatePointsAndNotification,
   AssociateInfo,
-} from "@/lib/api";
-import AssociateSelect from "@/components/AssociateSelect";
+  AssociateAndDesignation,
+} from "../lib/api";
+import AssociateSelect from "../components/AssociateSelect";
 import CAForm from "../components/form/CAForm";
 import CAList from "../components/list/CAList";
-import CAEditModal from "@/components/modals/CAEditModal";
+import CAEditModal from "../components/modals/CAEditModal";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
-import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
-import { uploadFile, downloadFile, deleteFile } from "@/lib/api";
+import { useAssociatesWithDesignation } from "../hooks/useAssociates";
+import { uploadFile, downloadFile, deleteFile } from "../lib/api";
 import { toast } from "react-hot-toast";
 
 function CAPage() {
@@ -34,9 +34,8 @@ function CAPage() {
     CorrectiveAction[]
   >([]);
   const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null);
-  const [selectedAssociate, setSelectedAssociate] = useState<Associate | null>(
-    null
-  );
+  const [selectedAssociate, setSelectedAssociate] =
+    useState<AssociateAndDesignation | null>(null);
   const [selectedAssociateId, setSelectedAssociateId] = useState<string | null>(
     null
   );
@@ -55,6 +54,7 @@ function CAPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const associateId = searchParams.get("associateId");
+    console.log("AssociateId from URL:", associateId);
     if (associateId) {
       handleAssociateSelect(associateId);
     }
@@ -68,10 +68,13 @@ function CAPage() {
           fetchAssociatesWithDesignation(),
         ]);
         setRules(rulesData);
+        console.log("Rules fetched:", rulesData);
+        console.log("Associates fetched:", associatesWithDesignation);
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
+        const errorMessage =
+          err instanceof Error ? err.message : "An unknown error occurred";
+        console.error("Error fetching initial data:", errorMessage);
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -82,6 +85,7 @@ function CAPage() {
 
   useEffect(() => {
     if (selectedAssociateId) {
+      console.log("Selected Associate ID changed:", selectedAssociateId);
       fetchCorrectiveActions();
       fetchAssociateInfo(selectedAssociateId);
     } else {
@@ -94,11 +98,13 @@ function CAPage() {
     if (selectedAssociateId) {
       try {
         const caData = await getCorrectiveActions(selectedAssociateId);
+        console.log("Corrective Actions fetched:", caData);
         setCorrectiveActions(caData);
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
+        const errorMessage =
+          err instanceof Error ? err.message : "An unknown error occurred";
+        console.error("Error fetching corrective actions:", errorMessage);
+        setError(errorMessage);
       }
     } else {
       setCorrectiveActions([]);
@@ -110,11 +116,13 @@ function CAPage() {
       const associateInfoData = await getAssociatePointsAndNotification(
         associateId
       );
+      console.log("Associate Info fetched:", associateInfoData);
       setAssociateInfo(associateInfoData);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : "An unknown error occurred";
+      console.error("Error fetching associate info:", errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -138,13 +146,40 @@ function CAPage() {
   };
 
   const handleAssociateSelect = async (associateId: string | null) => {
+    console.log("Associate selected:", associateId);
     setSelectedAssociateId(associateId);
     if (associateId) {
+      console.log("Associates with designation:", associatesWithDesignation);
       const selectedAssociate = associatesWithDesignation.find(
         (a) => a.id === associateId
       );
-      setSelectedAssociate(selectedAssociate || null);
-      fetchAssociateInfo(associateId);
+      if (selectedAssociate) {
+        console.log("Selected Associate:", selectedAssociate);
+        setSelectedAssociate(selectedAssociate);
+        fetchAssociateInfo(associateId);
+      } else {
+        console.error(
+          "Selected associate not found in associatesWithDesignation"
+        );
+        console.log("Attempting to fetch associate info directly");
+        try {
+          const associateInfoData = await getAssociatePointsAndNotification(
+            associateId
+          );
+          console.log("Associate Info fetched directly:", associateInfoData);
+          setAssociateInfo(associateInfoData);
+          setSelectedAssociate({
+            id: associateId,
+            name: associateInfoData.name,
+            designation: associateInfoData.designation,
+          });
+        } catch (err) {
+          console.error("Error fetching associate info directly:", err);
+          setError("Selected associate not found and could not be fetched");
+          setSelectedAssociate(null);
+          setAssociateInfo(null);
+        }
+      }
     } else {
       setSelectedAssociate(null);
       setAssociateInfo(null);
@@ -167,7 +202,10 @@ function CAPage() {
         await fetchAssociateInfo(selectedAssociateId);
         await fetchAssociatesWithDesignation();
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "An unknown error occurred");
+        const errorMessage =
+          e instanceof Error ? e.message : "An unknown error occurred";
+        console.error("Error adding corrective action:", errorMessage);
+        setError(errorMessage);
       }
     }
   };
