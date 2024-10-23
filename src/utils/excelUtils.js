@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import os from "os";
 import axios from "axios";
+import { prisma } from "../server.js";
 
 export async function getTemplate(fileKey, type) {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "excel-templates-"));
@@ -30,9 +31,10 @@ export async function generateExcelOccurrence(
   date,
   occurrences,
   notificationLevel,
-  notifications
+  notifications,
+  designation
 ) {
-  if (!associateName || !location || !department || !date) {
+  if (!associateName || !location || !department || !date || !designation) {
     throw new Error("Missing required parameters");
   }
 
@@ -57,22 +59,25 @@ export async function generateExcelOccurrence(
   sheet.cell("H7").value(department);
   sheet.cell("J7").value(date);
 
+  // Fetch notification levels directly from the database
+  const notificationLevels = await prisma.notificationLevel.findMany({
+    where: { designation },
+    orderBy: { level: "asc" },
+  });
+
+  // Map notification levels to Excel cells
+  const levelCells = ["B9", "E9", "H9", "B10", "E10"];
+  const mappedLevels = notificationLevels.slice(0, 5).map((level, index) => ({
+    text: level.name,
+    cell: levelCells[index],
+  }));
+
   // Set notification level
-  const levels = [
-    { text: "Verbal Notice", cell: "B9" },
-    { text: "1st Written Notice", cell: "E9" },
-    { text: "2nd Written Notice", cell: "H9" },
-    { text: "Final Written Notice", cell: "B10" },
-    { text: "Termination", cell: "E10" },
-  ];
-
-  const currentLevel = levels.findIndex(
-    (level) => level.text === notificationLevel
-  );
-
-  levels.forEach((level, index) => {
+  mappedLevels.forEach((level) => {
     const cellValue =
-      index === currentLevel ? `(X) ${level.text}` : `( ) ${level.text}`;
+      level.text === notificationLevel
+        ? `(X) ${level.text}`
+        : `( ) ${level.text}`;
     sheet.cell(level.cell).value(cellValue);
   });
 

@@ -34,7 +34,8 @@ export async function exportExcelOcc(
   date: string,
   occurrences: Occurrence[],
   notificationLevel: string,
-  notifications: Notification[]
+  notifications: Notification[],
+  designation: string
 ): Promise<Blob> {
   try {
     const templateBlob = await getTemplate("occurrence");
@@ -49,6 +50,7 @@ export async function exportExcelOcc(
         occurrences,
         notificationLevel,
         notifications,
+        designation,
       },
       {
         responseType: "blob",

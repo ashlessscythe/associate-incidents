@@ -25,6 +25,24 @@ router.get("/notifications/:associateId", async (req, res) => {
   }
 });
 
+// Get notification levels for a specific designation
+router.get("/notification-levels", async (req, res) => {
+  try {
+    const { designation } = req.query;
+    const where = designation ? { designation } : {};
+
+    const levels = await prisma.notificationLevel.findMany({
+      where,
+      orderBy: { level: "asc" },
+    });
+
+    res.json(levels);
+  } catch (error) {
+    console.error("Error fetching notification levels:", error);
+    res.status(500).json({ error: "Error fetching notification levels" });
+  }
+});
+
 // Create a new notification
 router.post("/notifications", async (req, res) => {
   try {

@@ -121,8 +121,9 @@ export interface Notification {
 
 export interface NotificationLevel {
   designation: Designation;
-  levelNumber: number;
-  levelText: string;
+  level: number;
+  name: string;
+  pointThreshhold?: number;
 }
 
 export interface CreateNotificationData {

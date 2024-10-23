@@ -292,7 +292,8 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         currentDate,
         filteredOccurrences,
         notificationLevel,
-        notificationsWithoutFiles
+        notificationsWithoutFiles,
+        designation // Add designation parameter
       );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");

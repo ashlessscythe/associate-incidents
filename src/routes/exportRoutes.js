@@ -20,6 +20,16 @@ router.post("/export-excel-occurrence", async (req, res) => {
       notifications,
     } = req.body;
 
+    // Fetch associate's designation from the database
+    const associate = await prisma.associate.findUnique({
+      where: { name: associateName },
+      select: { designation: true },
+    });
+
+    if (!associate) {
+      throw new Error("Associate not found");
+    }
+
     const excelBuffer = await generateExcelOccurrence(
       associateName,
       location,
@@ -27,7 +37,8 @@ router.post("/export-excel-occurrence", async (req, res) => {
       date,
       occurrences,
       notificationLevel,
-      notifications
+      notifications,
+      associate.designation
     );
 
     res.setHeader(

@@ -112,7 +112,9 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
 
   const fetchNotificationLevels = async () => {
     const levels = await getNotificationLevels(associateDesignation);
-    setNotificationLevels(levels);
+    // Sort levels by level number
+    const sortedLevels = [...levels].sort((a, b) => a.level - b.level);
+    setNotificationLevels(sortedLevels);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,6 +136,10 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasEditorRole) return;
+    if (!newNotification.level) {
+      alert("Please select a notification level.");
+      return;
+    }
     await createNotification({
       associateId,
       ...newNotification,
@@ -287,14 +293,15 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
           <Select
             value={newNotification.level}
             onValueChange={(value) => handleSelectChange("level", value)}
+            required
           >
             <SelectTrigger>
               <SelectValue placeholder="Select notification level" />
             </SelectTrigger>
             <SelectContent>
               {notificationLevels.map((level) => (
-                <SelectItem key={level.levelNumber} value={level.levelText}>
-                  {`${level.levelNumber} - ${level.levelText}`}
+                <SelectItem key={level.level} value={level.name}>
+                  {`${level.level} - ${level.name}`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -460,8 +467,8 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {notificationLevels.map((level) => (
-                    <SelectItem key={level.levelNumber} value={level.levelText}>
-                      {`${level.levelNumber} - ${level.levelText}`}
+                    <SelectItem key={level.level} value={level.name}>
+                      {`${level.level} - ${level.name}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
