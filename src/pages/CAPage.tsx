@@ -132,7 +132,8 @@ function CAPage() {
 
   const handleUpdateCA = async (updatedCA: CorrectiveAction) => {
     try {
-      await updateCorrectiveAction(updatedCA.id, updatedCA);
+      const { files, ...caWithoutFiles } = updatedCA;
+      await updateCorrectiveAction(updatedCA.id, caWithoutFiles);
       await fetchCorrectiveActions();
       setEditingCA(null);
     } catch (error) {
