@@ -355,4 +355,68 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
   }
 });
 
+// Get associates points report
+router.get("/associates-points-report", async (req, res) => {
+  try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const associates = await prisma.associate.findMany({
+      select: {
+        name: true,
+        designation: true,
+        department: {
+          select: {
+            name: true,
+          },
+        },
+        occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo,
+            },
+          },
+          select: {
+            type: {
+              select: {
+                points: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const report = associates.map((associate) => ({
+      associate_name: associate.name,
+      department_name: associate.department?.name || "No Department",
+      associate_designation: associate.designation,
+      total_points: associate.occurrences.reduce(
+        (sum, occ) => sum + (occ.type?.points || 0),
+        0
+      ),
+    }));
+
+    // Convert to CSV
+    const csvHeader =
+      "Associate Name,Department Name,Designation,Total Points\n";
+    const csvContent = report
+      .map(
+        (row) =>
+          `${row.associate_name},${row.department_name},${row.associate_designation},${row.total_points}`
+      )
+      .join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=associates-points-report.csv"
+    );
+    res.send(csvHeader + csvContent);
+  } catch (error) {
+    console.error("Error generating associates points report:", error);
+    res.status(500).json({ error: "Error generating report" });
+  }
+});
+
 export default router;

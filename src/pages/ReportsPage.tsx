@@ -5,6 +5,7 @@ import {
   getOccurrenceTypes,
   getAllAssociatesWithOccurrences,
   AssociateAndOccurrences,
+  downloadAssociatesPointsReport,
 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import {
 } from "../lib/api";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Download } from "lucide-react";
 
 interface CAByTypeData {
   id: string;
@@ -115,6 +116,15 @@ const ReportsPage: React.FC = () => {
 
   const handleUpdateOccurrence = async (associateId: string) => {
     console.log("Update Occurrences for Associate:", associateId);
+  };
+
+  const handleDownloadPointsReport = async () => {
+    try {
+      await downloadAssociatesPointsReport();
+    } catch (err) {
+      setError("Failed to download points report");
+      console.error(err);
+    }
   };
 
   const filteredAssociatesData = useMemo(() => {
@@ -251,40 +261,63 @@ const ReportsPage: React.FC = () => {
       <header className="sticky top-0 z-10 bg-card text-card-foreground shadow-md">
         <div className="container mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold mb-4">Reports</h1>
-          <div className="flex flex-wrap gap-2 mb-4">
+
+          {/* Quick Actions Section */}
+          <div className="mb-6 bg-muted/50 p-4 rounded-lg">
+            <h2 className="text-sm font-semibold mb-2 text-muted-foreground">
+              Quick Actions
+            </h2>
             <Button
-              onClick={handleGetAllOccurrences}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading && activeReport === "occurrences"
-                ? "Loading..."
-                : "Run Occurrences by Associate Report"}
-            </Button>
-            <Button
-              onClick={handleFetchCAByType}
-              disabled={loading}
-              className="w-full sm:w-auto"
-            >
-              {loading && activeReport === "ca"
-                ? "Loading..."
-                : "Run CA by Type Report"}
-            </Button>
-            <Button
-              onClick={handleClearReport}
+              onClick={handleDownloadPointsReport}
               variant="outline"
               className="w-full sm:w-auto"
             >
-              Clear Report
+              <Download className="w-4 h-4 mr-2" />
+              Download Points Report (All Associates)
             </Button>
-            <Input
-              type="text"
-              placeholder="Filter by Associate Name"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="w-full sm:w-auto"
-            />
           </div>
+
+          {/* Table Reports Section */}
+          <div className="mb-4">
+            <h2 className="text-sm font-semibold mb-2 text-muted-foreground">
+              Table Reports
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleGetAllOccurrences}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                {loading && activeReport === "occurrences"
+                  ? "Loading..."
+                  : "Run Occurrences by Associate Report"}
+              </Button>
+              <Button
+                onClick={handleFetchCAByType}
+                disabled={loading}
+                className="w-full sm:w-auto"
+              >
+                {loading && activeReport === "ca"
+                  ? "Loading..."
+                  : "Run CA by Type Report"}
+              </Button>
+              <Button
+                onClick={handleClearReport}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Clear Report
+              </Button>
+              <Input
+                type="text"
+                placeholder="Filter by Associate Name"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="w-full sm:w-auto"
+              />
+            </div>
+          </div>
+
           <RadioGroup
             value={selectedDesignation}
             onValueChange={(value) =>
