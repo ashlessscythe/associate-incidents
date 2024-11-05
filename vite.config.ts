@@ -11,11 +11,11 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": {
-        target: "http://localhost:5000",
+      "/zapi": {
+        target: "http://localhost:8000",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ""),
+        rewrite: (path) => path, // Don't rewrite the path, keep /zapi
       },
     },
   },
@@ -24,10 +24,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
-          // Add other large dependencies here
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increased from default 500
+    chunkSizeWarningLimit: 1000,
   },
 });
