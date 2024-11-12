@@ -35,3 +35,6 @@ excel/ca.xlsx
 .env.local
 prisma/definitions-real.js
 prisma/real-definitions.js
+
+# backups
+backups/

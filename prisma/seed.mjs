@@ -578,9 +578,14 @@ async function main() {
         description: "Seed only files",
       })
       .option("use-faker", {
-        type: "number",
+        type: "boolean",
         description:
-          "Use faker to generate data, specify the number of records",
+          "Use faker to generate data. Optionally specify number of records with --count",
+      })
+      .option("count", {
+        type: "number",
+        description: "Number of records to generate when using --use-faker",
+        default: 10,
       })
       .help().argv;
 
@@ -613,7 +618,8 @@ async function main() {
     }
 
     let associates = [];
-    const useFaker = argv.useFaker > 0;
+    const useFaker = argv.useFaker;
+    const recordCount = argv.count;
     const onlyFlagUsed =
       argv.occurrencesOnly ||
       argv.rulesOnly ||
@@ -623,7 +629,7 @@ async function main() {
 
     if (argv.usersOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
-        associates = generateFakeAssociates(argv.useFaker);
+        associates = generateFakeAssociates(recordCount);
         await upsertAssociates(associates);
       } else {
         const csvPath = path.join(__dirname, associatesFileName);
@@ -635,7 +641,7 @@ async function main() {
         }
       }
     } else if (useFaker && onlyFlagUsed) {
-      associates = await fetchExistingAssociates(argv.useFaker);
+      associates = await fetchExistingAssociates(recordCount);
       if (associates.length === 0) {
         console.log(
           "No existing associates found. Please seed users first or use --users-only flag."
@@ -647,7 +653,7 @@ async function main() {
     if (argv.occurrencesOnly || (!onlyFlagUsed && useFaker)) {
       let occurrences;
       if (useFaker) {
-        occurrences = generateFakeOccurrences(associates, argv.useFaker * 5);
+        occurrences = generateFakeOccurrences(associates, recordCount * 5);
       } else {
         const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
         occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
@@ -671,7 +677,7 @@ async function main() {
           correctiveActions = generateFakeCorrectiveActions(
             associates,
             rules,
-            argv.useFaker * 2
+            recordCount * 2
           );
         } else {
           console.log(
@@ -691,7 +697,7 @@ async function main() {
       if (useFaker && associates.length > 0) {
         const fakeNotifications = generateFakeNotifications(
           associates,
-          argv.useFaker * 3
+          recordCount * 3
         );
         await upsertNotifications(fakeNotifications);
       } else {
@@ -703,7 +709,7 @@ async function main() {
 
     if (argv.filesOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
-        const fakeFiles = await generateFakeFiles(argv.useFaker * 2);
+        const fakeFiles = await generateFakeFiles(recordCount * 2);
         if (fakeFiles.length > 0) {
           await upsertFiles(fakeFiles);
         } else {
