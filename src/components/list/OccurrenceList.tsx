@@ -277,19 +277,30 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 
   const executeExcelExport = async (department: string, location: string) => {
     try {
-      const currentDate = new Date().toISOString().split("T")[0];
+      const currentDate = new Date();
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
 
-      // Remove file items from notifications
-      const notificationsWithoutFiles = notifications.map((notification) => {
-        const { files, ...notificationWithoutFiles } = notification;
-        return notificationWithoutFiles;
-      });
+      // Filter notifications within the date range and remove file items
+      const notificationsWithoutFiles = notifications
+        .filter((notification) => {
+          const notificationDate = new Date(notification.date);
+          return (
+            notificationDate >= oneYearAgo && notificationDate <= currentDate
+          );
+        })
+        .map((notification) => {
+          const { files, ...notificationWithoutFiles } = notification;
+          return notificationWithoutFiles;
+        });
+
+      const currentDateStr = currentDate.toISOString().split("T")[0];
 
       const blob = await exportExcelOcc(
         associateInfo.name,
         location,
         department,
-        currentDate,
+        currentDateStr,
         filteredOccurrences,
         notificationLevel,
         notificationsWithoutFiles,
