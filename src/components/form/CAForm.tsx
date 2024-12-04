@@ -114,7 +114,7 @@ const CAForm: React.FC<CAFormProps> = ({
             ))}
           </div>
         </RadioGroup>
-
+        <h2 className="text-sm font-semibold mb-2">Corrective Action Rule</h2>
         <Select onValueChange={setRuleId} value={ruleId} disabled={!ruleType}>
           <SelectTrigger>
             <SelectValue placeholder="Select a rule" />
@@ -134,6 +134,7 @@ const CAForm: React.FC<CAFormProps> = ({
             ))}
           </SelectContent>
         </Select>
+        <h2 className="text-sm font-semibold mb-2">Corrective Action Date</h2>
         <Input
           type="date"
           ref={dateInputRef}

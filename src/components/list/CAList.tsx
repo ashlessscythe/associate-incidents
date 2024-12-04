@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Associate,
   AssociateInfo,
@@ -8,6 +8,8 @@ import {
 } from "@/lib/api";
 import { Printer, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import CAItem from "./CAItem";
 import { useCAPrint } from "@/hooks/useCAPrint";
 import { toast } from "react-hot-toast";
@@ -35,8 +37,22 @@ const CAList: React.FC<CAListProps> = ({
   onDownloadFile,
   onDeleteFile,
 }) => {
+  // Get unique rule types
+  const ruleTypes = Array.from(new Set(rules.map((rule) => rule.type)));
+
+  // Initialize state for rule type filters - all enabled by default
+  const [enabledRuleTypes, setEnabledRuleTypes] = useState<
+    Record<string, boolean>
+  >(ruleTypes.reduce((acc, type) => ({ ...acc, [type]: true }), {}));
+
+  // Filter CAs by enabled rule types
+  const filteredCAs = correctiveActions.filter((ca) => {
+    const rule = rules.find((r) => r.id === ca.ruleId);
+    return rule && enabledRuleTypes[rule.type];
+  });
+
   // Group CAs by rule type and code
-  const groupedCAs = correctiveActions.reduce((acc, ca) => {
+  const groupedCAs = filteredCAs.reduce((acc, ca) => {
     const rule = rules.find((r) => r.id === ca.ruleId);
     if (rule) {
       const key = `${rule.type}-${rule.code}`;
@@ -115,55 +131,90 @@ const CAList: React.FC<CAListProps> = ({
         <h2 className="text-2xl font-semibold mb-4">Corrective Actions</h2>
         {/* Updated Summary Section */}
         <div className="bg-muted p-4 rounded-lg mb-4">
-          <h3 className="text-lg font-semibold mb-2">Associate Summary</h3>
-          <div className="grid grid-cols-2 gap-2">
-            <p>
-              <span className="font-medium">Name:</span>{" "}
-              {associate?.name || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Department:</span>{" "}
-              {associate?.department?.name || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Location:</span>{" "}
-              {associate?.location?.name || "N/A"}
-            </p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+            <div className="w-full md:w-1/3">
+              <h3 className="text-lg font-semibold mb-2">Associate Summary</h3>
+              <div className="grid gap-2">
+                <p>
+                  <span className="font-medium">Name:</span>{" "}
+                  {associate?.name || "N/A"}
+                </p>
+                <p>
+                  <span className="font-medium">Department:</span>{" "}
+                  {associate?.department?.name || "N/A"}
+                </p>
+                <p>
+                  <span className="font-medium">Location:</span>{" "}
+                  {associate?.location?.name || "N/A"}
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full md:w-1/3 mt-4 md:mt-0">
+              <h3 className="text-lg font-semibold mb-2">Filters</h3>
+              <div className="grid gap-2">
+                {ruleTypes.map((type) => (
+                  <div key={type} className="flex items-center space-x-2">
+                    <Switch
+                      id={`filter-${type.toLowerCase()}`}
+                      checked={enabledRuleTypes[type]}
+                      onCheckedChange={(checked) =>
+                        setEnabledRuleTypes((prev) => ({
+                          ...prev,
+                          [type]: checked,
+                        }))
+                      }
+                    />
+                    <Label htmlFor={`filter-${type.toLowerCase()}`}>
+                      {type}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-full md:w-1/3 mt-4 md:mt-0">
+              <h3 className="text-lg font-semibold mb-2">Statistics</h3>{" "}
+              <div className="grid gap-2">
+                {" "}
+                <p>
+                  {" "}
+                  <span className="font-medium">
+                    Total Corrective Actions:
+                  </span>{" "}
+                  {correctiveActions.length}{" "}
+                </p>{" "}
+              </div>{" "}
+            </div>
           </div>
         </div>
-        <div className="flex justify-between items-center mb-4">
-          <p className="mb-4 font-medium">
-            Total Corrective Actions: {correctiveActions.length}
-            <br />
-            Cumulative Count: {safetyCumulativeCount}
-          </p>
-          <div>
-            <Button
-              onClick={() =>
-                handlePrint({
-                  associate,
-                  correctiveActions,
-                  totalCorrectiveActions: correctiveActions.length,
-                  safetyCumulativeCount,
-                })
-              }
-              variant="outline"
-              size="icon"
-              className="mr-2"
-              aria-label="Print corrective actions"
-            >
-              <Printer size={20} />
-            </Button>
-            <Button
-              onClick={handleExport}
-              variant="outline"
-              size="icon"
-              aria-label="Export corrective actions to Excel"
-            >
-              <FileSpreadsheet size={20} />
-            </Button>
-          </div>
+
+        <div className="flex justify-end mb-4">
+          <Button
+            onClick={() =>
+              handlePrint({
+                associate,
+                correctiveActions,
+                totalCorrectiveActions: correctiveActions.length,
+                safetyCumulativeCount,
+              })
+            }
+            variant="outline"
+            size="icon"
+            className="mr-2"
+            aria-label="Print corrective actions"
+          >
+            <Printer size={20} />
+          </Button>
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            size="icon"
+            aria-label="Export corrective actions to Excel"
+          >
+            <FileSpreadsheet size={20} />
+          </Button>
         </div>
+
         {sortedGroups.length === 0 ? (
           <p className="text-muted-foreground">No corrective actions found.</p>
         ) : (

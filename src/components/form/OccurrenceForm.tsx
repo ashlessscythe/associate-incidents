@@ -99,12 +99,14 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
             ))}
           </SelectContent>
         </Select>
+        <h2 className="text-sm font-semibold mb-2">Occurrence Date</h2>
         <Input
           type="date"
           ref={dateInputRef}
           defaultValue={new Date().toISOString().split("T")[0]}
           max={maxDate()} // Prevents future dates
         />
+        <h2 className="text-sm font-semibold mb-2">Occurrence Notes</h2>
         <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
