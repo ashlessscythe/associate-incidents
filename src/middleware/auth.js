@@ -1,56 +1,38 @@
-import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
-const hashSalt = process.env.VITE_HASH_SALT;
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY;
+const JWT_ALGORITHM = process.env.JWT_ALGORITHM || "RS256";
+const JWT_ROLE_CLAIM = process.env.JWT_ROLE_CLAIM || "role";
 
-if (!hashSalt) {
-  throw new Error("Hash salt not defined in .env file");
-} else {
-  console.log(`auth.js: Hash salt is ${hashSalt.length} chars`);
+if (!JWT_PUBLIC_KEY) {
+  throw new Error("JWT_PUBLIC_KEY not defined in .env file");
 }
 
-function generateTimeHash() {
-  const now = new Date();
-  const dateString = now.toISOString().split("T")[0];
-  const hour = now.getUTCHours().toString().padStart(2, "0");
-  const timeString = `${dateString}${hour}`;
+export const validateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  const hash = crypto.createHash("sha256");
-  hash.update(timeString + hashSalt);
-
-  return hash.digest("hex").substring(0, 8);
-}
-
-function validateTimeHash(hash) {
-  const now = new Date();
-  const currentHash = generateTimeHash();
-
-  if (hash === currentHash) {
-    return true;
+  if (!authHeader) {
+    return res.status(401).json({ error: "No authorization header" });
   }
 
-  now.setMinutes(now.getMinutes() - 1);
-  const previousHash = generateTimeHash();
+  const token = authHeader.split(" ")[1]; // Bearer <token>
 
-  return hash === previousHash;
-}
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
 
-export const validateApiKey = (req, res, next) => {
-  const urlParts = req.url.split("/");
-  const fullApiKey = urlParts[1];
+  try {
+    const decoded = jwt.verify(token, JWT_PUBLIC_KEY, {
+      algorithms: [JWT_ALGORITHM],
+    });
 
-  const [apiKey, timeHash] = fullApiKey.split("-");
+    // Add decoded user info to request
+    req.user = decoded;
+    req.userRole = decoded[JWT_ROLE_CLAIM];
 
-  const validPattern = /^(?=.*[!$^*_])(?!.*[92])[A-Za-z0-8!$^*\-_.~]{15}$/;
-
-  if (
-    apiKey &&
-    timeHash &&
-    validPattern.test(apiKey) &&
-    validateTimeHash(timeHash)
-  ) {
-    req.url = "/" + urlParts.slice(2).join("/");
     next();
-  } else {
-    res.status(401).json({ error: "Invalid API key" });
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    return res.status(401).json({ error: "Invalid token" });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,15 +45,6 @@ const CAEditModal: React.FC<CAEditModalProps> = ({
   const [date, setDate] = useState<string>(formatDate(ca.date.toString()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSafetyOrOperations, setIsSafetyOrOperations] = useState(false);
-
-  useEffect(() => {
-    const rule = rules.find((r) => r.id === ruleId);
-    // TODO: get these from db instead of literal static
-    setIsSafetyOrOperations(
-      rule?.type === "SAFETY" || rule?.type === "OPERATIONS"
-    );
-  }, [ruleId, rules]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +54,7 @@ const CAEditModal: React.FC<CAEditModalProps> = ({
         ...ca,
         ruleId,
         description,
-        level: isSafetyOrOperations ? 0 : Number(level),
+        level: Number(level),
         date: new Date(date),
       });
       onClose();
@@ -103,20 +94,18 @@ const CAEditModal: React.FC<CAEditModalProps> = ({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Enter description"
           />
-          {!isSafetyOrOperations && (
-            <Select onValueChange={setLevel} value={level}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select notification level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0 - Coaching Conversation</SelectItem>
-                <SelectItem value="1">1 - Documented Verbal Warning</SelectItem>
-                <SelectItem value="2">2 - Written Warning</SelectItem>
-                <SelectItem value="3">3 - Final Written Warning</SelectItem>
-                <SelectItem value="4">4 - Termination</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          <Select onValueChange={setLevel} value={level}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select notification level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 - Coaching Conversation</SelectItem>
+              <SelectItem value="1">1 - Documented Verbal Warning</SelectItem>
+              <SelectItem value="2">2 - Written Warning</SelectItem>
+              <SelectItem value="3">3 - Final Written Warning</SelectItem>
+              <SelectItem value="4">4 - Termination</SelectItem>
+            </SelectContent>
+          </Select>
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel

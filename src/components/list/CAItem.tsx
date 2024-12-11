@@ -175,16 +175,12 @@ const CAItem: React.FC<CAItemProps> = ({
     }
   };
 
-  const rule = rules.find((r) => r.id === ca.ruleId);
-  const isSafetyOrOperations =
-    rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
-
   return (
     <li className="bg-card text-card-foreground p-4 rounded-lg shadow mb-4">
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold">{getRuleDescription(ca.ruleId)}</p>
-          {!isSafetyOrOperations && <p>{getLevelDescription(level)}</p>}
+          <p>{getLevelDescription(level)}</p>
           <p>Date: {new Date(ca.date).toISOString().split("T")[0]}</p>
           <p>Description: {ca.description}</p>
         </div>

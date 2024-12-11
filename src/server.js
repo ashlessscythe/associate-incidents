@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import { PrismaClient } from "@prisma/client";
 import { corsOptions } from "./config/corsConfig.js";
-import { validateApiKey } from "./middleware/auth.js";
+import { validateToken } from "./middleware/auth.js";
 import associateRoutes from "./routes/associateRoutes.js";
 import occurrenceRoutes from "./routes/occurrenceRoutes.js";
 import correctiveActionRoutes from "./routes/correctiveActionRoutes.js";
@@ -28,8 +28,8 @@ app.use(express.json());
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "..", "dist")));
 
-// Apply the validateApiKey middleware to all /zapi routes
-app.use("/zapi", validateApiKey);
+// Apply the validateToken middleware to all /zapi routes
+app.use("/zapi", validateToken);
 
 // Routes
 app.use("/zapi", associateRoutes);
