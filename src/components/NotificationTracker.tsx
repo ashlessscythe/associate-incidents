@@ -357,7 +357,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         <TableBody>
           {notifications.map((notification) => (
             <React.Fragment key={notification.id}>
-              <TableRow className="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <TableRow>
                 <TableCell>
                   {new Date(notification.date).toISOString().split("T")[0]}
                 </TableCell>

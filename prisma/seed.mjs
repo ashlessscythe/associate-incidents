@@ -219,11 +219,12 @@ async function readOccurrencesFromCSV(filePath) {
   });
 }
 
-function generateFakeOccurrences(associates, count) {
+function generateFakeOccurrences(associates, count, multiplier = 5) {
   const occurrences = [];
   const occurrenceCodes = occurrenceTypes.map((type) => type.code);
+  const actualCount = Math.floor(count * multiplier);
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < actualCount; i++) {
     const associate = faker.helpers.arrayElement(associates);
     occurrences.push({
       ssoid: associate.ssoid,
@@ -319,11 +320,22 @@ async function upsertOccurrences(occurrences) {
 }
 
 // Function to generate fake corrective actions
-function generateFakeCorrectiveActions(associates, rules, count) {
+
+function generateFakeCorrectiveActions(
+  associates,
+  rules,
+  occurrenceCount,
+  multiplier = null
+) {
   const correctiveActions = [];
   const levels = [1, 2, 3, 4];
 
-  for (let i = 0; i < count; i++) {
+  // If multiplier is provided, use it, otherwise use 40-70% of occurrence count
+  const targetCount = multiplier
+    ? Math.floor(occurrenceCount * multiplier)
+    : Math.floor(occurrenceCount * faker.number.float({ min: 0.4, max: 0.7 }));
+
+  for (let i = 0; i < targetCount; i++) {
     const associate = faker.helpers.arrayElement(associates);
     const rule = faker.helpers.arrayElement(rules);
 
@@ -396,11 +408,21 @@ async function upsertCorrectiveActions(correctiveActions) {
 }
 
 // Modified function to generate fake notifications
-function generateFakeNotifications(associates, count) {
+
+function generateFakeNotifications(
+  associates,
+  occurrenceCount,
+  multiplier = null
+) {
   const notifications = [];
   const notificationTypes = ["OCCURRENCE"];
 
-  for (let i = 0; i < count; i++) {
+  // If multiplier is provided, use it, otherwise use 40-70% of occurrence count
+  const targetCount = multiplier
+    ? Math.floor(occurrenceCount * multiplier)
+    : Math.floor(occurrenceCount * faker.number.float({ min: 0.4, max: 0.7 }));
+
+  for (let i = 0; i < targetCount; i++) {
     const associate = faker.helpers.arrayElement(associates);
     if (associate && associate.id) {
       notifications.push({
@@ -417,8 +439,7 @@ function generateFakeNotifications(associates, count) {
   return notifications;
 }
 
-// Modified function to generate fake file data with relationships
-async function generateFakeFiles(count) {
+async function generateFakeFiles(occurrenceCount, multiplier = 0.5) {
   const files = [];
   const mimeTypes = [
     "application/pdf",
@@ -444,6 +465,8 @@ async function generateFakeFiles(count) {
     return files;
   }
 
+  const count = Math.floor(occurrenceCount * multiplier);
+
   for (let i = 0; i < count; i++) {
     const associate = faker.helpers.arrayElement(associates);
     const isNotification = faker.datatype.boolean();
@@ -451,7 +474,7 @@ async function generateFakeFiles(count) {
     let fileData = {
       filename: faker.system.fileName(),
       mimetype: faker.helpers.arrayElement(mimeTypes),
-      content: Buffer.from(faker.lorem.paragraphs(3)), // Generate fake binary data
+      content: Buffer.from(faker.lorem.paragraphs(3)),
       size: faker.number.int({ min: 1000, max: 1000000 }),
       associateId: associate.id,
     };
@@ -463,11 +486,9 @@ async function generateFakeFiles(count) {
       const correctiveAction = faker.helpers.arrayElement(correctiveActions);
       fileData.correctiveActionId = correctiveAction.id;
     } else if (notifications.length > 0) {
-      // Fallback to notification if no corrective actions are available
       const notification = faker.helpers.arrayElement(notifications);
       fileData.notificationId = notification.id;
     } else {
-      // Skip this file if we can't assign either a notification or corrective action
       continue;
     }
 
@@ -519,27 +540,19 @@ async function upsertNotifications(notifications) {
         skippedCount++;
         continue;
       }
+
+      await prisma.notification.create({
+        data: notification,
+      });
+      upsertedCount++;
     } catch (error) {
-      console.error("Error upserting notifications", error);
+      console.error("Error upserting notification:", error);
+      skippedCount++;
     }
-
-    await prisma.notification.create({
-      data: notification,
-    });
   }
-}
 
-// New function to fetch existing associates
-async function fetchExistingAssociates(count) {
-  const totalAssociates = await prisma.associate.count();
-  const skip =
-    totalAssociates > count
-      ? Math.floor(Math.random() * (totalAssociates - count))
-      : 0;
-  return prisma.associate.findMany({
-    take: count,
-    skip: skip,
-  });
+  console.log(`${upsertedCount} notifications upserted.`);
+  console.log(`${skippedCount} notifications skipped due to errors.`);
 }
 
 async function main() {
@@ -587,6 +600,20 @@ async function main() {
         description: "Number of records to generate when using --use-faker",
         default: 10,
       })
+      .option("occurrence-multiplier", {
+        type: "number",
+        description: "Multiplier for number of occurrences (default: 5)",
+      })
+      .option("ca-multiplier", {
+        type: "number",
+        description:
+          "Multiplier for number of corrective actions (if not set, will use 40-70% of occurrence count)",
+      })
+      .option("notification-multiplier", {
+        type: "number",
+        description:
+          "Multiplier for number of notifications (if not set, will use 40-70% of occurrence count)",
+      })
       .help().argv;
 
     if (argv.clearFiles) {
@@ -627,6 +654,7 @@ async function main() {
       argv.notificationsOnly ||
       argv.filesOnly;
 
+    // Generate or fetch associates
     if (argv.usersOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
         associates = generateFakeAssociates(recordCount);
@@ -650,13 +678,22 @@ async function main() {
       }
     }
 
+    // Generate occurrences
+    let occurrenceCount = 0;
     if (argv.occurrencesOnly || (!onlyFlagUsed && useFaker)) {
       let occurrences;
       if (useFaker) {
-        occurrences = generateFakeOccurrences(associates, recordCount * 5);
+        const multiplier = argv.occurrenceMultiplier || 5;
+        occurrences = generateFakeOccurrences(
+          associates,
+          recordCount,
+          multiplier
+        );
+        occurrenceCount = occurrences.length;
       } else {
         const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
         occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+        occurrenceCount = occurrences.length;
       }
       if (occurrences.length > 0) {
         await upsertOccurrences(occurrences);
@@ -665,6 +702,7 @@ async function main() {
       }
     }
 
+    // Generate corrective actions
     if (argv.caOnly || (!onlyFlagUsed && useFaker)) {
       const rules = await prisma.rule.findMany();
       if (associates.length === 0 || rules.length === 0) {
@@ -677,7 +715,8 @@ async function main() {
           correctiveActions = generateFakeCorrectiveActions(
             associates,
             rules,
-            recordCount * 2
+            occurrenceCount,
+            argv.caMultiplier
           );
         } else {
           console.log(
@@ -693,11 +732,13 @@ async function main() {
       }
     }
 
+    // Generate notifications
     if (argv.notificationsOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker && associates.length > 0) {
         const fakeNotifications = generateFakeNotifications(
           associates,
-          recordCount * 3
+          occurrenceCount,
+          argv.notificationMultiplier
         );
         await upsertNotifications(fakeNotifications);
       } else {
@@ -707,9 +748,10 @@ async function main() {
       }
     }
 
+    // Generate files
     if (argv.filesOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
-        const fakeFiles = await generateFakeFiles(recordCount * 2);
+        const fakeFiles = await generateFakeFiles(occurrenceCount);
         if (fakeFiles.length > 0) {
           await upsertFiles(fakeFiles);
         } else {
