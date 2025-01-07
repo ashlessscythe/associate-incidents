@@ -200,7 +200,7 @@ export async function generateExcelCA(
   }
 
   const formattedDate = new Date(currentCA.date).toISOString().split("T")[0];
-  const description = `${formattedDate} (${currentCA.description})`;
+  const description = `${formattedDate} - ${currentCA.description}`;
 
   const cell = sheet.cell("A17");
   cell.value(description);

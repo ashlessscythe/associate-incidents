@@ -222,7 +222,73 @@ const CAList: React.FC<CAListProps> = ({
             const [ruleType, ruleCode] = groupKey.split("-");
             return (
               <div key={groupKey} className="mb-8">
-                <h3 className="text-lg font-semibold mb-2">{`${ruleType} - ${ruleCode}`}</h3>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold">{`${ruleType} - ${ruleCode}`}</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        handlePrint({
+                          associate,
+                          correctiveActions: groupCAs,
+                          totalCorrectiveActions: groupCAs.length,
+                          safetyCumulativeCount: groupCAs.filter((ca) => {
+                            const rule = rules.find((r) => r.id === ca.ruleId);
+                            return (
+                              rule &&
+                              (rule.type === "SAFETY" ||
+                                rule.type === "OPERATIONS")
+                            );
+                          }).length,
+                        })
+                      }
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={`Print ${ruleType} - ${ruleCode} corrective actions`}
+                    >
+                      <Printer size={16} />
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const exportCAsWithoutFiles = groupCAs.map((ca) => {
+                            const { files, ...caWithoutFiles } = ca;
+                            return caWithoutFiles;
+                          });
+
+                          const blob = await exportExcelCA(
+                            associate.name,
+                            associate.location?.name || "",
+                            associate.department?.name || "",
+                            new Date().toISOString().split("T")[0],
+                            exportCAsWithoutFiles,
+                            `${ruleType} - ${ruleCode}`
+                          );
+
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.style.display = "none";
+                          a.href = url;
+                          a.download = `${associate.name}_${ruleType}_${ruleCode}_corrective_actions.xlsx`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                        } catch (error) {
+                          console.error("Error exporting to Excel:", error);
+                          toast.error(
+                            "An error occurred while exporting to Excel. Please try again."
+                          );
+                        }
+                      }}
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label={`Export ${ruleType} - ${ruleCode} corrective actions to Excel`}
+                    >
+                      <FileSpreadsheet size={16} />
+                    </Button>
+                  </div>
+                </div>
                 <ul className="space-y-4">
                   {groupCAs
                     .sort(
