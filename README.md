@@ -2,20 +2,56 @@
 
 ## 🚀 Overview
 
-The Associate Management System is a powerful web application designed to streamline the process of managing associates, tracking incidents, and monitoring attendance. Built with modern web technologies, it offers a user-friendly interface for efficient workforce management.
+The Associate Management System is a comprehensive web application designed to revolutionize workforce management through efficient tracking of incidents, attendance, and corrective actions. Built with modern web technologies and a focus on user experience, it provides a robust platform for HR professionals and managers to:
 
-Check out the `schema.prisma` file to get more information on how the data model works and how different entities are related.
+- **Streamline Incident Management**: Efficiently track and manage attendance-related incidents with automated point calculations and threshold monitoring.
+- **Enhance Compliance**: Maintain detailed records of corrective actions and follow standardized procedures for incident handling.
+- **Drive Data-Driven Decisions**: Generate comprehensive reports and analytics to identify patterns and make informed decisions.
+- **Ensure Consistency**: Apply standardized rules and procedures across all associate interactions.
+
+The system is built on a solid foundation using Prisma as the ORM with a well-structured data model (detailed in `schema.prisma`). It combines powerful backend capabilities with a responsive, user-friendly frontend to deliver a seamless management experience.
 
 ## ✨ Features
 
-🔍 **Smart Associate Search**: Quickly find associates with an intuitive search functionality.
-📊 **Incident Tracking**: Log and manage incidents associated with employees.
-🕒 **Attendance Management**: Keep track of attendance occurrences and points.
-🖱️ **User-Friendly Interface**: Sleek, responsive design with keyboard navigation support.
-📜 **Rule-Based Corrective Actions**: Manage and apply rules for corrective actions.
-🎨 **Theme Selector**: Choose between different themes, including a dark mode option.
-🖋️ **Improved Corrective Action Editing**: Enhanced functionality for editing Corrective Actions.
-📊 **Optimized Excel Exports**: Improved Excel export functionality, now excluding file objects for better performance.
+### 📊 Occurrence & Associate Management
+
+![Occurrence List](public/occ-list.png)
+
+Track and manage attendance-related incidents with our comprehensive occurrence system. The intuitive interface allows you to:
+
+- Log and categorize attendance incidents
+- Track points and thresholds
+- Add detailed comments and documentation
+- Filter and search through records
+
+### 👥 Associate Records
+
+![Associate List](public/assoc-list.png)
+
+Maintain detailed associate information in a centralized system:
+
+- Quick associate search and filtering
+- Comprehensive profile management
+- Historical record tracking
+- Department and role organization
+
+### 📈 Advanced Reporting
+
+![Reports Interface](public/reports.png)
+
+Generate detailed insights and analytics:
+
+- Customizable report templates
+- Excel export functionality
+- Trend analysis and visualizations
+- Filtered data exports
+
+Additional features include:
+
+- 🖱️ **User-Friendly Interface**: Sleek, responsive design with keyboard navigation support
+- 📜 **Rule-Based Corrective Actions**: Automated corrective action management
+- 🎨 **Theme Selector**: Multiple theme options including dark mode
+- 🔒 **Role-Based Access**: Secure, permission-based system access
 
 ## 🛠️ Technologies Used
 

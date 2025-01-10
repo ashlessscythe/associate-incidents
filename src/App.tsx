@@ -35,11 +35,93 @@ const Profile = () => {
     );
   } else {
     return (
-      <div className="text-foreground">
-        <p>
+      <div className="text-foreground w-full max-w-6xl mx-auto px-4">
+        <p className="mb-12 text-lg text-center">
           Please log in to access the platform. If you don't have an account,
           you can create one.
         </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-8">
+          {/* Key Features Card */}
+          <div className="bg-card rounded-lg p-6 sm:p-8 shadow-md border border-border">
+            <div className="flex items-center mb-4">
+              <span className="text-2xl mr-2">✨</span>
+              <h3 className="text-xl font-semibold">Key Features</h3>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-start">
+                <span className="mr-2">📊</span>
+                <div>
+                  <strong>Occurrence Tracking</strong>
+                  <p className="text-sm text-muted-foreground">
+                    Efficiently manage and track attendance-related incidents
+                    with our comprehensive occurrence system.
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">👥</span>
+                <div>
+                  <strong>Associate Management</strong>
+                  <p className="text-sm text-muted-foreground">
+                    Maintain detailed associate records and track their history
+                    in a centralized location.
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">📝</span>
+                <div>
+                  <strong>Corrective Actions</strong>
+                  <p className="text-sm text-muted-foreground">
+                    Document and monitor corrective actions with structured
+                    follow-up processes.
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2">📈</span>
+                <div>
+                  <strong>Advanced Reporting</strong>
+                  <p className="text-sm text-muted-foreground">
+                    Generate detailed reports and analytics to identify trends
+                    and make data-driven decisions.
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          {/* Benefits Card */}
+          <div className="bg-card rounded-lg p-6 sm:p-8 shadow-md border border-border">
+            <div className="flex items-center mb-4">
+              <span className="text-2xl mr-2">🎯</span>
+              <h3 className="text-xl font-semibold">Benefits</h3>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-center">
+                <span className="mr-2">⚡</span>
+                <span>Streamlined incident management workflow</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">🔔</span>
+                <span>Real-time tracking and notifications</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">🔒</span>
+                <span>Secure and role-based access control</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">📊</span>
+                <span>Customizable reporting options</span>
+              </li>
+              <li className="flex items-center">
+                <span className="mr-2">🎨</span>
+                <span>Dark mode and multiple theme options</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     );
   }
