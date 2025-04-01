@@ -27,16 +27,20 @@ async function clearFiles() {
 }
 
 async function clearData() {
-  await prisma.notification.deleteMany(); // clear notifications, mmmmm
-  await prisma.exportRecord.deleteMany(); // clear export records, bruh
-  await prisma.location.deleteMany(); // clear locs
-  await prisma.department.deleteMany(); // bruh
-  await prisma.correctiveAction.deleteMany();
-  await prisma.rule.deleteMany(); // again
-  await prisma.attendanceOccurrence.deleteMany();
-  await prisma.associate.deleteMany();
-  await prisma.notificationLevel.deleteMany();
-  await prisma.occurrenceType.deleteMany();
+  // First clear files since they have foreign key relationships
+  await clearFiles();
+
+  await prisma.notification.deleteMany(); // clear notifications
+  await prisma.exportRecord.deleteMany(); // clear export records
+  await prisma.correctiveAction.deleteMany(); // clear corrective actions
+  await prisma.attendanceOccurrence.deleteMany(); // clear occurrences
+  await prisma.associate.deleteMany(); // clear associates
+  await prisma.location.deleteMany(); // clear locations
+  await prisma.department.deleteMany(); // clear departments
+  await prisma.rule.deleteMany(); // clear rules
+  await prisma.notificationLevel.deleteMany(); // clear notification levels
+  await prisma.occurrenceType.deleteMany(); // clear occurrence types
+
   console.log("All data cleared.");
 }
 
@@ -129,6 +133,18 @@ async function readAssociatesFromCSV(filePath) {
       .on("end", () => resolve(associates))
       .on("error", reject);
   });
+}
+
+// Function to fetch existing associates from the database
+async function fetchExistingAssociates(limit = null) {
+  const query = {};
+  if (limit) {
+    query.take = limit;
+  }
+
+  const associates = await prisma.associate.findMany(query);
+  console.log(`Fetched ${associates.length} existing associates.`);
+  return associates;
 }
 
 function generateFakeAssociates(count) {
@@ -320,7 +336,6 @@ async function upsertOccurrences(occurrences) {
 }
 
 // Function to generate fake corrective actions
-
 function generateFakeCorrectiveActions(
   associates,
   rules,
@@ -370,6 +385,7 @@ async function upsertCorrectiveActions(correctiveActions) {
         where: {
           associateId: correctiveAction.associateId,
           ruleId: correctiveAction.ruleId,
+          date: correctiveAction.date,
         },
       });
 
@@ -380,7 +396,6 @@ async function upsertCorrectiveActions(correctiveActions) {
           data: {
             description: correctiveAction.description,
             level: correctiveAction.level,
-            date: correctiveAction.date,
           },
         });
       } else {
@@ -408,7 +423,6 @@ async function upsertCorrectiveActions(correctiveActions) {
 }
 
 // Modified function to generate fake notifications
-
 function generateFakeNotifications(
   associates,
   occurrenceCount,
@@ -516,9 +530,37 @@ async function upsertFiles(files) {
         continue;
       }
 
-      await prisma.file.create({
-        data: file,
+      // Check if a similar file already exists
+      const existingFile = await prisma.file.findFirst({
+        where: {
+          filename: file.filename,
+          associateId: file.associateId,
+          ...(file.notificationId
+            ? { notificationId: file.notificationId }
+            : {}),
+          ...(file.correctiveActionId
+            ? { correctiveActionId: file.correctiveActionId }
+            : {}),
+        },
       });
+
+      if (existingFile) {
+        // Update existing file
+        await prisma.file.update({
+          where: { id: existingFile.id },
+          data: {
+            mimetype: file.mimetype,
+            content: file.content,
+            size: file.size,
+          },
+        });
+      } else {
+        // Create new file
+        await prisma.file.create({
+          data: file,
+        });
+      }
+
       upsertedCount++;
     } catch (error) {
       console.error(`Error processing file: ${error.message}`);
@@ -529,6 +571,7 @@ async function upsertFiles(files) {
   console.log(`${upsertedCount} files upserted.`);
   console.log(`${skippedCount} files skipped due to errors.`);
 }
+
 async function upsertNotifications(notifications) {
   let upsertedCount = 0;
   let skippedCount = 0;
@@ -541,9 +584,32 @@ async function upsertNotifications(notifications) {
         continue;
       }
 
-      await prisma.notification.create({
-        data: notification,
+      // Check if a similar notification already exists
+      const existingNotification = await prisma.notification.findFirst({
+        where: {
+          associateId: notification.associateId,
+          date: notification.date,
+          type: notification.type,
+          level: notification.level,
+        },
       });
+
+      if (existingNotification) {
+        // Update existing notification
+        await prisma.notification.update({
+          where: { id: existingNotification.id },
+          data: {
+            totalPoints: notification.totalPoints,
+            description: notification.description,
+          },
+        });
+      } else {
+        // Create new notification
+        await prisma.notification.create({
+          data: notification,
+        });
+      }
+
       upsertedCount++;
     } catch (error) {
       console.error("Error upserting notification:", error);
@@ -616,46 +682,57 @@ async function main() {
       })
       .help().argv;
 
-    if (argv.clearFiles) {
+    // If clear flag is set, clear all data regardless of other flags
+    if (argv.clear) {
+      await clearData(); // This now includes clearFiles
+
+      // When using --clear, force faker to be used if not already set
+      if (!argv.useFaker) {
+        console.log(
+          "Clear flag detected. Enabling faker to generate all data."
+        );
+        argv.useFaker = true;
+      }
+    } else if (argv.clearFiles) {
+      // Only clear files if clear-files flag is set and clear flag is not set
       await clearFiles();
     }
 
-    if (argv.clear) {
-      await clearData();
-    }
+    // Determine if any "only" flags are used
+    const onlyFlagUsed =
+      argv.occurrencesOnly ||
+      argv.rulesOnly ||
+      argv.usersOnly ||
+      argv.caOnly ||
+      argv.notificationsOnly ||
+      argv.filesOnly;
 
-    // Always upsert these unless a specific --only flag is used
-    if (
-      !argv.occurrencesOnly &&
-      !argv.rulesOnly &&
-      !argv.usersOnly &&
-      !argv.caOnly &&
-      !argv.notificationsOnly &&
-      !argv.filesOnly
-    ) {
+    // If clear flag is set without any "only" flags, create all data
+    // Otherwise, respect the "only" flags
+    const createAllData = argv.clear && !onlyFlagUsed;
+    const useFaker = argv.useFaker;
+    const recordCount = argv.count;
+
+    // Always upsert base data types
+    if (createAllData || !onlyFlagUsed) {
+      // If creating all data or no "only" flags are used, upsert all base data
       await upsertOccurrenceTypes();
       await upsertLocations();
       await upsertDepartments();
       await upsertNotificationLevels();
       await upsertRules();
     } else {
+      // Selectively upsert based on flags
       if (argv.occurrencesOnly) await upsertOccurrenceTypes();
       if (argv.rulesOnly) await upsertRules();
       if (argv.notificationsOnly) await upsertNotificationLevels();
     }
 
     let associates = [];
-    const useFaker = argv.useFaker;
-    const recordCount = argv.count;
-    const onlyFlagUsed =
-      argv.occurrencesOnly ||
-      argv.rulesOnly ||
-      argv.caOnly ||
-      argv.notificationsOnly ||
-      argv.filesOnly;
+    let occurrenceCount = 0;
 
     // Generate or fetch associates
-    if (argv.usersOnly || (!onlyFlagUsed && useFaker)) {
+    if (createAllData || argv.usersOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
         associates = generateFakeAssociates(recordCount);
         await upsertAssociates(associates);
@@ -669,6 +746,7 @@ async function main() {
         }
       }
     } else if (useFaker && onlyFlagUsed) {
+      // Fetch existing associates for other data generation
       associates = await fetchExistingAssociates(recordCount);
       if (associates.length === 0) {
         console.log(
@@ -679,61 +757,66 @@ async function main() {
     }
 
     // Generate occurrences
-    let occurrenceCount = 0;
-    if (argv.occurrencesOnly || (!onlyFlagUsed && useFaker)) {
-      let occurrences;
-      if (useFaker) {
-        const multiplier = argv.occurrenceMultiplier || 5;
-        occurrences = generateFakeOccurrences(
-          associates,
-          recordCount,
-          multiplier
-        );
-        occurrenceCount = occurrences.length;
+    if (createAllData || argv.occurrencesOnly || (!onlyFlagUsed && useFaker)) {
+      if (associates.length === 0) {
+        console.log("No associates found. Cannot generate occurrences.");
       } else {
-        const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
-        occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
-        occurrenceCount = occurrences.length;
-      }
-      if (occurrences.length > 0) {
-        await upsertOccurrences(occurrences);
-      } else {
-        console.log("No occurrences found or generated.");
+        let occurrences;
+        if (useFaker) {
+          const multiplier = argv.occurrenceMultiplier || 5;
+          occurrences = generateFakeOccurrences(
+            associates,
+            recordCount,
+            multiplier
+          );
+          occurrenceCount = occurrences.length;
+        } else {
+          const occurrencesCsvPath = path.join(__dirname, occurrencesFileName);
+          occurrences = await readOccurrencesFromCSV(occurrencesCsvPath);
+          occurrenceCount = occurrences.length;
+        }
+        if (occurrences.length > 0) {
+          await upsertOccurrences(occurrences);
+        } else {
+          console.log("No occurrences found or generated.");
+        }
       }
     }
 
     // Generate corrective actions
-    if (argv.caOnly || (!onlyFlagUsed && useFaker)) {
+    if (createAllData || argv.caOnly || (!onlyFlagUsed && useFaker)) {
       const rules = await prisma.rule.findMany();
       if (associates.length === 0 || rules.length === 0) {
         console.log(
           "No associates or rules found. Cannot generate corrective actions."
         );
       } else {
-        let correctiveActions;
         if (useFaker) {
-          correctiveActions = generateFakeCorrectiveActions(
+          const correctiveActions = generateFakeCorrectiveActions(
             associates,
             rules,
             occurrenceCount,
             argv.caMultiplier
           );
+          if (correctiveActions.length > 0) {
+            await upsertCorrectiveActions(correctiveActions);
+          } else {
+            console.log("No corrective actions generated.");
+          }
         } else {
           console.log(
             "No source for corrective actions data. Use --use-faker to generate them."
           );
-          return;
-        }
-        if (correctiveActions.length > 0) {
-          await upsertCorrectiveActions(correctiveActions);
-        } else {
-          console.log("No corrective actions generated.");
         }
       }
     }
 
     // Generate notifications
-    if (argv.notificationsOnly || (!onlyFlagUsed && useFaker)) {
+    if (
+      createAllData ||
+      argv.notificationsOnly ||
+      (!onlyFlagUsed && useFaker)
+    ) {
       if (useFaker && associates.length > 0) {
         const fakeNotifications = generateFakeNotifications(
           associates,
@@ -749,7 +832,7 @@ async function main() {
     }
 
     // Generate files
-    if (argv.filesOnly || (!onlyFlagUsed && useFaker)) {
+    if (createAllData || argv.filesOnly || (!onlyFlagUsed && useFaker)) {
       if (useFaker) {
         const fakeFiles = await generateFakeFiles(occurrenceCount);
         if (fakeFiles.length > 0) {

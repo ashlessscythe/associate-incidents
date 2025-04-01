@@ -21,11 +21,16 @@ router.get("/occurrence-types", async (req, res) => {
 router.get("/attendance-occurrences/:associateId", async (req, res) => {
   try {
     const { associateId } = req.params;
+
     const occurrences = await prisma.attendanceOccurrence.findMany({
       where: { associateId },
-      include: { type: true },
+      include: {
+        type: true,
+        files: true,
+      },
       orderBy: { date: "desc" },
     });
+
     res.json(occurrences);
   } catch (error) {
     res.status(500).json({ error: "Error fetching attendance occurrences" });

@@ -40,6 +40,7 @@ export interface Occurrence {
   notes: string;
   createdAt?: string;
   updatedAt?: string;
+  files?: UploadedFile[];
 }
 
 export interface AssociateInfo {

@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/table";
 import {
   Printer,
-  Trash2,
-  Pencil,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   FileSpreadsheet,
+  Trash2,
+  Pencil,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +33,9 @@ import {
   getNotifications,
   Notification,
   Occurrence,
+  uploadOccurrenceFile,
+  downloadFile,
+  deleteFile,
 } from "@/lib/api";
 import {
   Dialog,
@@ -51,6 +55,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
+import OccurrenceItem from "./OccurrenceItem";
+import { toast } from "react-hot-toast";
 
 interface OccurrenceType {
   id: string;
@@ -90,6 +96,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [exportLocation, setExportLocation] = useState("");
   const [exportDepartment, setExportDepartment] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
@@ -149,6 +156,48 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       } else {
         alert("An unknown error occurred while updating occurrence");
       }
+    }
+  };
+
+  const handleUploadFile = async (occurrenceId: string, file: File) => {
+    try {
+      await uploadOccurrenceFile(occurrenceId, file);
+      if (associateInfo.id) {
+        onUpdate(associateInfo.id);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("Failed to upload file. Please try again.");
+    }
+  };
+
+  const handleDownloadFile = async (fileId: string, filename: string) => {
+    try {
+      const blob = await downloadFile(fileId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file. Please try again.");
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await deleteFile(fileId);
+      if (associateInfo.id) {
+        onUpdate(associateInfo.id);
+      }
+      toast.success("File deleted successfully");
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Failed to delete file. Please try again.");
     }
   };
 
@@ -379,6 +428,16 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               />
               <Label htmlFor="hide-old-occurrences">Hide Old</Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="view-mode"
+                checked={viewMode === "cards"}
+                onCheckedChange={(checked) =>
+                  setViewMode(checked ? "cards" : "table")
+                }
+              />
+              <Label htmlFor="view-mode">Card View</Label>
+            </div>
           </div>
         </div>
 
@@ -412,94 +471,154 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
             </Button>
           </div>
         )}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-24">
-                  <Button variant="ghost" onClick={() => handleSort("type")}>
-                    Type {renderSortIcon("type")}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-64">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("description")}
-                  >
-                    Description {renderSortIcon("description")}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-32">
-                  <Button variant="ghost" onClick={() => handleSort("date")}>
-                    Date {renderSortIcon("date")}
-                  </Button>
-                </TableHead>
-                <TableHead className="w-64">Notes</TableHead>
-                <TableHead className="w-24">
-                  <Button variant="ghost" onClick={() => handleSort("points")}>
-                    Points {renderSortIcon("points")}
-                  </Button>
-                </TableHead>
-                {showEditActions && (
-                  <TableHead className="w-32">Actions</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOccurrences.map((occurrence) => {
-                const isOld = isOverOneYearOld(occurrence.date);
-                const rowStyle = isOld
-                  ? { color: "gray", textDecoration: "line-through" }
-                  : {};
 
-                return (
-                  <TableRow key={occurrence.id} style={rowStyle}>
-                    <TableCell className="w-24">
-                      {occurrence.type.code}
-                    </TableCell>
-                    <TableCell className="w-64">
-                      {occurrence.type.description}
-                    </TableCell>
-                    <TableCell className="w-32">
-                      {new Date(occurrence.date).toISOString().split("T")[0]}
-                    </TableCell>
-                    <TableCell className="w-64 whitespace-normal break-words">
-                      {occurrence.notes}
-                    </TableCell>
-                    <TableCell className="w-24">
-                      {occurrence.type.points}
-                      {isOld && (
-                        <span className="ml-2 text-sm text-gray-500">
-                          (rolled out)
-                        </span>
-                      )}
-                    </TableCell>
-                    {showEditActions && (
-                      <TableCell className="w-32">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleDelete(occurrence.id)}
-                          aria-label="Delete occurrence"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setEditingOccurrence(occurrence)}
-                          aria-label="Edit occurrence"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+        {viewMode === "table" ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">
+                    <Button variant="ghost" onClick={() => handleSort("type")}>
+                      Type {renderSortIcon("type")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-64">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("description")}
+                    >
+                      Description {renderSortIcon("description")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-32">
+                    <Button variant="ghost" onClick={() => handleSort("date")}>
+                      Date {renderSortIcon("date")}
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-64">Notes</TableHead>
+                  <TableHead className="w-24">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("points")}
+                    >
+                      Points {renderSortIcon("points")}
+                    </Button>
+                  </TableHead>
+                  {showEditActions && (
+                    <TableHead className="w-32">Actions</TableHead>
+                  )}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOccurrences.map((occurrence) => {
+                  const isOld = isOverOneYearOld(occurrence.date);
+                  const rowStyle = isOld
+                    ? { color: "gray", textDecoration: "line-through" }
+                    : {};
+
+                  return (
+                    <TableRow key={occurrence.id} style={rowStyle}>
+                      <TableCell className="w-24">
+                        {occurrence.type.code}
                       </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                      <TableCell className="w-64">
+                        {occurrence.type.description}
+                      </TableCell>
+                      <TableCell className="w-32">
+                        {new Date(occurrence.date).toISOString().split("T")[0]}
+                      </TableCell>
+                      <TableCell className="w-64 whitespace-normal break-words">
+                        {occurrence.notes}
+                      </TableCell>
+                      <TableCell className="w-24">
+                        {occurrence.type.points}
+                        {isOld && (
+                          <span className="ml-2 text-sm text-gray-500">
+                            (rolled out)
+                          </span>
+                        )}
+                      </TableCell>
+                      {showEditActions && (
+                        <TableCell className="w-32">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDelete(occurrence.id)}
+                            aria-label="Delete occurrence"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setEditingOccurrence(occurrence)}
+                            aria-label="Edit occurrence"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              const input = document.createElement("input");
+                              input.type = "file";
+                              input.accept = ".pdf,.doc,.docx,.txt";
+                              input.onchange = async (e) => {
+                                const file = (e.target as HTMLInputElement)
+                                  .files?.[0];
+                                if (file) {
+                                  if (file.size > 1024 * 1024) {
+                                    toast.error(
+                                      "File size exceeds 1MB limit. Please choose a smaller file."
+                                    );
+                                    return;
+                                  }
+                                  try {
+                                    await handleUploadFile(occurrence.id, file);
+                                    toast.success("File uploaded successfully");
+                                  } catch (error) {
+                                    console.error(
+                                      "Error uploading file:",
+                                      error
+                                    );
+                                    toast.error(
+                                      "Failed to upload file. Please try again."
+                                    );
+                                  }
+                                }
+                              };
+                              input.click();
+                            }}
+                            aria-label="Upload file"
+                          >
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <ul className="space-y-4">
+            {filteredOccurrences.map((occurrence) => (
+              <OccurrenceItem
+                key={occurrence.id}
+                occurrence={occurrence}
+                occurrenceTypes={occurrenceTypes}
+                associateInfo={associateInfo}
+                onEdit={setEditingOccurrence}
+                onDelete={handleDelete}
+                onUploadFile={handleUploadFile}
+                onDownloadFile={handleDownloadFile}
+                onDeleteFile={handleDeleteFile}
+              />
+            ))}
+          </ul>
+        )}
+
         {filteredOccurrences.length === 0 && (
           <p className="text-center text-gray-500 mt-4">
             No occurrences recorded

@@ -12,7 +12,12 @@ const MAX_FILE_SIZE = 1024 * 1024;
 // Upload a file
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    const { associateId, notificationId, correctiveActionId } = req.body;
+    const {
+      associateId,
+      notificationId,
+      correctiveActionId,
+      attendanceOccurrenceId,
+    } = req.body;
     const { originalname, buffer, mimetype, size } = req.file;
 
     // Check file size
@@ -20,16 +25,19 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "File size exceeds 1MB limit" });
     }
 
+    const fileData = {
+      filename: originalname,
+      content: buffer,
+      mimetype: mimetype,
+      size: size,
+      associateId: associateId || undefined,
+      notificationId: notificationId || undefined,
+      correctiveActionId: correctiveActionId || undefined,
+      attendanceOccurrenceId: attendanceOccurrenceId || undefined,
+    };
+
     const file = await prisma.file.create({
-      data: {
-        filename: originalname,
-        content: buffer,
-        mimetype: mimetype,
-        size: size,
-        associateId: associateId,
-        notificationId: notificationId,
-        correctiveActionId: correctiveActionId,
-      },
+      data: fileData,
     });
 
     res.json({ message: "File uploaded successfully", fileId: file.id });
