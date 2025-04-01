@@ -520,6 +520,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                     <TableRow key={occurrence.id} style={rowStyle}>
                       <TableCell className="w-24">
                         {occurrence.type.code}
+                        {occurrence.files && occurrence.files.length > 0 && (
+                          <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
+                            {occurrence.files.length}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="w-64">
                         {occurrence.type.description}
