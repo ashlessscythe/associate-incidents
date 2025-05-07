@@ -5,6 +5,7 @@ import {
   Routes,
   Navigate,
 } from "react-router-dom";
+import { Button } from "./components/ui/button";
 import {
   AuthorizerProvider,
   useAuthorizer,
@@ -149,11 +150,32 @@ const ProtectedRoute = ({
   );
 
   if (!userHasRole) {
-    return user.roles.includes("pending") ? (
-      <Navigate to="/pending" />
-    ) : (
-      <Navigate to="/" />
-    );
+    if (user.roles.includes("pending")) {
+      return <Navigate to="/pending" />;
+    } else {
+      return (
+        <div className="container mx-auto p-8 text-center">
+          <div className="bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-4">Access Restricted</h2>
+            <p className="mb-4">
+              You don't have permission to access this page. Your account needs
+              the appropriate permissions to view this section.
+            </p>
+            <p>
+              Please contact your administrator to request access or return to
+              the home page.
+            </p>
+            <Button
+              onClick={() => (window.location.href = "/")}
+              className="mt-6"
+              variant="outline"
+            >
+              Return to Home
+            </Button>
+          </div>
+        </div>
+      );
+    }
   }
 
   return <>{children}</>;
@@ -245,7 +267,7 @@ function AppContent() {
               <Route
                 path="/attendance"
                 element={
-                  <ProtectedRoute allowedRoles={["viewer", "att-edit"]}>
+                  <ProtectedRoute allowedRoles={["att-view", "att-edit"]}>
                     <OccurencePage />
                   </ProtectedRoute>
                 }
@@ -253,7 +275,7 @@ function AppContent() {
               <Route
                 path="/ca"
                 element={
-                  <ProtectedRoute allowedRoles={["viewer", "ca-edit"]}>
+                  <ProtectedRoute allowedRoles={["ca-view", "ca-edit"]}>
                     <CAPage />
                   </ProtectedRoute>
                 }
@@ -261,7 +283,9 @@ function AppContent() {
               <Route
                 path="/associates"
                 element={
-                  <ProtectedRoute allowedRoles={["viewer", "user-edit"]}>
+                  <ProtectedRoute
+                    allowedRoles={["user-edit", "ca-edit", "att-edit"]}
+                  >
                     <AssociatesPage />
                   </ProtectedRoute>
                 }
@@ -269,7 +293,9 @@ function AppContent() {
               <Route
                 path="/reports"
                 element={
-                  <ProtectedRoute allowedRoles={["viewer", "report-edit"]}>
+                  <ProtectedRoute
+                    allowedRoles={["report-edit", "ca-edit", "att-edit"]}
+                  >
                     <ReportsPage />
                   </ProtectedRoute>
                 }
