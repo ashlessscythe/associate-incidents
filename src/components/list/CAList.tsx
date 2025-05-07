@@ -77,21 +77,30 @@ const CAList: React.FC<CAListProps> = ({
     return latestDateB.getTime() - latestDateA.getTime();
   });
 
-  // Count safety and operations CAs
-  const safetyCumulativeCount = correctiveActions.filter((ca) => {
+  // Count safety and operations CAs from filtered CAs, respecting current filter settings
+  const safetyCumulativeCount = filteredCAs.filter((ca) => {
     const rule = rules.find((r) => r.id === ca.ruleId);
-    return rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
+    // Only count types that are currently enabled in the filter
+    return (
+      rule &&
+      ((rule.type === "SAFETY" && enabledRuleTypes["SAFETY"]) ||
+        (rule.type === "OPERATIONS" && enabledRuleTypes["OPERATIONS"]))
+    );
   }).length;
 
   const handleExport = async () => {
     try {
-      const exportCAs = correctiveActions.filter((ca) => {
+      const exportCAs = filteredCAs.filter((ca) => {
         const rule = rules.find((r) => r.id === ca.ruleId);
-        return rule && (rule.type === "SAFETY" || rule.type === "OPERATIONS");
+        return (
+          rule &&
+          ((rule.type === "SAFETY" && enabledRuleTypes["SAFETY"]) ||
+            (rule.type === "OPERATIONS" && enabledRuleTypes["OPERATIONS"]))
+        );
       });
 
-      if (exportCAs.length === 0) {
-        exportCAs.push(correctiveActions[0]); // If no safety/operations CAs, export the most recent one
+      if (exportCAs.length === 0 && filteredCAs.length > 0) {
+        exportCAs.push(filteredCAs[0]); // If no safety/operations CAs, export the most recent filtered one
       }
 
       // Remove file items from the corrective actions
@@ -173,17 +182,19 @@ const CAList: React.FC<CAListProps> = ({
               </div>
             </div>
             <div className="w-full md:w-1/3 mt-4 md:mt-0">
-              <h3 className="text-lg font-semibold mb-2">Statistics</h3>{" "}
+              <h3 className="text-lg font-semibold mb-2">Statistics</h3>
               <div className="grid gap-2">
-                {" "}
                 <p>
-                  {" "}
+                  <span className="font-medium">Total Corrective Actions:</span>{" "}
+                  {correctiveActions.length}
+                </p>
+                <p>
                   <span className="font-medium">
-                    Total Corrective Actions:
+                    Filtered Corrective Actions:
                   </span>{" "}
-                  {correctiveActions.length}{" "}
-                </p>{" "}
-              </div>{" "}
+                  {filteredCAs.length}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -193,8 +204,8 @@ const CAList: React.FC<CAListProps> = ({
             onClick={() =>
               handlePrint({
                 associate,
-                correctiveActions,
-                totalCorrectiveActions: correctiveActions.length,
+                correctiveActions: filteredCAs,
+                totalCorrectiveActions: filteredCAs.length,
                 safetyCumulativeCount,
               })
             }
@@ -235,8 +246,10 @@ const CAList: React.FC<CAListProps> = ({
                             const rule = rules.find((r) => r.id === ca.ruleId);
                             return (
                               rule &&
-                              (rule.type === "SAFETY" ||
-                                rule.type === "OPERATIONS")
+                              ((rule.type === "SAFETY" &&
+                                enabledRuleTypes["SAFETY"]) ||
+                                (rule.type === "OPERATIONS" &&
+                                  enabledRuleTypes["OPERATIONS"]))
                             );
                           }).length,
                         })

@@ -19,7 +19,9 @@ export const useCAPrint = () => {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Corrective Action List - ${associate?.name}</title>
+            <title>Corrective Action List - ${associate?.name} (${
+        correctiveActions.length
+      } items)</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -90,7 +92,16 @@ export const useCAPrint = () => {
             </style>
           </head>
           <body>
-            <h1>Corrective Action List for ${associate?.name}</h1>
+            <h1>Corrective Action List for ${associate?.name} (${
+        correctiveActions.length > 0 ? correctiveActions[0].rule.type : "All"
+      } Type${
+        correctiveActions.length > 1 &&
+        correctiveActions.some(
+          (ca) => ca.rule.type !== correctiveActions[0].rule.type
+        )
+          ? "s"
+          : ""
+      })</h1>
             <div class="summary">
               <h2>Summary</h2>
               <p><strong>Name:</strong> ${associate?.name || "N/A"}</p>
