@@ -1,5 +1,6 @@
 import express from "express";
 import { prisma } from "../server.js";
+import { Prisma } from "@prisma/client";
 
 const router = express.Router();
 
@@ -352,6 +353,18 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
     res
       .status(500)
       .json({ error: "Error fetching associate points and notification" });
+  }
+});
+
+// Get all available designations
+router.get("/designations", async (req, res) => {
+  try {
+    // Get all designation values from the schema
+    const designationValues = ["MH", "CLERK", "OFFICE", "NONE"];
+    res.json(designationValues);
+  } catch (error) {
+    console.error("Error fetching designations:", error);
+    res.status(500).json({ error: "Error fetching designations" });
   }
 });
 

@@ -144,6 +144,7 @@ enum NotificationType {
 enum Designation {
   MH
   CLERK
+  OFFICE
   INACTIVE
   BRUH
   NONE

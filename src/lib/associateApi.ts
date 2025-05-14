@@ -1,12 +1,19 @@
 import api from "./apiConfig";
-import { Associate, AssociateAndDesignation, AssociateInfo, AssociateAndOccurrences } from "./types";
+import {
+  Associate,
+  AssociateAndDesignation,
+  AssociateInfo,
+  AssociateAndOccurrences,
+} from "./types";
 
 export const getAssociates = async (): Promise<Associate[]> => {
   const response = await api.get<Associate[]>("/associates");
   return response.data;
 };
 
-export const getAssociateById = async (id: string): Promise<Associate | null> => {
+export const getAssociateById = async (
+  id: string
+): Promise<Associate | null> => {
   const response = await api.get<Associate>(`/associates/${id}`);
   return response.data;
 };
@@ -37,14 +44,22 @@ export const deleteAssociate = async (id: string): Promise<void> => {
   return res.data;
 };
 
-export const updateAssociatePoints = async (associateId: string): Promise<Associate> => {
-  const response = await api.put<Associate>(`/associates/${associateId}/update-points`);
+export const updateAssociatePoints = async (
+  associateId: string
+): Promise<Associate> => {
+  const response = await api.put<Associate>(
+    `/associates/${associateId}/update-points`
+  );
   return response.data;
 };
 
-export const getAssociatePointsAndNotification = async (associateId: string): Promise<AssociateInfo> => {
+export const getAssociatePointsAndNotification = async (
+  associateId: string
+): Promise<AssociateInfo> => {
   try {
-    const response = await api.get<AssociateInfo>(`/associates/${associateId}/points-and-notification`);
+    const response = await api.get<AssociateInfo>(
+      `/associates/${associateId}/points-and-notification`
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching points and notification level:", error);
@@ -52,9 +67,13 @@ export const getAssociatePointsAndNotification = async (associateId: string): Pr
   }
 };
 
-export const getAssociatesAndDesignation = async (): Promise<AssociateAndDesignation[]> => {
+export const getAssociatesAndDesignation = async (): Promise<
+  AssociateAndDesignation[]
+> => {
   try {
-    const response = await api.get<AssociateAndDesignation[]>("/associates-with-designation");
+    const response = await api.get<AssociateAndDesignation[]>(
+      "/associates-with-designation"
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching associates with designation:", error);
@@ -62,12 +81,26 @@ export const getAssociatesAndDesignation = async (): Promise<AssociateAndDesigna
   }
 };
 
-export const getAllAssociatesWithOccurrences = async (): Promise<AssociateAndOccurrences[]> => {
+export const getAllAssociatesWithOccurrences = async (): Promise<
+  AssociateAndOccurrences[]
+> => {
   try {
-    const response = await api.get<AssociateAndOccurrences[]>("/all-with-occurrences");
+    const response = await api.get<AssociateAndOccurrences[]>(
+      "/all-with-occurrences"
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching all associates with occurrences:", error);
+    throw error;
+  }
+};
+
+export const getDesignations = async (): Promise<string[]> => {
+  try {
+    const response = await api.get<string[]>("/designations");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching designations:", error);
     throw error;
   }
 };

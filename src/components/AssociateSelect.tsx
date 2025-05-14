@@ -10,7 +10,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
-import { AssociateAndDesignation, Designation } from "@/lib/types";
+import { getDesignations } from "@/lib/associateApi";
+import { AssociateAndDesignation } from "@/lib/types";
 
 interface AssociateSelectProps {
   selectedAssociateId: string | null;
@@ -24,13 +25,31 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
   const { associatesWithDesignation, loading, fetchAssociatesWithDesignation } =
     useAssociatesWithDesignation();
   const [selectedDesignation, setSelectedDesignation] = useState<
-    Designation | "ALL"
+    string | "ALL"
   >("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [designations, setDesignations] = useState<string[]>([]);
+  const [loadingDesignations, setLoadingDesignations] = useState(true);
 
   useEffect(() => {
     fetchAssociatesWithDesignation();
   }, [fetchAssociatesWithDesignation]);
+
+  useEffect(() => {
+    const fetchDesignations = async () => {
+      try {
+        setLoadingDesignations(true);
+        const data = await getDesignations();
+        setDesignations(data);
+      } catch (error) {
+        console.error("Error fetching designations:", error);
+      } finally {
+        setLoadingDesignations(false);
+      }
+    };
+
+    fetchDesignations();
+  }, []);
 
   // Sort function for consistent alphabetical ordering
   const sortAlphabetically = (
@@ -68,21 +87,23 @@ const AssociateSelect: React.FC<AssociateSelectProps> = ({
 
       <RadioGroup
         value={selectedDesignation}
-        onValueChange={(value) =>
-          setSelectedDesignation(value as Designation | "ALL")
-        }
+        onValueChange={(value) => setSelectedDesignation(value)}
         className="flex flex-wrap gap-2 mb-4"
       >
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="ALL" id="all" />
           <Label htmlFor="all">All</Label>
         </div>
-        {Object.values(Designation).map((designation) => (
-          <div key={designation} className="flex items-center space-x-2">
-            <RadioGroupItem value={designation} id={designation} />
-            <Label htmlFor={designation}>{designation}</Label>
-          </div>
-        ))}
+        {loadingDesignations ? (
+          <div>Loading designations...</div>
+        ) : (
+          designations.map((designation) => (
+            <div key={designation} className="flex items-center space-x-2">
+              <RadioGroupItem value={designation} id={designation} />
+              <Label htmlFor={designation}>{designation}</Label>
+            </div>
+          ))
+        )}
       </RadioGroup>
 
       <Select
