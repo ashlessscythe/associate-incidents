@@ -166,7 +166,17 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasEditorRole || !editingNotification) return;
-    await updateNotification(editingNotification.id, editingNotification);
+
+    // Create a new object with only the necessary properties, excluding files
+    const updateData = {
+      level: editingNotification.level,
+      date: editingNotification.date,
+      totalPoints: editingNotification.totalPoints,
+      description: editingNotification.description,
+      type: editingNotification.type,
+    };
+
+    await updateNotification(editingNotification.id, updateData);
     setEditingNotification(null);
     fetchNotifications();
   };
