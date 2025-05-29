@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   getAssociatePointsAndNotification,
   deleteOccurrence,
@@ -762,7 +763,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                   <Label htmlFor="notes" className="text-right">
                     Notes
                   </Label>
-                  <Input
+                  <Textarea
                     id="notes"
                     value={editingOccurrence.notes}
                     onChange={(e) =>

@@ -22,6 +22,7 @@ import {
 } from "./ui/select";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
 import { Pencil, Trash2, Upload } from "lucide-react";
 import {
   Dialog,
@@ -508,8 +509,8 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
                   placeholder="Total Points"
                 />
               )}
-              <Input
-                type="text"
+              <Textarea
+                id="description"
                 value={editingNotification.description || ""}
                 onChange={(e) =>
                   setEditingNotification({
