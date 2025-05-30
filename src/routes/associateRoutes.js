@@ -565,6 +565,50 @@ router.post("/associates-import", upload.single("file"), async (req, res) => {
   }
 });
 
+// Download current associates list
+router.get("/download-current-associates", async (req, res) => {
+  try {
+    const associates = await prisma.associate.findMany({
+      select: {
+        name: true,
+        designation: true,
+        department: {
+          select: {
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    // Convert to CSV
+    const csvHeader = "name,designation,department,location\n";
+    const csvContent = associates
+      .map(
+        (associate) =>
+          `${associate.name},${associate.designation},${
+            associate.department?.name || ""
+          },${associate.location?.name || ""}`
+      )
+      .join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=current-associates.csv"
+    );
+    res.send(csvHeader + csvContent);
+  } catch (error) {
+    console.error("Error downloading current associates:", error);
+    res.status(500).json({ error: "Error downloading current associates" });
+  }
+});
+
 // Get associates points report
 router.get("/associates-points-report", async (req, res) => {
   try {

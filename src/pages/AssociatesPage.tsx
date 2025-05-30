@@ -97,6 +97,33 @@ const AssociatesPage: React.FC = () => {
     }
   };
 
+  const downloadCurrentAssociates = async () => {
+    try {
+      // Use axios to get the file with proper response type
+      const response = await api.get("/download-current-associates", {
+        responseType: "blob",
+      });
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "current-associates.csv";
+      document.body.appendChild(link);
+      link.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast.success("Associates list downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading associates list:", error);
+      toast.error("Failed to download associates list");
+    }
+  };
+
   const handleImportClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -181,12 +208,18 @@ const AssociatesPage: React.FC = () => {
               </>
             )}
           </div>
-          <Button
-            onClick={() => setShowTable(!showTable)}
-            className="mt-2 sm:mt-0"
-          >
-            {showTable ? "Show List View" : "Show All Associates"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+            {hasEditorRole && (
+              <>
+                <Button onClick={downloadCurrentAssociates} variant="outline">
+                  Download Current Associates
+                </Button>
+                <Button onClick={() => setShowTable(!showTable)}>
+                  {showTable ? "Show List View" : "Show All Associates"}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex-grow overflow-y-auto p-4">
