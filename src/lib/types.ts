@@ -1,7 +1,10 @@
 export enum Designation {
-  NONE = "NONE",
   MH = "MH",
   CLERK = "CLERK",
+  OFFICE = "OFFICE",
+  INACTIVE = "INACTIVE",
+  BRUH = "BRUH",
+  NONE = "NONE",
 }
 
 export interface Location {

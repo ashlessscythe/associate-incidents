@@ -1,4 +1,4 @@
-name,designation
-Fulano De Tal,OFFICE
-Rosa Blanca Del Monte,OFFICE
-John F. Smith,OFFICE
+name,designation,department,location
+Fulano De Tal,OFFICE,HR,Main Office
+Rosa Blanca Del Monte,OFFICE,Finance,Branch A
+John F. Smith,OFFICE,IT,Main Office

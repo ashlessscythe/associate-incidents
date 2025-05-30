@@ -1,8 +1,16 @@
 import express from "express";
 import { prisma } from "../server.js";
 import { Prisma } from "@prisma/client";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { parse } from "csv-parse";
 
 const router = express.Router();
+
+// Set up multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Get all associates
 router.get("/associates", async (req, res) => {
@@ -360,11 +368,200 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
 router.get("/designations", async (req, res) => {
   try {
     // Get all designation values from the schema
-    const designationValues = ["MH", "CLERK", "OFFICE", "NONE"];
+    const designationValues = [
+      "MH",
+      "CLERK",
+      "OFFICE",
+      "INACTIVE",
+      "BRUH",
+      "NONE",
+    ];
     res.json(designationValues);
   } catch (error) {
     console.error("Error fetching designations:", error);
     res.status(500).json({ error: "Error fetching designations" });
+  }
+});
+
+// Download associates template
+router.get("/download-associates-template", (req, res) => {
+  try {
+    // Generate CSV content directly
+    const csvContent =
+      "name,designation,department,location\n" +
+      "Alice Smith,OFFICE,HR,Main Office\n" +
+      "Bob Johnson,CLERK,Finance,Branch A\n" +
+      "Carol Williams,MH,Operations,Main Office";
+
+    // Set appropriate headers
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=associates-template.csv"
+    );
+
+    // Send the CSV content
+    res.send(csvContent);
+  } catch (error) {
+    console.error("Error generating template:", error);
+    res.status(500).json({ error: "Error generating template" });
+  }
+});
+
+// Import associates from CSV
+router.post("/associates-import", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  try {
+    const csvData = req.file.buffer.toString();
+    const records = [];
+    const errors = [];
+    const validDesignations = [
+      "MH",
+      "CLERK",
+      "OFFICE",
+      "INACTIVE",
+      "BRUH",
+      "NONE",
+    ];
+
+    // Parse CSV data
+    const parser = parse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+    });
+
+    for await (const record of parser) {
+      records.push(record);
+    }
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    // Process each record
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i];
+      const { name, designation, department, location } = record;
+      const rowNumber = i + 2; // +2 because of header row and 0-indexing
+
+      if (!name) {
+        skipped++;
+        errors.push({
+          row: rowNumber,
+          message: "Missing name",
+          data: record,
+        });
+        continue;
+      }
+
+      // Validate designation if provided
+      if (designation && !validDesignations.includes(designation)) {
+        errors.push({
+          row: rowNumber,
+          message: `Invalid designation: ${designation}. Valid values are: ${validDesignations.join(
+            ", "
+          )}`,
+          data: record,
+        });
+        skipped++;
+        continue;
+      }
+
+      try {
+        // Find department by name if provided
+        let departmentId = null;
+        if (department) {
+          const departmentRecord = await prisma.department.findFirst({
+            where: { name: department },
+          });
+          if (departmentRecord) {
+            departmentId = departmentRecord.id;
+          } else {
+            errors.push({
+              row: rowNumber,
+              message: `Department not found: ${department}`,
+              data: record,
+            });
+          }
+        }
+
+        // Find location by name if provided
+        let locationId = null;
+        if (location) {
+          const locationRecord = await prisma.location.findFirst({
+            where: { name: location },
+          });
+          if (locationRecord) {
+            locationId = locationRecord.id;
+          } else {
+            errors.push({
+              row: rowNumber,
+              message: `Location not found: ${location}`,
+              data: record,
+            });
+          }
+        }
+
+        // Check if the associate already exists by name
+        const existingAssociate = await prisma.associate.findFirst({
+          where: { name },
+        });
+
+        if (existingAssociate) {
+          // Update existing associate
+          await prisma.associate.update({
+            where: { id: existingAssociate.id },
+            data: {
+              designation: designation || existingAssociate.designation,
+              departmentId: departmentId || existingAssociate.departmentId,
+              locationId: locationId || existingAssociate.locationId,
+            },
+          });
+          updated++;
+        } else {
+          // Create new associate
+          await prisma.associate.create({
+            data: {
+              name,
+              designation: designation || "NONE",
+              departmentId,
+              locationId,
+              currentPoints: 0,
+            },
+          });
+          created++;
+        }
+      } catch (recordError) {
+        console.error(
+          `Error processing record at row ${rowNumber}:`,
+          recordError
+        );
+        errors.push({
+          row: rowNumber,
+          message: `Error processing record: ${recordError.message}`,
+          data: record,
+        });
+        skipped++;
+      }
+    }
+
+    res.status(200).json({
+      message: `Import completed: ${created} created, ${updated} updated, ${skipped} skipped`,
+      errors: errors.length > 0 ? errors : undefined,
+      success: created + updated,
+      skipped,
+    });
+  } catch (error) {
+    console.error("Error importing associates:", error);
+    res.status(500).json({
+      error: "Error importing associates",
+      details: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
