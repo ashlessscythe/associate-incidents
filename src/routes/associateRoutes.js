@@ -373,7 +373,6 @@ router.get("/designations", async (req, res) => {
       "CLERK",
       "OFFICE",
       "INACTIVE",
-      "BRUH",
       "NONE",
     ];
     res.json(designationValues);

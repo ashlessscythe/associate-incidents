@@ -3,7 +3,6 @@ export enum Designation {
   CLERK = "CLERK",
   OFFICE = "OFFICE",
   INACTIVE = "INACTIVE",
-  BRUH = "BRUH",
   NONE = "NONE",
 }
 
