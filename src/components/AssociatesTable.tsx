@@ -31,8 +31,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { Link } from "react-router-dom";
+
+type SortOrder = "asc" | "desc";
 
 interface AssociatesTableProps {
   associates: AssociateAndDesignation[];
@@ -44,17 +45,16 @@ interface AssociatesTableProps {
     designation: string,
     location: string
   ) => void;
+  hasEditorRole: boolean;
 }
 
 type SortKey = "name" | "department" | "designation" | "location";
-type SortOrder = "asc" | "desc";
-
-const EDITOR_ROLES = ["att-edit", "user-edit"];
 
 const AssociatesTable: React.FC<AssociatesTableProps> = ({
   associates,
   onDelete,
   onEdit,
+  hasEditorRole,
 }) => {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -68,12 +68,6 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [searchTerm, setSearchTerm] = useState("");
-  const { user } = useAuthorizer();
-
-  const hasEditorRole =
-    user &&
-    Array.isArray(user.roles) &&
-    user.roles.some((role) => EDITOR_ROLES.includes(role));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,14 +146,13 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
         } else if (sortKey === "department") {
           return sortOrder === "asc"
             ? (a.department?.name || "").localeCompare(b.department?.name || "")
-            : (b.department?.name || "").localeCompare(
-                a.department?.name || ""
-              );
+            : (b.department?.name || "").localeCompare(a.department?.name || "");
         } else if (sortKey === "designation") {
           return sortOrder === "asc"
-            ? a.designation.localeCompare(b.designation)
-            : b.designation.localeCompare(a.designation);
+            ? (a.designation || "").localeCompare(b.designation || "")
+            : (b.designation || "").localeCompare(a.designation || "");
         } else {
+          // location
           return sortOrder === "asc"
             ? (a.location?.name || "").localeCompare(b.location?.name || "")
             : (b.location?.name || "").localeCompare(a.location?.name || "");

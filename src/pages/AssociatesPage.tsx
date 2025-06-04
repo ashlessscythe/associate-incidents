@@ -218,6 +218,7 @@ const AssociatesPage: React.FC = () => {
           associates={associatesWithDesignation}
           onDelete={handleDeleteAssociate}
           onEdit={handleEditAssociate}
+          hasEditorRole={hasEditorRole}
         />
       </div>
 
