@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import ImportErrorModal, {
   ImportError,
 } from "@/components/modals/ImportErrorModal";
-import AssociateSelect from "@/components/AssociateSelect";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
 import { addAssociate, deleteAssociate, updateAssociate } from "@/lib/api";
@@ -19,7 +18,6 @@ const AssociatesPage: React.FC = () => {
     error,
     fetchAssociatesWithDesignation,
   } = useAssociatesWithDesignation();
-  const [showTable, setShowTable] = useState(false);
   const { user } = useAuthorizer();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
@@ -30,10 +28,8 @@ const AssociatesPage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (showTable) {
-      fetchAssociatesWithDesignation();
-    }
-  }, [showTable, fetchAssociatesWithDesignation]);
+    fetchAssociatesWithDesignation();
+  }, [fetchAssociatesWithDesignation]);
 
   const handleAddAssociate = async (name: string) => {
     try {
@@ -210,31 +206,19 @@ const AssociatesPage: React.FC = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
             {hasEditorRole && (
-              <>
-                <Button onClick={downloadCurrentAssociates} variant="outline">
-                  Download Current Associates
-                </Button>
-                <Button onClick={() => setShowTable(!showTable)}>
-                  {showTable ? "Show List View" : "Show All Associates"}
-                </Button>
-              </>
+              <Button onClick={downloadCurrentAssociates} variant="outline">
+                Download Current Associates
+              </Button>
             )}
           </div>
         </div>
       </div>
       <div className="flex-grow overflow-y-auto p-4">
-        {showTable ? (
-          <AssociatesTable
-            associates={associatesWithDesignation}
-            onDelete={handleDeleteAssociate}
-            onEdit={handleEditAssociate}
-          />
-        ) : (
-          <AssociateSelect
-            selectedAssociateId={null}
-            onAssociateSelect={() => {}}
-          />
-        )}
+        <AssociatesTable
+          associates={associatesWithDesignation}
+          onDelete={handleDeleteAssociate}
+          onEdit={handleEditAssociate}
+        />
       </div>
 
       <ImportErrorModal
