@@ -30,6 +30,7 @@ export function useAssociatesWithOccurrences() {
             points: associate.info.points,
             notificationLevel: associate.info.notificationLevel,
             designation: associate.info.designation as Designation,
+            isActive: associate.info.isActive,
           },
           occurrences: associate.occurrences,
         })

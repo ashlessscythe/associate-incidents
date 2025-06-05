@@ -173,6 +173,7 @@ function CAPage() {
             id: associateId,
             name: associateInfoData.name,
             designation: associateInfoData.designation,
+            isActive: associateInfoData.isActive || true, // Default to true if not provided
           });
         } catch (err) {
           console.error("Error fetching associate info directly:", err);

@@ -14,6 +14,7 @@ model Associate {
   id                  String                @id @default(uuid())
   name                String                @unique
   ssoid               String?               @unique
+  isActive            Boolean               @default(true)
   designation         Designation           @default(NONE)
   currentPoints       Float                 @default(0)
   locationId          String?

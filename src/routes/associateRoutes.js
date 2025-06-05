@@ -135,6 +135,7 @@ router.get("/associates-with-designation", async (req, res) => {
         designation: true,
         department: true,
         location: true,
+        isActive: true,
       },
     });
 
@@ -144,6 +145,7 @@ router.get("/associates-with-designation", async (req, res) => {
       designation: associate.designation,
       department: associate.department,
       location: associate.location,
+      isActive: associate.isActive,
     }));
 
     res.json(result);
@@ -277,6 +279,7 @@ router.get("/all-with-occurrences", async (req, res) => {
             designation: associate.designation,
             department: associate.department,
             location: associate.location,
+            isActive: associate.isActive,
           },
         };
       })
@@ -353,6 +356,7 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       designation: associate.designation,
       department: associate.department,
       location: associate.location,
+      isActive: associate.isActive,
     };
 
     res.json(associateInfo);
@@ -669,6 +673,34 @@ router.get("/associates-points-report", async (req, res) => {
   } catch (error) {
     console.error("Error generating associates points report:", error);
     res.status(500).json({ error: "Error generating report" });
+  }
+});
+
+// Toggle associate active status
+router.put("/associates/:id/toggle-active", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const associate = await prisma.associate.findUnique({
+      where: { id }
+    });
+
+    if (!associate) {
+      return res.status(404).json({ error: "Associate not found" });
+    }
+
+    const updatedAssociate = await prisma.associate.update({
+      where: { id },
+      data: {
+        isActive: !isActive,
+      }
+    });
+
+    res.json(updatedAssociate);
+  } catch (error) {
+    console.error("Error toggling associate active status:", error);
+    res.status(500).json({ error: "Error toggling associate active status" });
   }
 });
 

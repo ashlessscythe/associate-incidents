@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
 
 type SortOrder = "asc" | "desc";
 
@@ -45,6 +46,7 @@ interface AssociatesTableProps {
     designation: string,
     location: string
   ) => void;
+  onToggleActive: (id: string, isActive: boolean) => void;
   hasEditorRole: boolean;
 }
 
@@ -54,6 +56,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   associates,
   onDelete,
   onEdit,
+  onToggleActive,
   hasEditorRole,
 }) => {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -205,6 +208,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
             >
               Location <SortIcon columnKey="location" />
             </TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -253,7 +257,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                     </SelectContent>
                   </Select>
                 ) : (
-                  associate.department?.name
+                  associate.department?.name || "-"
                 )}
               </TableCell>
               <TableCell>
@@ -286,6 +290,15 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                   </Select>
                 ) : (
                   associate.location?.name
+                )}
+              </TableCell>
+              <TableCell>
+                {hasEditorRole && (
+                  <Switch
+                    checked={associate.isActive}
+                    onCheckedChange={() => onToggleActive(associate.id, associate.isActive)}
+                    aria-label="Toggle active status"
+                  />
                 )}
               </TableCell>
               <TableCell>

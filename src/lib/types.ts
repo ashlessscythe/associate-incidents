@@ -24,6 +24,7 @@ export interface Associate {
   occurrences?: Occurrence[];
   department?: Department;
   location?: Location;
+  isActive: boolean;
 }
 
 export interface OccurrenceType {
@@ -53,6 +54,7 @@ export interface AssociateInfo {
   designation: string;
   department?: Department;
   location?: Location;
+  isActive: boolean;
 }
 
 export interface AssociateAndDesignation {
@@ -61,6 +63,7 @@ export interface AssociateAndDesignation {
   designation: string;
   department?: Department;
   location?: Location;
+  isActive: boolean;
 }
 
 export interface AssociateAndOccurrences {

@@ -104,3 +104,14 @@ export const getDesignations = async (): Promise<string[]> => {
     throw error;
   }
 };
+
+export const toggleAssociateActive = async (
+  id: string,
+  currentState: boolean
+): Promise<Associate> => {
+  const response = await api.put<Associate>(
+    `/associates/${id}/toggle-active`,
+    { isActive: currentState }
+  );
+  return response.data;
+};

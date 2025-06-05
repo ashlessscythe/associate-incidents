@@ -4,7 +4,7 @@ import ImportErrorModal, {
 } from "@/components/modals/ImportErrorModal";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
-import { addAssociate, deleteAssociate, updateAssociate } from "@/lib/api";
+import { addAssociate, deleteAssociate, updateAssociate, toggleAssociateActive } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
@@ -63,6 +63,17 @@ const AssociatesPage: React.FC = () => {
     } catch (error) {
       console.error("Error updating associate:", error);
       toast.error("Failed to update associate");
+    }
+  };
+
+  const handleToggleActive = async (id: string, currentState: boolean) => {
+    try {
+      await toggleAssociateActive(id, currentState);
+      await fetchAssociatesWithDesignation();
+      toast.success("Associate status updated successfully");
+    } catch (error) {
+      console.error("Error updating associate status:", error);
+      toast.error("Failed to update associate status");
     }
   };
 
@@ -218,6 +229,7 @@ const AssociatesPage: React.FC = () => {
           associates={associatesWithDesignation}
           onDelete={handleDeleteAssociate}
           onEdit={handleEditAssociate}
+          onToggleActive={handleToggleActive}
           hasEditorRole={hasEditorRole}
         />
       </div>
