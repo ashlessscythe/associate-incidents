@@ -156,4 +156,5 @@ enum RuleType {
   WORK
   OPERATIONS
   SIGNAL
+  CBA_VIOLATION
 }

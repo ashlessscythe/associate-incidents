@@ -78,6 +78,7 @@ export enum RuleType {
   WORK = "WORK",
   OPERATIONS = "OPERATIONS",
   SIGNAL = "SIGNAL",
+  CBA_VIOLATION = "CBA VIOLATION",
 }
 
 export interface Rule {
