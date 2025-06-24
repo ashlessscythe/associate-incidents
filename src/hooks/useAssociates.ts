@@ -75,10 +75,21 @@ export function useAssociatesWithDesignation() {
     }
   }, []);
 
+  const updateAssociateActiveStatus = useCallback((id: string, isActive: boolean) => {
+    setAssociatesWithDesignation(prev => 
+      prev.map(associate => 
+        associate.id === id 
+          ? { ...associate, isActive } 
+          : associate
+      )
+    );
+  }, []);
+
   return {
     associatesWithDesignation,
     loading,
     error,
     fetchAssociatesWithDesignation,
+    updateAssociateActiveStatus,
   };
 }

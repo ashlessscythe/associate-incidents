@@ -17,6 +17,7 @@ const AssociatesPage: React.FC = () => {
     loading,
     error,
     fetchAssociatesWithDesignation,
+    updateAssociateActiveStatus,
   } = useAssociatesWithDesignation();
   const { user } = useAuthorizer();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,11 +68,17 @@ const AssociatesPage: React.FC = () => {
   };
 
   const handleToggleActive = async (id: string, currentState: boolean) => {
+    const newState = !currentState;
+    
+    // Optimistically update the UI
+    updateAssociateActiveStatus(id, newState);
+    
     try {
       await toggleAssociateActive(id, currentState);
-      await fetchAssociatesWithDesignation();
       toast.success("Associate status updated successfully");
     } catch (error) {
+      // Revert the optimistic update on error
+      updateAssociateActiveStatus(id, currentState);
       console.error("Error updating associate status:", error);
       toast.error("Failed to update associate status");
     }
