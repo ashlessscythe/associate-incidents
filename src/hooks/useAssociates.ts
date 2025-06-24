@@ -85,11 +85,25 @@ export function useAssociatesWithDesignation() {
     );
   }, []);
 
+  const updateAssociateOptimistically = useCallback((
+    id: string, 
+    updates: Partial<AssociateAndDesignation>
+  ) => {
+    setAssociatesWithDesignation(prev => 
+      prev.map(associate => 
+        associate.id === id 
+          ? { ...associate, ...updates } 
+          : associate
+      )
+    );
+  }, []);
+
   return {
     associatesWithDesignation,
     loading,
     error,
     fetchAssociatesWithDesignation,
     updateAssociateActiveStatus,
+    updateAssociateOptimistically,
   };
 }

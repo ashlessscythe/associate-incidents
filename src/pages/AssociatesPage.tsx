@@ -4,12 +4,13 @@ import ImportErrorModal, {
 } from "@/components/modals/ImportErrorModal";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
-import { addAssociate, deleteAssociate, updateAssociate, toggleAssociateActive } from "@/lib/api";
+import { addAssociate, deleteAssociate, updateAssociate, toggleAssociateActive, getDepartments, getLocations } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthorizer } from "@authorizerdev/authorizer-react";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
+import { Department, Location } from "@/lib/api";
 
 const AssociatesPage: React.FC = () => {
   const {
@@ -18,6 +19,7 @@ const AssociatesPage: React.FC = () => {
     error,
     fetchAssociatesWithDesignation,
     updateAssociateActiveStatus,
+    updateAssociateOptimistically,
   } = useAssociatesWithDesignation();
   const { user } = useAuthorizer();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,10 +29,28 @@ const AssociatesPage: React.FC = () => {
     success: 0,
     skipped: 0,
   });
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
 
   useEffect(() => {
     fetchAssociatesWithDesignation();
   }, [fetchAssociatesWithDesignation]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [fetchedDepartments, fetchedLocations] = await Promise.all([
+          getDepartments(),
+          getLocations(),
+        ]);
+        setDepartments(fetchedDepartments);
+        setLocations(fetchedLocations);
+      } catch (error) {
+        console.error("Error fetching departments and locations:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleAddAssociate = async (name: string) => {
     try {
@@ -57,11 +77,36 @@ const AssociatesPage: React.FC = () => {
     designation: string,
     location: string
   ) => {
+    // Find the current associate to get the original values for reverting on error
+    const currentAssociate = associatesWithDesignation.find(a => a.id === id);
+    if (!currentAssociate) return;
+
+    // Find the department and location objects for the optimistic update
+    const newDepartment = departments.find(d => d.id === departmentId);
+    const newLocation = locations.find(l => l.id === location);
+
+    // Create optimistic update
+    const optimisticUpdate = {
+      name,
+      department: newDepartment,
+      designation,
+      location: newLocation,
+    };
+
+    // Apply optimistic update
+    updateAssociateOptimistically(id, optimisticUpdate);
+
     try {
       await updateAssociate(id, name, departmentId, designation, location);
-      await fetchAssociatesWithDesignation();
       toast.success("Associate updated successfully");
     } catch (error) {
+      // Revert optimistic update on error
+      updateAssociateOptimistically(id, {
+        name: currentAssociate.name,
+        department: currentAssociate.department,
+        designation: currentAssociate.designation,
+        location: currentAssociate.location,
+      });
       console.error("Error updating associate:", error);
       toast.error("Failed to update associate");
     }
@@ -234,6 +279,8 @@ const AssociatesPage: React.FC = () => {
       <div className="flex-grow overflow-y-auto p-4">
         <AssociatesTable
           associates={associatesWithDesignation}
+          departments={departments}
+          locations={locations}
           onDelete={handleDeleteAssociate}
           onEdit={handleEditAssociate}
           onToggleActive={handleToggleActive}

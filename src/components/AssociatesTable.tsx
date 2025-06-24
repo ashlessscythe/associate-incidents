@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -11,10 +11,9 @@ import { Trash2, Pencil, ChevronUp, ChevronDown } from "lucide-react";
 import {
   AssociateAndDesignation,
   Department,
-  getDepartments,
   Location,
-  getLocations,
 } from "@/lib/api";
+import { Designation } from "@/lib/types";
 import {
   Select,
   SelectContent,
@@ -38,6 +37,8 @@ type SortOrder = "asc" | "desc";
 
 interface AssociatesTableProps {
   associates: AssociateAndDesignation[];
+  departments: Department[];
+  locations: Location[];
   onDelete: (id: string) => void;
   onEdit: (
     id: string,
@@ -54,6 +55,8 @@ type SortKey = "name" | "department" | "designation" | "location";
 
 const AssociatesTable: React.FC<AssociatesTableProps> = ({
   associates,
+  departments,
+  locations,
   onDelete,
   onEdit,
   onToggleActive,
@@ -66,27 +69,9 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   const [editDepartmentId, setEditDepartmentId] = useState("");
   const [editDesignation, setEditDesignation] = useState("");
   const [editLocation, setEditLocation] = useState("");
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [fetchedDepartments, fetchedLocations] = await Promise.all([
-          getDepartments(),
-          getLocations(),
-        ]);
-        setDepartments(fetchedDepartments);
-        setLocations(fetchedLocations);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
-  }, []);
 
   const handleDeleteClick = (id: string) => {
     setConfirmingDelete(id);
@@ -111,10 +96,15 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
     setEditLocation(associate.location?.id || "");
   };
 
-  const handleSaveEdit = (id: string) => {
+  const handleSaveEdit = async (id: string) => {
     if (!hasEditorRole) return;
-    onEdit(id, editName, editDepartmentId, editDesignation, editLocation);
-    setEditingAssociate(null);
+    
+    try {
+      await onEdit(id, editName, editDepartmentId, editDesignation, editLocation);
+      setEditingAssociate(null);
+    } catch (error) {
+      console.error("Error updating associate:", error);
+    }
   };
 
   const handleSort = (key: SortKey) => {
@@ -262,11 +252,21 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
               </TableCell>
               <TableCell>
                 {editingAssociate === associate.id ? (
-                  <Input
-                    type="text"
+                  <Select
                     value={editDesignation}
-                    onChange={(e) => setEditDesignation(e.target.value)}
-                  />
+                    onValueChange={(value) => setEditDesignation(value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select a designation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(Designation).map((designation) => (
+                        <SelectItem key={designation} value={designation}>
+                          {designation}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   associate.designation
                 )}
