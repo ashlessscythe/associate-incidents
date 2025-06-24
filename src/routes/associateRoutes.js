@@ -622,6 +622,7 @@ router.get("/associates-points-report", async (req, res) => {
       select: {
         name: true,
         designation: true,
+        isActive: true,
         department: {
           select: {
             name: true,
@@ -652,15 +653,16 @@ router.get("/associates-points-report", async (req, res) => {
         (sum, occ) => sum + (occ.type?.points || 0),
         0
       ),
+      status: associate.isActive ? "Active" : "Inactive",
     }));
 
     // Convert to CSV
     const csvHeader =
-      "Associate Name,Department Name,Designation,Total Points\n";
+      "Associate Name,Department Name,Designation,Total Points,Status\n";
     const csvContent = report
       .map(
         (row) =>
-          `${row.associate_name},${row.department_name},${row.associate_designation},${row.total_points}`
+          `${row.associate_name},${row.department_name},${row.associate_designation},${row.total_points},${row.status}`
       )
       .join("\n");
 
