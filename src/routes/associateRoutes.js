@@ -585,18 +585,17 @@ router.get("/download-current-associates", async (req, res) => {
             name: true,
           },
         },
+        isActive: true,
       },
       orderBy: { name: "asc" },
     });
 
     // Convert to CSV
-    const csvHeader = "name,designation,department,location\n";
+    const csvHeader = "name,designation,department,location,status\n";
     const csvContent = associates
       .map(
         (associate) =>
-          `${associate.name},${associate.designation},${
-            associate.department?.name || ""
-          },${associate.location?.name || ""}`
+          `${associate.name},${associate.designation},${associate.department?.name || ""},${associate.location?.name || ""},${associate.isActive ? "Active" : "Inactive"}`
       )
       .join("\n");
 
