@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Occurrence, OccurrenceType, AssociateInfo } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Upload } from "lucide-react";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import UploadedFiles from "@/components/UploadedFiles";
 import { Switch } from "@/components/ui/switch";
@@ -27,7 +27,7 @@ const OccurrenceItem: React.FC<OccurrenceItemProps> = ({
   onDownloadFile,
   onDeleteFile,
 }) => {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
   const [viewFiles, setViewFiles] = useState(false);

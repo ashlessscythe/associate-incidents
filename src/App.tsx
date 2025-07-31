@@ -6,14 +6,10 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Button } from "./components/ui/button";
-import {
-  AuthorizerProvider,
-  useAuthorizer,
-} from "@authorizerdev/authorizer-react";
 import { ThemeProvider, useTheme } from "next-themes";
-import LoginModal from "./components/modals/LoginModal";
+import AuthModal from "./components/modals/AuthModal";
 import Header from "./components/Header";
-import "./components/authorizer-custom.css";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./index.css";
 
 // Lazy load page components
@@ -22,11 +18,12 @@ const CAPage = React.lazy(() => import("./pages/CAPage"));
 const AssociatesPage = React.lazy(() => import("./pages/AssociatesPage"));
 const ReportsPage = React.lazy(() => import("./pages/ReportsPage"));
 const PendingPage = React.lazy(() => import("./pages/PendingPage"));
+const AdminPage = React.lazy(() => import("./pages/AdminPage"));
 
-type PageType = "attendance" | "ca" | "associates" | "reports" | null;
+type PageType = "attendance" | "ca" | "associates" | "reports" | "admin" | null;
 
 const Profile = () => {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   if (user) {
     return (
       <div className="text-foreground">
@@ -135,7 +132,7 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   allowedRoles: string[];
 }) => {
-  const { user, loading } = useAuthorizer();
+  const { user, loading } = useAuth();
 
   if (loading) return <div className="text-foreground">Loading...</div>;
   if (!user) return <Navigate to="/" />;
@@ -181,10 +178,38 @@ const ProtectedRoute = ({
   return <>{children}</>;
 };
 
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="text-foreground">Loading...</div>;
+  if (!user) return <Navigate to="/" />;
+  if (!user.isAdmin) {
+    return (
+      <div className="container mx-auto p-8 text-center">
+        <div className="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200 p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Admin Access Required</h2>
+          <p className="mb-4">
+            You need administrator privileges to access this page.
+          </p>
+          <Button
+            onClick={() => (window.location.href = "/")}
+            className="mt-6"
+            variant="outline"
+          >
+            Return to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const { loading, user, logout } = useAuthorizer();
+  const { loading, user, logout } = useAuth();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -300,12 +325,20 @@ function AppContent() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminPage />
+                  </AdminRoute>
+                }
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </main>
       </div>
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <AuthModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </Router>
   );
 }
@@ -326,15 +359,9 @@ function App() {
         sky: "sky",
       }}
     >
-      <AuthorizerProvider
-        config={{
-          authorizerURL: import.meta.env.VITE_AUTHORIZER_URL,
-          redirectURL: window.location.origin,
-          clientID: import.meta.env.VITE_AUTHORIZER_CLIENT_ID,
-        }}
-      >
+      <AuthProvider>
         <AppContent />
-      </AuthorizerProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

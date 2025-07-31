@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
 import OccurrenceItem from "./OccurrenceItem";
 import { toast } from "react-hot-toast";
@@ -86,7 +86,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   occurrenceTypes,
   allowEdit,
 }) => {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const [totalPoints, setTotalPoints] = useState<number>(0);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
   const [designation, setDesignation] = useState<string>("");
@@ -366,7 +366,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       window.URL.revokeObjectURL(url);
 
       const exportedBy =
-        `${user?.given_name} ${user?.family_name}` || "no name";
+        user?.name || "no name";
       const exportedAt = new Date();
 
       await recordOccExport(

@@ -6,7 +6,7 @@ import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
 import { addAssociate, deleteAssociate, updateAssociate, toggleAssociateActive, getDepartments, getLocations } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
@@ -21,7 +21,7 @@ const AssociatesPage: React.FC = () => {
     updateAssociateActiveStatus,
     updateAssociateOptimistically,
   } = useAssociatesWithDesignation();
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importErrors, setImportErrors] = useState<ImportError[]>([]);
   const [showErrorModal, setShowErrorModal] = useState(false);

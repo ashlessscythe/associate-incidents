@@ -41,7 +41,7 @@ import {
 } from "./ui/table";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import UploadedFiles from "./UploadedFiles";
 
@@ -58,7 +58,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   associateName,
   notificationType,
 }) => {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationLevels, setNotificationLevels] = useState<
     NotificationLevel[]

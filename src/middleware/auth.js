@@ -1,12 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY;
-const JWT_ALGORITHM = process.env.JWT_ALGORITHM || "RS256";
-const JWT_ROLE_CLAIM = process.env.JWT_ROLE_CLAIM || "role";
-
-if (!JWT_PUBLIC_KEY) {
-  throw new Error("JWT_PUBLIC_KEY not defined in .env file");
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export const validateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -22,17 +16,21 @@ export const validateToken = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_PUBLIC_KEY, {
-      algorithms: [JWT_ALGORITHM],
-    });
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Add decoded user info to request
     req.user = decoded;
-    req.userRole = decoded[JWT_ROLE_CLAIM];
 
     next();
   } catch (error) {
     console.error("Token verification failed:", error.message);
     return res.status(401).json({ error: "Invalid token" });
   }
+};
+
+export const requireAdmin = (req, res, next) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
 };

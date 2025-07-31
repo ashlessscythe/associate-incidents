@@ -1,11 +1,4 @@
 import axios, { AxiosInstance } from "axios";
-import { Authorizer } from "@authorizerdev/authorizer-js";
-
-const authorizer = new Authorizer({
-  authorizerURL: import.meta.env.VITE_AUTHORIZER_URL,
-  clientID: import.meta.env.VITE_AUTHORIZER_CLIENT_ID,
-  redirectURL: window.location.origin,
-});
 
 const api: AxiosInstance = axios.create({
   baseURL: "/zapi",
@@ -15,9 +8,8 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      // Get the access token from Authorizer
-      const session = await authorizer.getSession();
-      const accessToken = session?.data?.access_token;
+      // Get the access token from localStorage
+      const accessToken = localStorage.getItem('authToken');
 
       if (accessToken) {
         // Add JWT token to Authorization header
@@ -48,22 +40,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      try {
-        // Get a fresh token from Authorizer
-        const session = await authorizer.getSession();
-        const accessToken = session?.data?.access_token;
-
-        // Retry the original request with the new token
-        if (accessToken) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
-        // Handle refresh failure (e.g., redirect to login)
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      }
+      // Clear the token and redirect to login
+      localStorage.removeItem('authToken');
+      window.location.href = "/";
+      return Promise.reject(error);
     }
 
     console.error("API Error Response:", error.response?.data);

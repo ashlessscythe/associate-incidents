@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import ThemeSelector from "./ThemeSelector";
 
-type PageType = "attendance" | "ca" | "associates" | "reports" | null;
+type PageType = "attendance" | "ca" | "associates" | "reports" | "admin" | null;
 
 interface HeaderProps {
   currentPage: PageType;
@@ -84,6 +84,19 @@ const Header: React.FC<HeaderProps> = ({
       >
         Reports
       </Link>
+      {user?.isAdmin && (
+        <Link
+          to="/admin"
+          className={`px-4 py-2 rounded ${
+            currentPage === "admin"
+              ? "bg-primary text-primary-foreground"
+              : "text-foreground hover:text-primary"
+          }`}
+          onClick={() => onPageSelect("admin")}
+        >
+          Admin
+        </Link>
+      )}
     </>
   );
 
@@ -97,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center">
             <nav className="hidden md:block">
               <ul className="flex space-x-4">
-                {user && user.role !== "pending" && <NavLinks />}
+                {user && !user.roles?.includes("pending") && <NavLinks />}
               </ul>
             </nav>
             <ThemeSelector />

@@ -8,7 +8,7 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { FileSpreadsheet, Edit2, Trash2, Upload } from "lucide-react";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import ExportCADetailsModal from "@/components/modals/ExportCADetailsModal";
 import { toast } from "react-hot-toast";
 import UploadedFiles from "@/components/UploadedFiles";
@@ -43,7 +43,7 @@ const CAItem: React.FC<CAItemProps> = ({
   associateLocation,
   associateDepartment,
 }) => {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);

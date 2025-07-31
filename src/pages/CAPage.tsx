@@ -16,13 +16,13 @@ import AssociateSelect from "../components/AssociateSelect";
 import CAForm from "../components/form/CAForm";
 import CAList from "../components/list/CAList";
 import CAEditModal from "../components/modals/CAEditModal";
-import { useAuthorizer } from "@authorizerdev/authorizer-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useAssociatesWithDesignation } from "../hooks/useAssociates";
 import { uploadFile, downloadFile, deleteFile } from "../lib/api";
 import { toast } from "react-hot-toast";
 
 function CAPage() {
-  const { user } = useAuthorizer();
+  const { user } = useAuth();
   const {
     associatesWithDesignation,
     fetchAssociatesWithDesignation,
