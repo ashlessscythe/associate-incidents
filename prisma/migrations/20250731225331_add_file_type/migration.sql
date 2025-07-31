@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "FileType" AS ENUM ('ASSOCIATE_FILE', 'TEMPLATE');
+
+-- AlterTable
+ALTER TABLE "File" ADD COLUMN     "fileType" "FileType" NOT NULL DEFAULT 'ASSOCIATE_FILE';

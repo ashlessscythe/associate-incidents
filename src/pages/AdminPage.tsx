@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/apiConfig';
+import { uploadTemplate, getTemplates, Template } from '@/lib/templateApi';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
 
 interface User {
@@ -34,6 +36,8 @@ export default function AdminPage() {
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [showNewRoleForm, setShowNewRoleForm] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [uploadingTemplate, setUploadingTemplate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -41,12 +45,14 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersResponse, rolesResponse] = await Promise.all([
+      const [usersResponse, rolesResponse, templatesResponse] = await Promise.all([
         api.get('/admin/users'),
-        api.get('/admin/roles')
+        api.get('/admin/roles'),
+        getTemplates()
       ]);
       setUsers(usersResponse.data.users);
       setRoles(rolesResponse.data.roles);
+      setTemplates(templatesResponse);
     } catch (error) {
       toast.error('Failed to fetch data');
     } finally {
@@ -122,6 +128,57 @@ export default function AdminPage() {
     }
   };
 
+  const handleTemplateUpload = async (type: "ca" | "occ", file: File) => {
+    setUploadingTemplate(type);
+    try {
+      const result = await uploadTemplate(file);
+      toast.success(result.message);
+      await fetchData(); // Refresh templates
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to upload template');
+    } finally {
+      setUploadingTemplate(null);
+    }
+  };
+
+  const handleTemplateFileSelect = (type: "ca" | "occ") => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xlsx,.xls';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleTemplateUpload(type, file);
+      }
+    };
+    input.click();
+  };
+
+  const getTemplateForType = (type: "ca" | "occ") => {
+    return templates.find(template => 
+      template.filename.toLowerCase().includes(type === "ca" ? "ca" : "occ")
+    );
+  };
+
+  const handleDownloadTemplate = async (type: "ca" | "occ") => {
+    try {
+      const response = await api.get(`/templates/${type}`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${type}-template.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download template');
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading...</div>;
   }
@@ -135,6 +192,118 @@ export default function AdminPage() {
           <Button onClick={() => setShowNewRoleForm(true)} variant="outline">Add Role</Button>
         </div>
       </div>
+
+      {/* Template Management Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            Template Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Occurrence Template */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Occurrence Template</h3>
+                  <p className="text-sm text-gray-600">Excel template for occurrence reports</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getTemplateForType("occ") ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleTemplateFileSelect("occ")}
+                  disabled={uploadingTemplate === "occ"}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadingTemplate === "occ" ? "Uploading..." : "Upload Template"}
+                </Button>
+                {getTemplateForType("occ") && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadTemplate("occ")}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                    <Badge variant="secondary">Template Available</Badge>
+                  </>
+                )}
+              </div>
+              {getTemplateForType("occ") && (
+                <div className="text-xs text-gray-500">
+                  Last updated: {new Date(getTemplateForType("occ")!.createdAt).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+
+            {/* Corrective Action Template */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Corrective Action Template</h3>
+                  <p className="text-sm text-gray-600">Excel template for corrective action reports</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getTemplateForType("ca") ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleTemplateFileSelect("ca")}
+                  disabled={uploadingTemplate === "ca"}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadingTemplate === "ca" ? "Uploading..." : "Upload Template"}
+                </Button>
+                {getTemplateForType("ca") && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadTemplate("ca")}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
+                    <Badge variant="secondary">Template Available</Badge>
+                  </>
+                )}
+              </div>
+              {getTemplateForType("ca") && (
+                <div className="text-xs text-gray-500">
+                  Last updated: {new Date(getTemplateForType("ca")!.createdAt).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Templates are stored directly in the database and will be used for 
+              generating Excel reports. Upload Excel files (.xlsx or .xls) with a maximum size of 10MB.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Users Section */}
       <Card>

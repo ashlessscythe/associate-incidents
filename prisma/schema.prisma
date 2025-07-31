@@ -156,6 +156,7 @@ model File {
   content               Bytes
   mimetype              String
   size                  Int
+  fileType              FileType             @default(ASSOCIATE_FILE)
   associate             Associate?           @relation(fields: [associateId], references: [id])
   associateId           String?
   attendanceOccurrence  AttendanceOccurrence? @relation(fields: [attendanceOccurrenceId], references: [id])
@@ -188,4 +189,9 @@ enum RuleType {
   OPERATIONS
   SIGNAL
   CBA_VIOLATION
+}
+
+enum FileType {
+  ASSOCIATE_FILE
+  TEMPLATE
 }

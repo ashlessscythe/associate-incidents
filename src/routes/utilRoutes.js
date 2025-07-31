@@ -1,35 +1,37 @@
 import express from "express";
 import { prisma } from "../server.js";
-import { UTApi } from "uploadthing/server";
 
 const router = express.Router();
-const utapi = new UTApi({ token: process.env.UPLOADTHING_SECRET });
 
 router.get("/get-template/:type", async (req, res) => {
   const { type } = req.params;
-  const fileKey =
-    type === "ca" ? process.env.CA_TEMPLATE_KEY : process.env.OCC_TEMPLATE_KEY;
-
-  if (!fileKey) {
-    return res.status(400).send("Invalid template type");
-  }
-
+  
   try {
-    const signedUrl = await utapi.getSignedUrl(fileKey);
-    const response = await fetch(signedUrl);
-    if (!response.ok) throw new Error("Failed to fetch file from UploadThing");
+    // Find the most recent template for the specified type
+    const template = await prisma.file.findFirst({
+      where: { 
+        fileType: "TEMPLATE",
+        filename: {
+          contains: type === "ca" ? "ca" : "occ",
+          mode: "insensitive"
+        }
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    const fileBuffer = await response.arrayBuffer();
+    if (!template) {
+      return res.status(404).json({ error: "Template not found" });
+    }
 
-    res.set(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    res.setHeader("Content-Type", template.mimetype);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${template.filename}"`
     );
-    res.set("Content-Disposition", `attachment; filename=${type}.xlsx`);
-    res.send(Buffer.from(fileBuffer));
+    res.send(template.content);
   } catch (error) {
     console.error("Error fetching template:", error);
-    res.status(500).send("Error retrieving template file");
+    res.status(500).json({ error: "Error retrieving template file" });
   }
 });
 

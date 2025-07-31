@@ -5,21 +5,31 @@ import os from "os";
 import axios from "axios";
 import { prisma } from "../server.js";
 
-export async function getTemplate(fileKey, type) {
+export async function getTemplate(type) {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "excel-templates-"));
   const filePath = path.join(tempDir, `${type}.xlsx`);
 
   try {
-    const base_url =
-      process.env.BASE_UPLOAD_URL || "https://example.com/urlnotset";
-    const response = await axios.get(`${base_url}${fileKey}`, {
-      responseType: "arraybuffer",
+    // Find the most recent template for the specified type
+    const template = await prisma.file.findFirst({
+      where: { 
+        fileType: "TEMPLATE",
+        filename: {
+          contains: type === "ca" ? "ca" : "occ",
+          mode: "insensitive"
+        }
+      },
+      orderBy: { createdAt: "desc" },
     });
 
-    await fs.writeFile(filePath, response.data);
+    if (!template) {
+      throw new Error(`Template not found for type: ${type}`);
+    }
+
+    await fs.writeFile(filePath, template.content);
     return filePath;
   } catch (error) {
-    console.error(`Error downloading template for ${type}:`, error);
+    console.error(`Error getting template for ${type}:`, error);
     throw error;
   }
 }
@@ -38,10 +48,7 @@ export async function generateExcelOccurrence(
     throw new Error("Missing required parameters");
   }
 
-  const templatePath = await getTemplate(
-    process.env.OCC_TEMPLATE_KEY,
-    "occurrence"
-  );
+  const templatePath = await getTemplate("occ");
   let workbook;
 
   try {
@@ -147,7 +154,7 @@ export async function generateExcelCA(
   correctiveActions,
   notificationLevel
 ) {
-  const templatePath = await getTemplate(process.env.CA_TEMPLATE_KEY, "ca");
+  const templatePath = await getTemplate("ca");
   const workbook = await XlsxPopulate.fromFileAsync(templatePath);
   const sheet = workbook.sheet(0);
 
