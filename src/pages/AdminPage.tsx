@@ -36,6 +36,9 @@ export default function AdminPage() {
   const [newRole, setNewRole] = useState({ name: '', description: '' });
   const [showNewUserForm, setShowNewUserForm] = useState(false);
   const [showNewRoleForm, setShowNewRoleForm] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [uploadingTemplate, setUploadingTemplate] = useState<string | null>(null);
 
@@ -126,6 +129,27 @@ export default function AdminPage() {
     } catch (error) {
       toast.error('Failed to delete user');
     }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    
+    try {
+      await api.patch(`/admin/users/${selectedUser.id}/password`, { password: newPassword });
+      toast.success('Password changed successfully');
+      setNewPassword('');
+      setSelectedUser(null);
+      setShowPasswordForm(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    }
+  };
+
+  const openPasswordForm = (user: User) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setShowPasswordForm(true);
   };
 
   const handleTemplateUpload = async (type: "ca" | "occ", file: File) => {
@@ -340,6 +364,13 @@ export default function AdminPage() {
                       <Label>Admin</Label>
                     </div>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openPasswordForm(user)}
+                    >
+                      Change Password
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDeleteUser(user.id)}
@@ -473,6 +504,47 @@ export default function AdminPage() {
                 <div className="flex gap-2">
                   <Button type="submit">Create Role</Button>
                   <Button type="button" variant="outline" onClick={() => setShowNewRoleForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showPasswordForm && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Change Password for {selectedUser.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 characters)"
+                    minLength={6}
+                    required
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit">Change Password</Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowPasswordForm(false);
+                      setSelectedUser(null);
+                      setNewPassword('');
+                    }}
+                  >
                     Cancel
                   </Button>
                 </div>

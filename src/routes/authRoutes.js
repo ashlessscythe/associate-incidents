@@ -328,6 +328,49 @@ router.patch("/admin/users/:id", validateToken, requireAdmin, async (req, res) =
   }
 });
 
+// Change user password
+router.patch("/admin/users/:id/password", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Update user password
+    const user = await prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+      include: {
+        roles: {
+          include: {
+            role: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isActive: user.isActive,
+        isAdmin: user.isAdmin,
+        roles: user.roles.map(ur => ur.role.name)
+      },
+      message: "Password updated successfully"
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Failed to change password" });
+  }
+});
+
 router.patch("/admin/users/:id/roles", validateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
