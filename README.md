@@ -99,6 +99,18 @@ Additional features include:
 
 The project includes sample data files:
 
+## 📧 Email Configuration
+
+The application includes email functionality for user registration and password reset. Email setup is **optional** - the application works perfectly without email configuration.
+
+### Quick Start (No Email Setup)
+- The application will log email attempts to the console instead of sending them
+- Perfect for development and testing
+- All functionality works without email services
+
+### Full Email Setup
+See [Email Setup Guide](docs/EMAIL_SETUP.md) for complete instructions on configuring Resend for production email delivery.
+
 - `definitions-sample.js`: Contains sample notification levels, rules, and occurrence types.
 - `associates-sample.csv`: Contains sample associate data.
 

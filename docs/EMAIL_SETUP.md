@@ -32,7 +32,22 @@ FRONTEND_URL="http://localhost:5173"
 - For testing, you can use `onboarding@resend.dev` (Resend's sandbox domain)
 - `FRONTEND_URL` should match your frontend URL for password reset links
 
-### 3. Domain Verification (Production)
+### 3. Fallback Behavior
+
+The application includes graceful fallbacks when email is not configured:
+
+- **No API Key**: If `RESEND_API_KEY` is missing or set to the default value, emails are logged to console instead of being sent
+- **Development Mode**: Perfect for development without setting up email services
+- **Console Logging**: All email attempts are logged with `[EMAIL]` prefix for debugging
+- **Password Reset**: Reset tokens are still generated and stored, so the reset flow works even without email delivery
+
+**Example console output when Resend is not configured:**
+```
+[EMAIL] Welcome email would be sent to user@example.com for John Doe (Resend not configured)
+[EMAIL] Password reset email would be sent to user@example.com with reset URL: http://localhost:5173/reset-password?token=abc123... (Resend not configured)
+```
+
+### 4. Domain Verification (Production)
 
 For production use, you need to verify your domain in Resend:
 
@@ -99,6 +114,7 @@ The application includes three email templates:
    - Check RESEND_API_KEY is correct
    - Verify domain is approved in Resend
    - Check server logs for errors
+   - Look for `[EMAIL]` console logs if Resend is not configured
 
 2. **Reset links not working**
    - Verify FRONTEND_URL is correct
@@ -114,6 +130,27 @@ The application includes three email templates:
 
 Enable debug logging by checking the server console for email-related errors.
 
+### Email Configuration Status
+
+You can check the email configuration status using the admin endpoint:
+
+```bash
+curl -H "Authorization: Bearer YOUR_ADMIN_TOKEN" http://localhost:5000/zapi/auth/email-status
+```
+
+This will return:
+```json
+{
+  "status": {
+    "isConfigured": true,
+    "hasApiKey": true,
+    "hasValidApiKey": true,
+    "emailFrom": "noreply@yourdomain.com",
+    "frontendUrl": "http://localhost:5173"
+  }
+}
+```
+
 ## API Endpoints
 
 ### Password Reset
@@ -122,6 +159,9 @@ Enable debug logging by checking the server console for email-related errors.
 
 ### Registration
 - `POST /auth/register` - User registration (sends welcome email)
+
+### Email Configuration
+- `GET /auth/email-status` - Get email configuration status (admin only)
 
 ## Database Schema
 

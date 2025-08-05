@@ -1,9 +1,28 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Check if Resend is configured
+const isResendConfigured = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 'rekeygoeshere';
+const resend = isResendConfigured ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Helper function to check email configuration status
+export const getEmailConfigStatus = () => {
+  return {
+    isConfigured: isResendConfigured,
+    hasApiKey: !!process.env.RESEND_API_KEY,
+    hasValidApiKey: isResendConfigured,
+    emailFrom: process.env.EMAIL_FROM || 'Not configured',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173'
+  };
+};
 
 export const sendWelcomeEmail = async (userEmail, userName) => {
   try {
+    // Check if Resend is configured
+    if (!isResendConfigured) {
+      console.log(`[EMAIL] Welcome email would be sent to ${userEmail} for user ${userName} (Resend not configured)`);
+      return { success: true, data: { id: 'mock-email-id' } };
+    }
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Associate Incidents <noreply@yourdomain.com>',
       to: [userEmail],
@@ -52,6 +71,13 @@ export const sendWelcomeEmail = async (userEmail, userName) => {
 
 export const sendPasswordResetEmail = async (userEmail, resetToken) => {
   try {
+    // Check if Resend is configured
+    if (!isResendConfigured) {
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+      console.log(`[EMAIL] Password reset email would be sent to ${userEmail} with reset URL: ${resetUrl} (Resend not configured)`);
+      return { success: true, data: { id: 'mock-email-id' } };
+    }
+
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
     
     const { data, error } = await resend.emails.send({
@@ -107,6 +133,12 @@ export const sendPasswordResetEmail = async (userEmail, resetToken) => {
 
 export const sendPasswordResetSuccessEmail = async (userEmail, userName) => {
   try {
+    // Check if Resend is configured
+    if (!isResendConfigured) {
+      console.log(`[EMAIL] Password reset success email would be sent to ${userEmail} for user ${userName} (Resend not configured)`);
+      return { success: true, data: { id: 'mock-email-id' } };
+    }
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'Associate Incidents <noreply@yourdomain.com>',
       to: [userEmail],

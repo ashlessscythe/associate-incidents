@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
-import { sendWelcomeEmail, sendPasswordResetEmail, sendPasswordResetSuccessEmail } from "../lib/emailService.js";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendPasswordResetSuccessEmail, getEmailConfigStatus } from "../lib/emailService.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -547,6 +547,17 @@ router.post("/auth/reset-password", async (req, res) => {
   } catch (error) {
     console.error("Reset password error:", error);
     res.status(500).json({ message: "Failed to reset password" });
+  }
+});
+
+// Get email configuration status (admin only)
+router.get("/auth/email-status", validateToken, requireAdmin, (req, res) => {
+  try {
+    const status = getEmailConfigStatus();
+    res.json({ status });
+  } catch (error) {
+    console.error("Email status error:", error);
+    res.status(500).json({ message: "Failed to get email status" });
   }
 });
 

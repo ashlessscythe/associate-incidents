@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Test files
+test-*.js
+
 # prisma
 prisma/definitions.js
 prisma/associates.csv
