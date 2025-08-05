@@ -19,6 +19,7 @@ const AssociatesPage = React.lazy(() => import("./pages/AssociatesPage"));
 const ReportsPage = React.lazy(() => import("./pages/ReportsPage"));
 const PendingPage = React.lazy(() => import("./pages/PendingPage"));
 const AdminPage = React.lazy(() => import("./pages/AdminPage"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | "admin" | null;
 
@@ -332,6 +333,10 @@ function AppContent() {
                     <AdminPage />
                   </AdminRoute>
                 }
+              />
+              <Route
+                path="/reset-password"
+                element={<ResetPassword />}
               />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

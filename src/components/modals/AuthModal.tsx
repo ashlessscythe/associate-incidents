@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-hot-toast';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,6 +99,16 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
+              
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </form>
           </TabsContent>
           
@@ -146,6 +158,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </TabsContent>
         </Tabs>
       </DialogContent>
+      
+      <ForgotPasswordModal 
+        isOpen={showForgotPassword} 
+        onClose={() => setShowForgotPassword(false)} 
+      />
     </Dialog>
   );
 } 

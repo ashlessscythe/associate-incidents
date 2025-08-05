@@ -2,7 +2,9 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendPasswordResetSuccessEmail } from "../lib/emailService.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -51,6 +53,14 @@ router.post("/auth/register", async (req, res) => {
         }
       }
     });
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("Welcome email failed to send:", emailError);
+      // Don't fail registration if email fails
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -435,6 +445,108 @@ router.delete("/admin/users/:id", validateToken, requireAdmin, async (req, res) 
   } catch (error) {
     console.error("Delete user error:", error);
     res.status(500).json({ message: "Failed to delete user" });
+  }
+});
+
+// Request password reset
+router.post("/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.json({ message: "If an account with that email exists, a password reset link has been sent." });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken,
+        resetTokenExpiry
+      }
+    });
+
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+    } catch (emailError) {
+      console.error("Password reset email failed to send:", emailError);
+      return res.status(500).json({ message: "Failed to send password reset email" });
+    }
+
+    res.json({ message: "If an account with that email exists, a password reset link has been sent." });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({ message: "Failed to process password reset request" });
+  }
+});
+
+// Reset password with token
+router.post("/auth/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: "Token and password are required" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Find user with valid reset token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: {
+          gt: new Date()
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Update user password and clear reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null
+      }
+    });
+
+    // Send success email
+    try {
+      await sendPasswordResetSuccessEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("Password reset success email failed to send:", emailError);
+      // Don't fail the reset if email fails
+    }
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 });
 
