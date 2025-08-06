@@ -17,6 +17,7 @@ import OccurrenceForm from "@/components/form/OccurrenceForm";
 import OccurrenceList from "@/components/list/OccurrenceList";
 import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { NotificationTracker } from "@/components/NotificationTracker";
+import { AlertTriangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 function OccurrencePage() {
   const { user } = useAuth();
@@ -141,49 +142,58 @@ function OccurrencePage() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  if (associatesLoading || loading) return <div>Loading...</div>;
+  if (associatesLoading || loading) return <div className="p-4">Loading...</div>;
   if (associatesError || error)
-    return <div>Error: {associatesError || error}</div>;
+    return <div className="p-4">Error: {associatesError || error}</div>;
 
   return (
-    <div className="flex flex-col md:flex-row h-full relative bg-background text-foreground">
+    <div className="flex flex-col lg:flex-row h-full relative bg-background text-foreground">
       {/* Sidebar */}
       <div
         className={`${
-          isSidebarOpen ? "w-full md:w-1/2 lg:w-2/5 xl:w-1/3" : "w-0"
-        } transition-all duration-300 ease-in-out overflow-hidden md:h-full bg-card text-card-foreground shadow-md`}
+          isSidebarOpen ? "w-full lg:w-1/2 xl:w-2/5 2xl:w-1/3" : "w-0"
+        } transition-all duration-300 ease-in-out overflow-hidden lg:h-full bg-card text-card-foreground shadow-md`}
       >
-        <div className="sticky top-0 z-10 p-4 space-y-4">
-          <AssociateSelect
-            selectedAssociateId={selectedAssociateId}
-            onAssociateSelect={handleAssociateSelect}
-          />
-          {hasEditorRole && (
-            <OccurrenceForm
-              occurrenceTypes={occurrenceTypes}
-              associateId={selectedAssociateId}
-              onAddOccurrence={handleAddOccurrence}
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <AssociateSelect
+              selectedAssociateId={selectedAssociateId}
+              onAssociateSelect={handleAssociateSelect}
             />
-          )}
+            {hasEditorRole && (
+              <OccurrenceForm
+                occurrenceTypes={occurrenceTypes}
+                associateId={selectedAssociateId}
+                onAddOccurrence={handleAddOccurrence}
+              />
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Toggle button */}
-      <button
-        onClick={toggleSidebar}
-        className={`fixed top-4 z-20 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-r-md shadow-md transition-all duration-300 ease-in-out ${
-          isSidebarOpen
-            ? "left-[calc(50%-1rem)] md:left-[calc(40%-1rem)] lg:left-[calc(33.33%-1rem)]"
-            : "left-0"
-        }`}
-      >
-        {isSidebarOpen ? "←" : "→"}
-      </button>
+      {/* Toggle button - positioned at the top of the main content area */}
+      <div className="relative">
+        <button
+          onClick={toggleSidebar}
+          className={`absolute top-4 z-20 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-md shadow-md transition-all duration-300 ease-in-out ${
+            isSidebarOpen 
+              ? "left-4 lg:left-0 lg:-translate-x-1/2" 
+              : "left-4"
+          }`}
+          title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+        >
+          {isSidebarOpen ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <PanelLeftOpen className="h-4 w-4" />
+          )}
+        </button>
+      </div>
 
       {/* Main content area */}
       <div
-        className={`flex-grow p-4 md:h-full overflow-y-auto transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "md:ml-4" : "md:ml-0"
+        className={`flex-grow p-4 lg:h-full overflow-y-auto transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "lg:ml-4" : "lg:ml-0"
         }`}
       >
         {!hasEditorRole && (
@@ -191,8 +201,13 @@ function OccurrencePage() {
             className="bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 p-4 mb-4 rounded-lg"
             role="alert"
           >
-            <p className="font-bold">View Only Mode</p>
-            <p>You do not have permission to add or edit occurrences.</p>
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-bold text-sm sm:text-base">View Only Mode</p>
+                <p className="text-sm">You do not have permission to add or edit occurrences.</p>
+              </div>
+            </div>
           </div>
         )}
 

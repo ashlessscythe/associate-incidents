@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'react-hot-toast';
 import api from '@/lib/apiConfig';
 import { uploadTemplate, getTemplates, Template } from '@/lib/templateApi';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download, Users, Shield } from 'lucide-react';
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
 
 interface User {
@@ -208,12 +208,19 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Admin Portal</h1>
-        <div className="space-x-2">
-          <Button onClick={() => setShowNewUserForm(true)}>Add User</Button>
-          <Button onClick={() => setShowNewRoleForm(true)} variant="outline">Add Role</Button>
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">Admin Portal</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button onClick={() => setShowNewUserForm(true)} className="w-full sm:w-auto">
+            <Users className="h-4 w-4 mr-2" />
+            Add User
+          </Button>
+          <Button onClick={() => setShowNewRoleForm(true)} variant="outline" className="w-full sm:w-auto">
+            <Shield className="h-4 w-4 mr-2" />
+            Add Role
+          </Button>
         </div>
       </div>
 
@@ -226,27 +233,27 @@ export default function AdminPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Occurrence Template */}
             <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
                   <h3 className="font-semibold">Occurrence Template</h3>
                   <p className="text-sm text-gray-600">Excel template for occurrence reports</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-2">
                   {getTemplateForType("occ") ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0" />
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button
                   onClick={() => handleTemplateFileSelect("occ")}
                   disabled={uploadingTemplate === "occ"}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   {uploadingTemplate === "occ" ? "Uploading..." : "Upload Template"}
@@ -257,12 +264,12 @@ export default function AdminPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDownloadTemplate("occ")}
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Download
                     </Button>
-                    <Badge variant="secondary">Template Available</Badge>
+                    <Badge variant="secondary" className="self-center">Template Available</Badge>
                   </>
                 )}
               </div>
@@ -275,24 +282,24 @@ export default function AdminPage() {
 
             {/* Corrective Action Template */}
             <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
                   <h3 className="font-semibold">Corrective Action Template</h3>
                   <p className="text-sm text-gray-600">Excel template for corrective action reports</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-2">
                   {getTemplateForType("ca") ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0" />
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Button
                   onClick={() => handleTemplateFileSelect("ca")}
                   disabled={uploadingTemplate === "ca"}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   {uploadingTemplate === "ca" ? "Uploading..." : "Upload Template"}
@@ -303,12 +310,12 @@ export default function AdminPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDownloadTemplate("ca")}
-                      className="flex items-center gap-2"
+                      className="flex items-center justify-center gap-2"
                     >
                       <Download className="h-4 w-4" />
                       Download
                     </Button>
-                    <Badge variant="secondary">Template Available</Badge>
+                    <Badge variant="secondary" className="self-center">Template Available</Badge>
                   </>
                 )}
               </div>
@@ -332,57 +339,64 @@ export default function AdminPage() {
       {/* Users Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Users Management</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Users Management
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {users.map((user) => (
-              <div key={user.id} className="border rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{user.name}</h3>
-                    <p className="text-sm text-gray-600">{user.email}</p>
-                    <div className="flex gap-2 mt-2">
+              <div key={user.id} className="border rounded-lg p-4 space-y-4">
+                <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{user.name}</h3>
+                    <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {user.roles.map((role) => (
-                        <Badge key={role} variant="secondary">{role}</Badge>
+                        <Badge key={role} variant="secondary" className="text-xs">{role}</Badge>
                       ))}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
                     <div className="flex items-center space-x-2">
                       <Switch
                         checked={user.isActive}
                         onCheckedChange={(checked) => handleToggleUserStatus(user.id, checked)}
                       />
-                      <Label>Active</Label>
+                      <Label className="text-sm">Active</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Switch
                         checked={user.isAdmin}
                         onCheckedChange={(checked) => handleToggleAdminStatus(user.id, checked)}
                       />
-                      <Label>Admin</Label>
+                      <Label className="text-sm">Admin</Label>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openPasswordForm(user)}
-                    >
-                      Change Password
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                    >
-                      Delete
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openPasswordForm(user)}
+                        className="w-full sm:w-auto"
+                      >
+                        Change Password
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="w-full sm:w-auto"
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 
                 {/* Role Management */}
                 <div className="space-y-2">
-                  <Label>Roles:</Label>
+                  <Label className="text-sm">Roles:</Label>
                   <div className="flex flex-wrap gap-2">
                     {roles.map((role) => (
                       <Button
@@ -395,6 +409,7 @@ export default function AdminPage() {
                             : [...user.roles, role.name];
                           handleUpdateUserRoles(user.id, newRoles);
                         }}
+                        className="text-xs"
                       >
                         {role.name}
                       </Button>
@@ -410,10 +425,13 @@ export default function AdminPage() {
       {/* Roles Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Roles Management</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Roles Management
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => (
               <div key={role.id} className="border rounded-lg p-4">
                 <h3 className="font-semibold">{role.name}</h3>
@@ -426,8 +444,8 @@ export default function AdminPage() {
 
       {/* New User Modal */}
       {showNewUserForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Create New User</CardTitle>
             </CardHeader>
@@ -462,9 +480,9 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit">Create User</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowNewUserForm(false)}>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" className="w-full sm:w-auto">Create User</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowNewUserForm(false)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
                 </div>
@@ -476,8 +494,8 @@ export default function AdminPage() {
 
       {/* New Role Modal */}
       {showNewRoleForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Create New Role</CardTitle>
             </CardHeader>
@@ -501,9 +519,9 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit">Create Role</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowNewRoleForm(false)}>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" className="w-full sm:w-auto">Create Role</Button>
+                  <Button type="button" variant="outline" onClick={() => setShowNewRoleForm(false)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
                 </div>
@@ -515,8 +533,8 @@ export default function AdminPage() {
 
       {/* Change Password Modal */}
       {showPasswordForm && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle>Change Password for {selectedUser.name}</CardTitle>
             </CardHeader>
@@ -534,8 +552,8 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit">Change Password</Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button type="submit" className="w-full sm:w-auto">Change Password</Button>
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -544,6 +562,7 @@ export default function AdminPage() {
                       setSelectedUser(null);
                       setNewPassword('');
                     }}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>

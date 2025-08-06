@@ -62,10 +62,11 @@ export default function ResetPassword() {
 
   if (isCheckingToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full space-y-6">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Checking Reset Link...</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Checking Reset Link...</h2>
+            <p className="mt-2 text-sm sm:text-base text-gray-600">Please wait while we verify your reset link.</p>
           </div>
         </div>
       </div>
@@ -74,14 +75,14 @@ export default function ResetPassword() {
 
   if (!isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full space-y-6">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Invalid Reset Link</h2>
-            <p className="mt-2 text-gray-600">The password reset link is invalid or has expired.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Invalid Reset Link</h2>
+            <p className="mt-2 text-sm sm:text-base text-gray-600">The password reset link is invalid or has expired.</p>
             <Button 
               onClick={() => navigate('/')} 
-              className="mt-4"
+              className="mt-4 w-full sm:w-auto"
             >
               Go to Home
             </Button>
@@ -92,16 +93,16 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Reset Your Password</h2>
-          <p className="mt-2 text-gray-600">Enter your new password below.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Reset Your Password</h2>
+          <p className="mt-2 text-sm sm:text-base text-gray-600">Enter your new password below.</p>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="password">New Password</Label>
+            <Label htmlFor="password" className="text-sm sm:text-base">New Password</Label>
             <Input
               id="password"
               type="password"
@@ -111,11 +112,12 @@ export default function ResetPassword() {
               disabled={isLoading}
               minLength={6}
               placeholder="Enter your new password"
+              className="text-sm sm:text-base"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword" className="text-sm sm:text-base">Confirm Password</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -125,6 +127,7 @@ export default function ResetPassword() {
               disabled={isLoading}
               minLength={6}
               placeholder="Confirm your new password"
+              className="text-sm sm:text-base"
             />
           </div>
           

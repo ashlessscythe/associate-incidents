@@ -11,6 +11,7 @@ import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
 import { Department, Location } from "@/lib/api";
+import { Users, Upload, Download, FileText } from "lucide-react";
 
 const AssociatesPage: React.FC = () => {
   const {
@@ -236,14 +237,22 @@ const AssociatesPage: React.FC = () => {
     (user && Array.isArray(user.roles) && user.roles.includes("user-edit")) ||
     false;
 
-  if (loading) return <div className="text-foreground">Loading...</div>;
-  if (error) return <div className="text-foreground">Error: {error}</div>;
+  if (loading) return <div className="text-foreground p-4">Loading...</div>;
+  if (error) return <div className="text-foreground p-4">Error: {error}</div>;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Associates</h1>
-        <div className="flex flex-col sm:flex-row justify-between mb-4">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Users className="h-6 w-6" />
+            Associates
+          </h1>
+        </div>
+        
+        {/* Action Buttons */}
+        <div className="space-y-4 mb-6">
+          {/* Primary Actions */}
           <div className="flex flex-col sm:flex-row gap-2">
             <NewAssociateModal
               onAddAssociate={handleAddAssociate}
@@ -251,7 +260,8 @@ const AssociatesPage: React.FC = () => {
             />
             {hasEditorRole && (
               <>
-                <Button onClick={handleImportClick} variant="outline">
+                <Button onClick={handleImportClick} variant="outline" className="w-full sm:w-auto">
+                  <Upload className="h-4 w-4 mr-2" />
                   Import Associates
                 </Button>
                 <input
@@ -261,22 +271,27 @@ const AssociatesPage: React.FC = () => {
                   accept=".csv"
                   style={{ display: "none" }}
                 />
-                <Button onClick={downloadTemplate} variant="outline">
+                <Button onClick={downloadTemplate} variant="outline" className="w-full sm:w-auto">
+                  <FileText className="h-4 w-4 mr-2" />
                   Download Template
                 </Button>
               </>
             )}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
-            {hasEditorRole && (
-              <Button onClick={downloadCurrentAssociates} variant="outline">
+          
+          {/* Secondary Actions */}
+          {hasEditorRole && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={downloadCurrentAssociates} variant="outline" className="w-full sm:w-auto">
+                <Download className="h-4 w-4 mr-2" />
                 Download Current Associates
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-      <div className="flex-grow overflow-y-auto p-4">
+      
+      <div className="flex-grow overflow-y-auto p-4 sm:p-6">
         <AssociatesTable
           associates={associatesWithDesignation}
           departments={departments}

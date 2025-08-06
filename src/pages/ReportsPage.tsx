@@ -20,7 +20,7 @@ import {
 } from "../lib/api";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { ArrowUpDown, Download } from "lucide-react";
+import { ArrowUpDown, Download, FileText, BarChart3, Users } from "lucide-react";
 
 interface CAByTypeData {
   id: string;
@@ -183,7 +183,7 @@ const ReportsPage: React.FC = () => {
     if (sortField === field) {
       return (
         <ArrowUpDown
-          className={`inline ml-1 ${
+          className={`inline ml-1 h-4 w-4 ${
             sortOrder === "desc" ? "transform rotate-180" : ""
           }`}
         />
@@ -197,7 +197,7 @@ const ReportsPage: React.FC = () => {
       case "occurrences":
         return (
           <div>
-            <div className="grid grid-cols-4 gap-4 mb-2 font-bold text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 font-bold text-sm">
               <div
                 className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => handleSort("name")}
@@ -233,7 +233,7 @@ const ReportsPage: React.FC = () => {
                   />
                 ))
               ) : (
-                <p>No associates found with occurrences.</p>
+                <p className="text-center text-muted-foreground py-8">No associates found with occurrences.</p>
               )}
             </ul>
           </div>
@@ -252,19 +252,30 @@ const ReportsPage: React.FC = () => {
           </ul>
         );
       default:
-        return <p>Please select a report to run.</p>;
+        return (
+          <div className="text-center text-muted-foreground py-12">
+            <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Please select a report to run.</p>
+          </div>
+        );
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 bg-card text-card-foreground shadow-md">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold mb-4">Reports</h1>
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+              <BarChart3 className="h-6 w-6" />
+              Reports
+            </h1>
+          </div>
 
           {/* Quick Actions Section */}
           <div className="mb-6 bg-muted/50 p-4 rounded-lg">
-            <h2 className="text-sm font-semibold mb-2 text-muted-foreground">
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground flex items-center gap-2">
+              <Download className="h-4 w-4" />
               Quick Actions
             </h2>
             <Button
@@ -272,49 +283,54 @@ const ReportsPage: React.FC = () => {
               variant="outline"
               className="w-full sm:w-auto"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <FileText className="w-4 h-4 mr-2" />
               Download Points Report (All Associates)
             </Button>
           </div>
 
           {/* Table Reports Section */}
-          <div className="mb-4">
-            <h2 className="text-sm font-semibold mb-2 text-muted-foreground">
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground flex items-center gap-2">
+              <Users className="h-4 w-4" />
               Table Reports
             </h2>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleGetAllOccurrences}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
-                {loading && activeReport === "occurrences"
-                  ? "Loading..."
-                  : "Run Occurrences by Associate Report"}
-              </Button>
-              <Button
-                onClick={handleFetchCAByType}
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
-                {loading && activeReport === "ca"
-                  ? "Loading..."
-                  : "Run CA by Type Report"}
-              </Button>
-              <Button
-                onClick={handleClearReport}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                Clear Report
-              </Button>
-              <Input
-                type="text"
-                placeholder="Filter by Associate Name"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="w-full sm:w-auto"
-              />
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={handleGetAllOccurrences}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
+                  {loading && activeReport === "occurrences"
+                    ? "Loading..."
+                    : "Run Occurrences by Associate Report"}
+                </Button>
+                <Button
+                  onClick={handleFetchCAByType}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
+                  {loading && activeReport === "ca"
+                    ? "Loading..."
+                    : "Run CA by Type Report"}
+                </Button>
+                <Button
+                  onClick={handleClearReport}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  Clear Report
+                </Button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="text"
+                  placeholder="Filter by Associate Name"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="w-full sm:w-auto sm:max-w-xs"
+                />
+              </div>
             </div>
           </div>
 
@@ -323,23 +339,23 @@ const ReportsPage: React.FC = () => {
             onValueChange={(value) =>
               setSelectedDesignation(value as Designation | "ALL")
             }
-            className="flex flex-wrap gap-2 mb-4"
+            className="flex flex-wrap gap-3 mb-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="ALL" id="all" />
-              <Label htmlFor="all">All</Label>
+              <Label htmlFor="all" className="text-sm">All</Label>
             </div>
             {Object.values(Designation).map((designation) => (
               <div key={designation} className="flex items-center space-x-2">
                 <RadioGroupItem value={designation} id={designation} />
-                <Label htmlFor={designation}>{designation}</Label>
+                <Label htmlFor={designation} className="text-sm">{designation}</Label>
               </div>
             ))}
           </RadioGroup>
-          {error && <p className="text-destructive mt-2 mb-4">{error}</p>}
+          {error && <p className="text-destructive mt-2 mb-4 text-sm">{error}</p>}
         </div>
       </header>
-      <main className="flex-grow overflow-y-auto p-4">
+      <main className="flex-grow overflow-y-auto p-4 sm:p-6">
         <div className="container mx-auto">{renderActiveReport()}</div>
       </main>
     </div>
