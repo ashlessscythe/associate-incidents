@@ -2,7 +2,7 @@
 
 ## 🚀 Overview
 
-The Associate Management System is a comprehensive web application designed to revolutionize workforce management through efficient tracking of incidents, attendance, and corrective actions. Built with modern web technologies and a focus on user experience, it provides a robust platform for HR professionals and managers to:
+The Associate Management System is a complete web application designed to revolutionize workforce management through efficient tracking of incidents, attendance, and corrective actions. Built with modern web technologies and a focus on user experience, it provides a robust platform for HR professionals and managers to:
 
 - **Streamline Incident Management**: Efficiently track and manage attendance-related incidents with automated point calculations and threshold monitoring.
 - **Enhance Compliance**: Maintain detailed records of corrective actions and follow standardized procedures for incident handling.
