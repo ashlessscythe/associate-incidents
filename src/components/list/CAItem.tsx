@@ -14,6 +14,7 @@ import { toast } from "react-hot-toast";
 import UploadedFiles from "@/components/UploadedFiles";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useExpiredItem } from "@/hooks/useExpiredItem";
 
 interface CAItemProps {
   ca: CorrectiveAction;
@@ -48,6 +49,7 @@ const CAItem: React.FC<CAItemProps> = ({
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [viewFiles, setViewFiles] = useState(false);
+  const { style: expiredStyle } = useExpiredItem(ca.date);
 
   const getRuleDescription = (ruleId: string) => {
     const rule = rules.find((r) => r.id === ruleId);
@@ -176,7 +178,7 @@ const CAItem: React.FC<CAItemProps> = ({
   };
 
   return (
-    <li className="bg-card text-card-foreground p-4 rounded-lg shadow mb-4">
+    <li className="bg-card text-card-foreground p-4 rounded-lg shadow mb-4" style={expiredStyle}>
       <div className="flex justify-between items-start">
         <div>
           <p className="font-semibold">{getRuleDescription(ca.ruleId)}</p>

@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import UploadedFiles from "@/components/UploadedFiles";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useExpiredItem } from "@/hooks/useExpiredItem";
 
 interface OccurrenceItemProps {
   occurrence: Occurrence;
@@ -31,13 +32,7 @@ const OccurrenceItem: React.FC<OccurrenceItemProps> = ({
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("att-edit");
   const [viewFiles, setViewFiles] = useState(false);
-
-  const isOverOneYearOld = (date: Date) => {
-    const occurrenceDate = new Date(date);
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    return occurrenceDate < oneYearAgo;
-  };
+  const { style: expiredStyle } = useExpiredItem(occurrence.date);
 
   const handleUpload = async () => {
     if (!onUploadFile) {
@@ -98,15 +93,10 @@ const OccurrenceItem: React.FC<OccurrenceItemProps> = ({
     }
   };
 
-  const isOld = isOverOneYearOld(occurrence.date);
-  const rowStyle = isOld
-    ? { color: "gray", textDecoration: "line-through" }
-    : {};
-
   return (
     <li
       className="bg-card text-card-foreground p-4 rounded-lg shadow mb-4"
-      style={rowStyle}
+      style={expiredStyle}
     >
       <div className="flex justify-between items-start">
         <div>

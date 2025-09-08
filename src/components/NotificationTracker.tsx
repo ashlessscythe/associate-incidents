@@ -44,6 +44,7 @@ import { Label } from "./ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import UploadedFiles from "./UploadedFiles";
+import { useExpiredItem } from "@/hooks/useExpiredItem";
 
 interface NotificationTrackerProps {
   associateId: string;
@@ -274,6 +275,97 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
     }));
   };
 
+  // Helper component for notification row with expired styling
+  const NotificationRow: React.FC<{ notification: Notification }> = ({ notification }) => {
+    const { style: expiredStyle } = useExpiredItem(notification.date);
+    
+    return (
+      <React.Fragment>
+        <TableRow style={expiredStyle}>
+          <TableCell>
+            {new Date(notification.date).toISOString().split("T")[0]}
+          </TableCell>
+          <TableCell>{notification.level}</TableCell>
+          {notificationType === NotificationType.OCCURRENCE && (
+            <TableCell>
+              {typeof notification.totalPoints === "number"
+                ? notification.totalPoints.toFixed(1)
+                : "N/A"}
+            </TableCell>
+          )}
+          <TableCell>{notification.description || "N/A"}</TableCell>
+          <TableCell>
+            {notification.files && notification.files.length > 0 ? (
+              <div className="flex items-center space-x-2">
+                <span>{notification.files.length} file(s)</span>
+                <Switch
+                  id={`view-files-${notification.id}`}
+                  checked={viewFiles[notification.id]}
+                  onCheckedChange={() => toggleViewFiles(notification.id)}
+                />
+                <Label htmlFor={`view-files-${notification.id}`}>
+                  View Files
+                </Label>
+              </div>
+            ) : (
+              <span className="text-gray-500 mr-2">No files</span>
+            )}
+            {hasEditorRole && (
+              <Button
+                onClick={() => handleUpload(notification.id, associateId)}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                <Upload size={16} className="mr-2" />
+                Upload
+              </Button>
+            )}
+          </TableCell>
+          {hasEditorRole && (
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleEdit(notification)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(notification.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TableCell>
+          )}
+        </TableRow>
+        {viewFiles[notification.id] &&
+          notification.files &&
+          notification.files.length > 0 && (
+            <TableRow>
+              <TableCell colSpan={6}>
+                <UploadedFiles
+                  files={notification.files}
+                  onDownload={(fileId) => {
+                    const file = notification.files?.find(
+                      (f) => f.id === fileId
+                    );
+                    if (file) {
+                      handleDownload(fileId, file.filename);
+                    }
+                  }}
+                  onDelete={handleDeleteFile}
+                  hasEditorRole={hasEditorRole}
+                />
+              </TableCell>
+            </TableRow>
+          )}
+      </React.Fragment>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
@@ -367,89 +459,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
         </TableHeader>
         <TableBody>
           {notifications.map((notification) => (
-            <React.Fragment key={notification.id}>
-              <TableRow>
-                <TableCell>
-                  {new Date(notification.date).toISOString().split("T")[0]}
-                </TableCell>
-                <TableCell>{notification.level}</TableCell>
-                {notificationType === NotificationType.OCCURRENCE && (
-                  <TableCell>
-                    {typeof notification.totalPoints === "number"
-                      ? notification.totalPoints.toFixed(1)
-                      : "N/A"}
-                  </TableCell>
-                )}
-                <TableCell>{notification.description || "N/A"}</TableCell>
-                <TableCell>
-                  {notification.files && notification.files.length > 0 ? (
-                    <div className="flex items-center space-x-2">
-                      <span>{notification.files.length} file(s)</span>
-                      <Switch
-                        id={`view-files-${notification.id}`}
-                        checked={viewFiles[notification.id]}
-                        onCheckedChange={() => toggleViewFiles(notification.id)}
-                      />
-                      <Label htmlFor={`view-files-${notification.id}`}>
-                        View Files
-                      </Label>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500 mr-2">No files</span>
-                  )}
-                  {hasEditorRole && (
-                    <Button
-                      onClick={() => handleUpload(notification.id, associateId)}
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                    >
-                      <Upload size={16} className="mr-2" />
-                      Upload
-                    </Button>
-                  )}
-                </TableCell>
-                {hasEditorRole && (
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(notification)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(notification.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                )}
-              </TableRow>
-              {viewFiles[notification.id] &&
-                notification.files &&
-                notification.files.length > 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <UploadedFiles
-                        files={notification.files}
-                        onDownload={(fileId) => {
-                          const file = notification.files?.find(
-                            (f) => f.id === fileId
-                          );
-                          if (file) {
-                            handleDownload(fileId, file.filename);
-                          }
-                        }}
-                        onDelete={handleDeleteFile}
-                        hasEditorRole={hasEditorRole}
-                      />
-                    </TableCell>
-                  </TableRow>
-                )}
-            </React.Fragment>
+            <NotificationRow key={notification.id} notification={notification} />
           ))}
         </TableBody>
       </Table>
