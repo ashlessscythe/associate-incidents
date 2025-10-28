@@ -7,11 +7,16 @@ import process from "process";
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Encryption key - in production, this should be stored securely
-// Use a fixed key for development, or set BACKUP_ENCRYPTION_KEY environment variable
-const ENCRYPTION_KEY =
-  process.env.BACKUP_ENCRYPTION_KEY ||
-  "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456";
+// Encryption key - must be set via environment variable
+const ENCRYPTION_KEY = process.env.BACKUP_ENCRYPTION_KEY;
+
+if (!ENCRYPTION_KEY) {
+  throw new Error("BACKUP_ENCRYPTION_KEY environment variable is required");
+}
+
+if (ENCRYPTION_KEY.length !== 64) {
+  throw new Error("BACKUP_ENCRYPTION_KEY must be exactly 64 characters long");
+}
 const ALGORITHM = "aes-256-cbc";
 
 // Helper function to encrypt data

@@ -4,14 +4,65 @@ import multer from "multer";
 
 const router = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (validateFileType(file.mimetype, file.originalname)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          "Invalid file type. Only PDF, DOC, DOCX, TXT, JPG, PNG, and GIF files are allowed."
+        ),
+        false
+      );
+    }
+  },
+});
 
 // Maximum file size (1MB for regular files, 10MB for templates)
 const MAX_FILE_SIZE = 1024 * 1024;
 const MAX_TEMPLATE_SIZE = 10 * 1024 * 1024;
 
+// Allowed file types
+const ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+];
+
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".txt",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+];
+
+// File type validation function
+function validateFileType(mimetype, filename) {
+  const extension = filename.toLowerCase().substring(filename.lastIndexOf("."));
+
+  return (
+    ALLOWED_MIME_TYPES.includes(mimetype) &&
+    ALLOWED_EXTENSIONS.includes(extension)
+  );
+}
+
 // Upload a file
 router.post("/upload", upload.single("file"), async (req, res) => {
+  // Handle multer errors
+  if (req.fileValidationError) {
+    return res.status(400).json({ error: req.fileValidationError.message });
+  }
   try {
     const {
       associateId,
@@ -26,11 +77,16 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const maxSize = fileType === "TEMPLATE" ? MAX_TEMPLATE_SIZE : MAX_FILE_SIZE;
     if (size > maxSize) {
       const sizeLimit = fileType === "TEMPLATE" ? "10MB" : "1MB";
-      return res.status(400).json({ error: `File size exceeds ${sizeLimit} limit` });
+      return res
+        .status(400)
+        .json({ error: `File size exceeds ${sizeLimit} limit` });
     }
 
+    // Sanitize filename
+    const sanitizedFilename = originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+
     const fileData = {
-      filename: originalname,
+      filename: sanitizedFilename,
       content: buffer,
       mimetype: mimetype,
       size: size,
@@ -142,15 +198,15 @@ router.get("/templates", async (req, res) => {
 router.get("/templates/:type", async (req, res) => {
   try {
     const { type } = req.params;
-    
+
     // Find the most recent template for the specified type
     const template = await prisma.file.findFirst({
-      where: { 
+      where: {
         fileType: "TEMPLATE",
         filename: {
           contains: type === "ca" ? "ca" : "occ",
-          mode: "insensitive"
-        }
+          mode: "insensitive",
+        },
       },
       orderBy: { createdAt: "desc" },
     });
