@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import process from "process";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
+import { passwordResetRateLimit, loginRateLimit } from "../middleware/rateLimit.js";
 import {
   sendWelcomeEmail,
   sendPasswordResetEmail,
@@ -75,12 +76,14 @@ router.post("/auth/register", async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user with pending role
+    // Create user with pending role and inactive status
+    // SECURITY: New users should be inactive by default and require admin approval
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
+        isActive: false, // SECURITY: New users are inactive until approved by admin
         roles: {
           create: {
             role: {
@@ -109,21 +112,10 @@ router.post("/auth/register", async (req, res) => {
       // Don't fail registration if email fails
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
-      },
-      JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
-    res.json({
-      token,
+    // SECURITY: Do NOT issue JWT token for pending users
+    // They must wait for admin approval before accessing the app
+    res.status(201).json({
+      message: "Registration successful. Your account is pending approval by an administrator.",
       user: {
         id: user.id,
         email: user.email,
@@ -140,7 +132,7 @@ router.post("/auth/register", async (req, res) => {
 });
 
 // Login user
-router.post("/auth/login", async (req, res) => {
+router.post("/auth/login", loginRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -216,6 +208,13 @@ router.get("/auth/me", validateToken, async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    // SECURITY: Check if user is active before returning user data
+    if (!user.isActive) {
+      return res.status(403).json({ 
+        message: "Account is deactivated. Please contact an administrator." 
+      });
     }
 
     res.json({
@@ -530,7 +529,7 @@ router.delete(
 );
 
 // Request password reset
-router.post("/auth/forgot-password", async (req, res) => {
+router.post("/auth/forgot-password", passwordResetRateLimit, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -544,6 +543,15 @@ router.post("/auth/forgot-password", async (req, res) => {
     });
 
     if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.json({
+        message:
+          "If an account with that email exists, a password reset link has been sent.",
+      });
+    }
+
+    // SECURITY: Prevent password reset for inactive accounts
+    if (!user.isActive) {
       // Don't reveal if user exists or not for security
       return res.json({
         message:
@@ -587,7 +595,7 @@ router.post("/auth/forgot-password", async (req, res) => {
 });
 
 // Reset password with token
-router.post("/auth/reset-password", async (req, res) => {
+router.post("/auth/reset-password", passwordResetRateLimit, async (req, res) => {
   try {
     const { token, password } = req.body;
 
@@ -597,10 +605,21 @@ router.post("/auth/reset-password", async (req, res) => {
         .json({ message: "Token and password are required" });
     }
 
-    if (password.length < 6) {
+    // SECURITY: Match password requirements with registration (8 chars + complexity)
+    if (!password || password.length < 8) {
       return res
         .status(400)
-        .json({ message: "Password must be at least 6 characters long" });
+        .json({ message: "Password must be at least 8 characters long" });
+    }
+
+    // Check password strength
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+      });
     }
 
     // Find user with valid reset token
@@ -619,9 +638,17 @@ router.post("/auth/reset-password", async (req, res) => {
         .json({ message: "Invalid or expired reset token" });
     }
 
+    // SECURITY: Prevent password reset for inactive accounts
+    if (!user.isActive) {
+      return res
+        .status(403)
+        .json({ message: "Account is deactivated. Please contact an administrator." });
+    }
+
     // Hash new password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // SECURITY: Clear reset token after use (single-use token)
     // Update user password and clear reset token
     await prisma.user.update({
       where: { id: user.id },

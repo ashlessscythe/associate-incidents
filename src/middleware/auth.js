@@ -7,6 +7,24 @@ if (!JWT_SECRET) {
 }
 
 export const validateToken = (req, res, next) => {
+  // SECURITY: Skip token validation for public auth endpoints
+  // Check both with and without /zapi prefix since Express path handling varies
+  const publicPaths = [
+    '/auth/register',
+    '/auth/login',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/zapi/auth/register',
+    '/zapi/auth/login',
+    '/zapi/auth/forgot-password',
+    '/zapi/auth/reset-password'
+  ];
+  
+  const isPublicPath = publicPaths.some(path => req.path.startsWith(path) || req.originalUrl.startsWith(path));
+  if (isPublicPath) {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -21,6 +39,10 @@ export const validateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // SECURITY: Verify user is active (additional check beyond token validation)
+    // Note: This requires a DB lookup, so we'll rely on individual route checks
+    // But we can add a flag check here if needed
 
     // Add decoded user info to request
     req.user = decoded;

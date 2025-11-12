@@ -35,11 +35,21 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       }
 
       if (result.success) {
-        toast.success(isLogin ? 'Login successful!' : 'Registration successful!');
-        onClose();
-        setEmail('');
-        setPassword('');
-        setName('');
+        if (isLogin) {
+          toast.success('Login successful!');
+          onClose();
+          setEmail('');
+          setPassword('');
+          setName('');
+        } else {
+          // SECURITY: Registration doesn't grant immediate access
+          const registerResult = result as { success: boolean; message?: string; error?: string };
+          toast.success(registerResult.message || 'Registration successful! Your account is pending approval by an administrator.');
+          onClose();
+          setEmail('');
+          setPassword('');
+          setName('');
+        }
       } else {
         toast.error(result.error || 'Authentication failed');
       }
