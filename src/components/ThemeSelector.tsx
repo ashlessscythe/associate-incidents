@@ -12,11 +12,11 @@ const themes = [
   { name: "System", value: "system" },
   { name: "Day", value: "day" },
   { name: "Night", value: "night" },
-  { name: "Corporate", value: "corporate" },
   { name: "Ocean", value: "ocean" },
   { name: "Nature", value: "nature" },
   { name: "Volcano", value: "volcano" },
-  { name: "Sky", value: "sky" },
+  { name: "Cyberpunk", value: "cyberpunk" },
+  { name: "Neon", value: "neon" },
 ];
 
 const ThemeSelector: React.FC = () => {
@@ -34,12 +34,9 @@ const ThemeSelector: React.FC = () => {
   return (
     <div className="flex items-center space-x-2">
       <Select
-        value={theme}
+        value={theme || "system"}
         onValueChange={(value) => {
           setTheme(value);
-          // Force a re-render
-          setMounted(false);
-          setTimeout(() => setMounted(true), 0);
         }}
       >
         <SelectTrigger className="w-[150px]">

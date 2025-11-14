@@ -225,11 +225,11 @@ function AppContent() {
     htmlElement.classList.remove(
       "day",
       "night",
-      "corporate",
       "ocean",
       "nature",
       "volcano",
-      "sky"
+      "cyberpunk",
+      "neon"
     );
     htmlElement.classList.add(themeClass);
   }, [theme]);
@@ -357,11 +357,11 @@ function App() {
       value={{
         day: "day",
         night: "night",
-        corporate: "corporate",
         ocean: "ocean",
         nature: "nature",
         volcano: "volcano",
-        sky: "sky",
+        cyberpunk: "cyberpunk",
+        neon: "neon",
       }}
     >
       <AuthProvider>
