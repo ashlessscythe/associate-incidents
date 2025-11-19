@@ -1,6 +1,5 @@
 import express from "express";
 import { prisma } from "../server.js";
-import { Prisma } from "@prisma/client";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
@@ -371,14 +370,12 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
 // Get all available designations
 router.get("/designations", async (req, res) => {
   try {
-    // Get all designation values from the schema
-    const designationValues = [
-      "MH",
-      "CLERK",
-      "OFFICE",
-      "INACTIVE",
-      "NONE",
-    ];
+    // Query PostgreSQL to get enum values
+    const result = await prisma.$queryRaw`
+      SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
+      ORDER BY designation;
+    `;
+    const designationValues = result.map((row) => row.designation);
     res.json(designationValues);
   } catch (error) {
     console.error("Error fetching designations:", error);
@@ -677,6 +674,98 @@ router.get("/associates-points-report", async (req, res) => {
   }
 });
 
+// Get attendance occurrences report
+router.get("/attendance-occurrences-report", async (req, res) => {
+  try {
+    const occurrences = await prisma.attendanceOccurrence.findMany({
+      select: {
+        date: true,
+        notes: true,
+        associate: {
+          select: {
+            designation: true,
+            name: true,
+          },
+        },
+        type: {
+          select: {
+            code: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    const report = occurrences.map((occ) => ({
+      designation: occ.associate.designation,
+      code: occ.type.code,
+      name: occ.associate.name,
+      date: occ.date,
+      notes: occ.notes,
+    }));
+
+    res.json(report);
+  } catch (error) {
+    console.error("Error generating attendance occurrences report:", error);
+    res.status(500).json({ error: "Error generating report" });
+  }
+});
+
+// Download attendance occurrences report as CSV
+router.get("/attendance-occurrences-report/download", async (req, res) => {
+  try {
+    const occurrences = await prisma.attendanceOccurrence.findMany({
+      select: {
+        date: true,
+        notes: true,
+        associate: {
+          select: {
+            designation: true,
+            name: true,
+          },
+        },
+        type: {
+          select: {
+            code: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    const report = occurrences.map((occ) => ({
+      designation: occ.associate.designation,
+      code: occ.type.code,
+      name: occ.associate.name,
+      date: occ.date,
+      notes: occ.notes || "",
+    }));
+
+    // Convert to CSV
+    const csvHeader = "Designation,Code,Name,Date,Notes\n";
+    const csvContent = report
+      .map(
+        (row) =>
+          `${row.designation},${row.code},"${row.name}",${new Date(row.date).toLocaleDateString()},"${row.notes.replace(/"/g, '""')}"`
+      )
+      .join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=attendance-occurrences-report.csv"
+    );
+    res.send(csvHeader + csvContent);
+  } catch (error) {
+    console.error("Error downloading attendance occurrences report:", error);
+    res.status(500).json({ error: "Error generating report" });
+  }
+});
+
 // Toggle associate active status
 router.put("/associates/:id/toggle-active", async (req, res) => {
   try {
@@ -684,7 +773,7 @@ router.put("/associates/:id/toggle-active", async (req, res) => {
     const { isActive } = req.body;
 
     const associate = await prisma.associate.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!associate) {
@@ -695,7 +784,7 @@ router.put("/associates/:id/toggle-active", async (req, res) => {
       where: { id },
       data: {
         isActive: !isActive,
-      }
+      },
     });
 
     res.json(updatedAssociate);

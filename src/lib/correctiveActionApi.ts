@@ -66,3 +66,8 @@ export const updateCorrectiveAction = async (
 export const deleteCorrectiveAction = async (id: string): Promise<void> => {
   await api.delete(`/corrective-actions/${id}`);
 };
+
+export async function getRuleTypes(): Promise<string[]> {
+  const res = await api.get<string[]>("/rule-types");
+  return res.data;
+}

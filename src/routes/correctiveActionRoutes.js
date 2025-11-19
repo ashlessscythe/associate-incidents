@@ -124,6 +124,22 @@ router.delete("/corrective-actions/:id", async (req, res) => {
   }
 });
 
+// Get all available rule types
+router.get("/rule-types", async (req, res) => {
+  try {
+    // Query PostgreSQL to get enum values
+    const result = await prisma.$queryRaw`
+      SELECT unnest(enum_range(NULL::"RuleType"))::text AS rule_type
+      ORDER BY rule_type;
+    `;
+    const ruleTypeValues = result.map((row) => row.rule_type);
+    res.json(ruleTypeValues);
+  } catch (error) {
+    console.error("Error fetching rule types:", error);
+    res.status(500).json({ error: "Error fetching rule types" });
+  }
+});
+
 // Get CA by type with info
 router.get("/ca-by-type-with-info", async (req, res) => {
   try {
