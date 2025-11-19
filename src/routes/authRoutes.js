@@ -685,4 +685,64 @@ router.get("/auth/email-status", validateToken, requireAdmin, (req, res) => {
   }
 });
 
+// Test email sending (admin only)
+router.post("/admin/test-email", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { emailType, userEmail, userName, resetToken } = req.body;
+
+    if (!emailType) {
+      return res.status(400).json({ message: "Email type is required" });
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ message: "User email is required" });
+    }
+
+    let result;
+
+    switch (emailType) {
+      case "welcome":
+        if (!userName) {
+          return res.status(400).json({ message: "User name is required for welcome email" });
+        }
+        result = await sendWelcomeEmail(userEmail, userName);
+        break;
+
+      case "password-reset":
+        if (!resetToken) {
+          return res.status(400).json({ message: "Reset token is required for password reset email" });
+        }
+        result = await sendPasswordResetEmail(userEmail, resetToken);
+        break;
+
+      case "password-reset-success":
+        if (!userName) {
+          return res.status(400).json({ message: "User name is required for password reset success email" });
+        }
+        result = await sendPasswordResetSuccessEmail(userEmail, userName);
+        break;
+
+      default:
+        return res.status(400).json({ message: "Invalid email type" });
+    }
+
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: `${emailType} email sent successfully`,
+        data: result.data 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to send email",
+        error: result.error 
+      });
+    }
+  } catch (error) {
+    console.error("Test email error:", error);
+    res.status(500).json({ message: "Failed to send test email" });
+  }
+});
+
 export default router;

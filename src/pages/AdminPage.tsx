@@ -5,6 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
 import { uploadTemplate, getTemplates, Template } from "@/lib/templateApi";
@@ -20,6 +27,8 @@ import {
   AlertTriangle,
   FileText,
   RefreshCw,
+  Mail,
+  Send,
 } from "lucide-react";
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
 
@@ -67,6 +76,14 @@ export default function AdminPage() {
   const [restoreConfirmText, setRestoreConfirmText] = useState("");
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [selectedEmailType, setSelectedEmailType] = useState<string>("");
+  const [testEmailData, setTestEmailData] = useState({
+    userEmail: "",
+    userName: "",
+    resetToken: "",
+  });
+  const [showPlaceholderWarning, setShowPlaceholderWarning] = useState(false);
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -320,6 +337,74 @@ export default function AdminPage() {
     } finally {
       setIsRestoring(false);
     }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!selectedEmailType) {
+      toast.error("Please select an email type");
+      return;
+    }
+
+    if (!testEmailData.userEmail) {
+      toast.error("Email address is required");
+      return;
+    }
+
+    // Check for missing required fields
+    const missingFields: string[] = [];
+    if (selectedEmailType === "welcome" && !testEmailData.userName) {
+      missingFields.push("User Name");
+    }
+    if (selectedEmailType === "password-reset" && !testEmailData.resetToken) {
+      missingFields.push("Reset Token");
+    }
+    if (
+      selectedEmailType === "password-reset-success" &&
+      !testEmailData.userName
+    ) {
+      missingFields.push("User Name");
+    }
+
+    if (missingFields.length > 0) {
+      setShowPlaceholderWarning(true);
+      return;
+    }
+
+    await sendTestEmail();
+  };
+
+  const sendTestEmail = async () => {
+    setIsSendingTestEmail(true);
+    try {
+      // Use placeholder values if fields are empty
+      const emailData = {
+        emailType: selectedEmailType,
+        userEmail: testEmailData.userEmail,
+        userName: testEmailData.userName || "Test User",
+        resetToken: testEmailData.resetToken || "test-reset-token-12345",
+      };
+
+      const response = await api.post("/admin/test-email", emailData);
+
+      if (response.data.success) {
+        toast.success(response.data.message || "Test email sent successfully");
+        // Reset form
+        setSelectedEmailType("");
+        setTestEmailData({ userEmail: "", userName: "", resetToken: "" });
+        setShowPlaceholderWarning(false);
+      } else {
+        toast.error(response.data.message || "Failed to send test email");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to send test email");
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
+
+  const handleConfirmPlaceholderWarning = () => {
+    setShowPlaceholderWarning(false);
+    sendTestEmail();
   };
 
   if (loading) {
@@ -699,6 +784,134 @@ export default function AdminPage() {
         </CardContent>
       </Card>
 
+      {/* Email Testing Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Email Testing
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="emailType">Email Type</Label>
+              <Select
+                value={selectedEmailType}
+                onValueChange={setSelectedEmailType}
+              >
+                <SelectTrigger id="emailType" className="mt-2">
+                  <SelectValue placeholder="Select an email type to test" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="welcome">Welcome Email</SelectItem>
+                  <SelectItem value="password-reset">
+                    Password Reset Email
+                  </SelectItem>
+                  <SelectItem value="password-reset-success">
+                    Password Reset Success Email
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedEmailType && (
+              <div className="space-y-4 border rounded-lg p-4">
+                <div>
+                  <Label htmlFor="testUserEmail">
+                    Email Address <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="testUserEmail"
+                    type="email"
+                    value={testEmailData.userEmail}
+                    onChange={(e) =>
+                      setTestEmailData({
+                        ...testEmailData,
+                        userEmail: e.target.value,
+                      })
+                    }
+                    placeholder="test@example.com"
+                    className="mt-2"
+                  />
+                </div>
+
+                {(selectedEmailType === "welcome" ||
+                  selectedEmailType === "password-reset-success") && (
+                  <div>
+                    <Label htmlFor="testUserName">User Name</Label>
+                    <Input
+                      id="testUserName"
+                      type="text"
+                      value={testEmailData.userName}
+                      onChange={(e) =>
+                        setTestEmailData({
+                          ...testEmailData,
+                          userName: e.target.value,
+                        })
+                      }
+                      placeholder="Test User"
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      If not provided, "Test User" will be used
+                    </p>
+                  </div>
+                )}
+
+                {selectedEmailType === "password-reset" && (
+                  <div>
+                    <Label htmlFor="testResetToken">Reset Token</Label>
+                    <Input
+                      id="testResetToken"
+                      type="text"
+                      value={testEmailData.resetToken}
+                      onChange={(e) =>
+                        setTestEmailData({
+                          ...testEmailData,
+                          resetToken: e.target.value,
+                        })
+                      }
+                      placeholder="test-reset-token-12345"
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      If not provided, "test-reset-token-12345" will be used
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleSendTestEmail}
+                  disabled={isSendingTestEmail || !testEmailData.userEmail}
+                  className="w-full sm:w-auto"
+                >
+                  {isSendingTestEmail ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Test Email
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This tool allows you to test email
+                templates. If required fields are not provided, placeholder
+                values will be used and you will be warned before sending.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* New User Modal */}
       {showNewUserForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -1006,6 +1219,87 @@ export default function AdminPage() {
                       setRestoreFile(null);
                       setRestoreConfirmText("");
                     }}
+                    className="w-full sm:w-auto"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Placeholder Warning Modal */}
+      {showPlaceholderWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-yellow-600">
+                <AlertTriangle className="h-5 w-5" />
+                Missing Required Values
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-yellow-800">
+                    <strong>⚠️ Warning:</strong> Some required fields are
+                    missing. The following placeholder values will be used:
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {selectedEmailType === "welcome" &&
+                    !testEmailData.userName && (
+                      <div className="text-sm">
+                        <strong>User Name:</strong> "Test User"
+                      </div>
+                    )}
+                  {selectedEmailType === "password-reset" &&
+                    !testEmailData.resetToken && (
+                      <div className="text-sm">
+                        <strong>Reset Token:</strong> "test-reset-token-12345"
+                      </div>
+                    )}
+                  {selectedEmailType === "password-reset-success" &&
+                    !testEmailData.userName && (
+                      <div className="text-sm">
+                        <strong>User Name:</strong> "Test User"
+                      </div>
+                    )}
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-sm text-blue-800">
+                    <strong>Note:</strong> These are placeholder values for
+                    testing purposes only. In production, all fields should be
+                    properly filled.
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    onClick={handleConfirmPlaceholderWarning}
+                    disabled={isSendingTestEmail}
+                    className="w-full sm:w-auto"
+                  >
+                    {isSendingTestEmail ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send with Placeholders
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPlaceholderWarning(false)}
+                    disabled={isSendingTestEmail}
                     className="w-full sm:w-auto"
                   >
                     Cancel
