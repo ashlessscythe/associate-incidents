@@ -367,16 +367,30 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
   }
 });
 
-// Get all available designations
+// Get all available designations (only visible ones)
 router.get("/designations", async (req, res) => {
   try {
-    // Query PostgreSQL to get enum values
-    const result = await prisma.$queryRaw`
+    // Get all designation enum values
+    const allDesignations = await prisma.$queryRaw`
       SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
       ORDER BY designation;
     `;
-    const designationValues = result.map((row) => row.designation);
-    res.json(designationValues);
+    
+    // Get visibility settings
+    const visibilitySettings = await prisma.designationVisibility.findMany();
+    const visibilityMap = new Map(
+      visibilitySettings.map((v) => [v.designation, v.isVisible])
+    );
+    
+    // Filter to only visible designations (default to visible if not in DB)
+    const visibleDesignations = allDesignations
+      .map((row) => row.designation)
+      .filter((designation) => {
+        const isVisible = visibilityMap.get(designation);
+        return isVisible !== false; // Default to visible if not set
+      });
+    
+    res.json(visibleDesignations);
   } catch (error) {
     console.error("Error fetching designations:", error);
     res.status(500).json({ error: "Error fetching designations" });

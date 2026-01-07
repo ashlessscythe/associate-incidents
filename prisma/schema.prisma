@@ -11,17 +11,17 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
-  password          String
-  name              String
-  isActive          Boolean   @default(true)
-  isAdmin           Boolean   @default(false)
-  resetToken        String?
-  resetTokenExpiry  DateTime?
-  roles             UserRole[]
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id               String     @id @default(uuid())
+  email            String     @unique
+  password         String
+  name             String
+  isActive         Boolean    @default(true)
+  isAdmin          Boolean    @default(false)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  roles            UserRole[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 }
 
 model Role {
@@ -44,37 +44,37 @@ model UserRole {
 }
 
 model Associate {
-  id                  String                @id @default(uuid())
-  name                String                @unique
-  ssoid               String?               @unique
-  isActive            Boolean               @default(true)
-  designation         Designation           @default(NONE)
-  currentPoints       Float                 @default(0)
-  locationId          String?
-  location            Location?             @relation(fields: [locationId], references: [id])
-  departmentId        String?
-  department          Department?           @relation(fields: [departmentId], references: [id])
-  occurrences         AttendanceOccurrence[]
-  correctiveActions   CorrectiveAction[]
-  exportRecords       ExportRecord[]
-  notifications       Notification[]
-  files               File[]
+  id                String                 @id @default(uuid())
+  name              String                 @unique
+  ssoid             String?                @unique
+  isActive          Boolean                @default(true)
+  designation       Designation            @default(NONE)
+  currentPoints     Float                  @default(0)
+  locationId        String?
+  location          Location?              @relation(fields: [locationId], references: [id])
+  departmentId      String?
+  department        Department?            @relation(fields: [departmentId], references: [id])
+  occurrences       AttendanceOccurrence[]
+  correctiveActions CorrectiveAction[]
+  exportRecords     ExportRecord[]
+  notifications     Notification[]
+  files             File[]
 }
 
 model Location {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  associates  Associate[]
+  id         String      @id @default(uuid())
+  name       String      @unique
+  associates Associate[]
 }
 
 model Department {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  associates  Associate[]
+  id         String      @id @default(uuid())
+  name       String      @unique
+  associates Associate[]
 }
 
 model ExportRecord {
-  id          String  @id @default(uuid())
+  id          String    @id @default(uuid())
   associateId String
   associate   Associate @relation(fields: [associateId], references: [id])
   exportedBy  String
@@ -92,50 +92,50 @@ model OccurrenceType {
 }
 
 model AttendanceOccurrence {
-  id              String         @id @default(uuid())
-  associateId     String
-  associate       Associate      @relation(fields: [associateId], references: [id])
-  typeId          String
-  type            OccurrenceType @relation(fields: [typeId], references: [id])
-  date            DateTime
-  notes           String         @default("")
-  pointsAtTime    Float
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  files           File[]
+  id           String         @id @default(uuid())
+  associateId  String
+  associate    Associate      @relation(fields: [associateId], references: [id])
+  typeId       String
+  type         OccurrenceType @relation(fields: [typeId], references: [id])
+  date         DateTime
+  notes        String         @default("")
+  pointsAtTime Float
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  files        File[]
 }
 
 model Rule {
-  id          String   @id @default(uuid())
-  code        String   @unique
+  id          String             @id @default(uuid())
+  code        String             @unique
   description String
   type        RuleType
   actions     CorrectiveAction[]
 }
 
 model NotificationLevel {
-  id              String        @id @default(uuid())
-  designation     Designation
-  level           Int
-  name            String
-  pointThreshold  Float
+  id             String      @id @default(uuid())
+  designation    Designation
+  level          Int
+  name           String
+  pointThreshold Float
 
   // for upsert
   @@unique([designation, level])
 }
 
 model Notification {
-  id            String         @id @default(uuid())
-  associateId   String
-  associate     Associate      @relation(fields: [associateId], references: [id])
-  date          DateTime
-  type          NotificationType
-  level         String
-  totalPoints   Float?
-  description   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  files         File[]         // Add this line to create the relation with File model
+  id          String           @id @default(uuid())
+  associateId String
+  associate   Associate        @relation(fields: [associateId], references: [id])
+  date        DateTime
+  type        NotificationType
+  level       String
+  totalPoints Float?
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  files       File[] // Add this line to create the relation with File model
 }
 
 model CorrectiveAction {
@@ -144,7 +144,7 @@ model CorrectiveAction {
   associate   Associate @relation(fields: [associateId], references: [id])
   ruleId      String
   rule        Rule      @relation(fields: [ruleId], references: [id])
-  level       Int       // 1 to 4, representing the notification level
+  level       Int // 1 to 4, representing the notification level
   description String    @default("")
   date        DateTime
   createdAt   DateTime  @default(now())
@@ -153,22 +153,22 @@ model CorrectiveAction {
 }
 
 model File {
-  id                    String               @id @default(uuid())
-  filename              String
-  content               Bytes
-  mimetype              String
-  size                  Int
-  fileType              FileType             @default(ASSOCIATE_FILE)
-  associate             Associate?           @relation(fields: [associateId], references: [id])
-  associateId           String?
-  attendanceOccurrence  AttendanceOccurrence? @relation(fields: [attendanceOccurrenceId], references: [id])
+  id                     String                @id @default(uuid())
+  filename               String
+  content                Bytes
+  mimetype               String
+  size                   Int
+  fileType               FileType              @default(ASSOCIATE_FILE)
+  associate              Associate?            @relation(fields: [associateId], references: [id])
+  associateId            String?
+  attendanceOccurrence   AttendanceOccurrence? @relation(fields: [attendanceOccurrenceId], references: [id])
   attendanceOccurrenceId String?
-  correctiveAction      CorrectiveAction?    @relation(fields: [correctiveActionId], references: [id])
-  correctiveActionId    String?
-  notification          Notification?        @relation(fields: [notificationId], references: [id])
-  notificationId        String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  correctiveAction       CorrectiveAction?     @relation(fields: [correctiveActionId], references: [id])
+  correctiveActionId     String?
+  notification           Notification?         @relation(fields: [notificationId], references: [id])
+  notificationId         String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 }
 
 enum NotificationType {
@@ -196,4 +196,12 @@ enum RuleType {
 enum FileType {
   ASSOCIATE_FILE
   TEMPLATE
+}
+
+model DesignationVisibility {
+  id          String      @id @default(uuid())
+  designation Designation @unique
+  isVisible   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }

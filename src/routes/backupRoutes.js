@@ -74,6 +74,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
       correctiveActions,
       files,
       exportRecords,
+      designationVisibility,
     ] = await Promise.all([
       prisma.user.findMany({
         include: {
@@ -128,6 +129,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
           associate: true,
         },
       }),
+      prisma.designationVisibility.findMany(),
     ]);
 
     // Create backup object
@@ -151,6 +153,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
           correctiveActions: correctiveActions.length,
           files: files.length,
           exportRecords: exportRecords.length,
+          designationVisibility: designationVisibility.length,
         },
       },
       data: {
@@ -168,6 +171,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
         correctiveActions,
         files,
         exportRecords,
+        designationVisibility,
       },
     };
 
@@ -267,6 +271,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
       await tx.occurrenceType.deleteMany();
       await tx.rule.deleteMany();
       await tx.notificationLevel.deleteMany();
+      await tx.designationVisibility.deleteMany();
       await tx.user.deleteMany();
       await tx.role.deleteMany();
 
@@ -387,7 +392,23 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 6. Restore associates
+      // 6. Restore designation visibility (before associates, as it's independent)
+      if (backupData.data.designationVisibility && backupData.data.designationVisibility.length > 0) {
+        await tx.designationVisibility.createMany({
+          data: backupData.data.designationVisibility.map((dv) => ({
+            id: dv.id,
+            designation: dv.designation,
+            isVisible: dv.isVisible,
+            createdAt: new Date(dv.createdAt),
+            updatedAt: new Date(dv.updatedAt),
+          })),
+        });
+        console.log(
+          `Restored ${backupData.data.designationVisibility.length} designation visibility settings`
+        );
+      }
+
+      // 7. Restore associates
       if (backupData.data.associates.length > 0) {
         await tx.associate.createMany({
           data: backupData.data.associates.map((associate) => ({
@@ -404,7 +425,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         console.log(`Restored ${backupData.data.associates.length} associates`);
       }
 
-      // 7. Restore attendance occurrences
+      // 8. Restore attendance occurrences
       if (backupData.data.attendanceOccurrences.length > 0) {
         await tx.attendanceOccurrence.createMany({
           data: backupData.data.attendanceOccurrences.map((occurrence) => ({
@@ -423,7 +444,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 8. Restore corrective actions
+      // 9. Restore corrective actions
       if (backupData.data.correctiveActions.length > 0) {
         await tx.correctiveAction.createMany({
           data: backupData.data.correctiveActions.map((action) => ({
@@ -442,7 +463,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 9. Restore notifications
+      // 10. Restore notifications
       if (backupData.data.notifications.length > 0) {
         await tx.notification.createMany({
           data: backupData.data.notifications.map((notification) => ({
@@ -462,7 +483,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 10. Restore export records
+      // 11. Restore export records
       if (backupData.data.exportRecords.length > 0) {
         await tx.exportRecord.createMany({
           data: backupData.data.exportRecords.map((record) => ({
@@ -479,7 +500,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 11. Restore files (last, as they reference other entities)
+      // 12. Restore files (last, as they reference other entities)
       if (backupData.data.files.length > 0) {
         await tx.file.createMany({
           data: backupData.data.files.map((file) => ({

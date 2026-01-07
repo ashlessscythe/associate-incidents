@@ -115,3 +115,36 @@ export const toggleAssociateActive = async (
   );
   return response.data;
 };
+
+export interface DesignationVisibility {
+  designation: string;
+  isVisible: boolean;
+}
+
+export const getDesignationVisibility = async (): Promise<DesignationVisibility[]> => {
+  try {
+    const response = await api.get<{ designations: DesignationVisibility[] }>(
+      "/admin/designations"
+    );
+    return response.data.designations;
+  } catch (error) {
+    console.error("Error fetching designation visibility:", error);
+    throw error;
+  }
+};
+
+export const updateDesignationVisibility = async (
+  designation: string,
+  isVisible: boolean
+): Promise<DesignationVisibility> => {
+  try {
+    const response = await api.patch<{ designation: DesignationVisibility }>(
+      `/admin/designations/${designation}`,
+      { isVisible }
+    );
+    return response.data.designation;
+  } catch (error) {
+    console.error("Error updating designation visibility:", error);
+    throw error;
+  }
+};

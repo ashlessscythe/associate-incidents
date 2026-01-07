@@ -40,6 +40,7 @@ async function clearData() {
   await prisma.rule.deleteMany(); // clear rules
   await prisma.notificationLevel.deleteMany(); // clear notification levels
   await prisma.occurrenceType.deleteMany(); // clear occurrence types
+  await prisma.designationVisibility.deleteMany(); // clear designation visibility
   await prisma.userRole.deleteMany(); // clear user roles (must be before users and roles)
   await prisma.user.deleteMany(); // clear users
   await prisma.role.deleteMany(); // clear roles

@@ -351,6 +351,71 @@ router.post("/admin/roles", validateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Get all designations with visibility settings
+router.get("/admin/designations", validateToken, requireAdmin, async (req, res) => {
+  try {
+    // Get all designation enum values
+    const allDesignations = await prisma.$queryRaw`
+      SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
+      ORDER BY designation;
+    `;
+    
+    // Get visibility settings
+    const visibilitySettings = await prisma.designationVisibility.findMany();
+    const visibilityMap = new Map(
+      visibilitySettings.map((v) => [v.designation, v.isVisible])
+    );
+    
+    // Combine with visibility status (default to visible if not in DB)
+    const designations = allDesignations.map((row) => ({
+      designation: row.designation,
+      isVisible: visibilityMap.get(row.designation) !== false,
+    }));
+    
+    res.json({ designations });
+  } catch (error) {
+    console.error("Get designations error:", error);
+    res.status(500).json({ message: "Failed to get designations" });
+  }
+});
+
+// Update designation visibility
+router.patch(
+  "/admin/designations/:designation",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { designation } = req.params;
+      const { isVisible } = req.body;
+
+      // Validate designation enum value
+      const validDesignations = await prisma.$queryRaw`
+        SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
+      `;
+      const isValid = validDesignations.some(
+        (d) => d.designation === designation
+      );
+
+      if (!isValid) {
+        return res.status(400).json({ message: "Invalid designation" });
+      }
+
+      // Upsert visibility setting
+      const visibility = await prisma.designationVisibility.upsert({
+        where: { designation },
+        update: { isVisible },
+        create: { designation, isVisible },
+      });
+
+      res.json({ designation: visibility });
+    } catch (error) {
+      console.error("Update designation visibility error:", error);
+      res.status(500).json({ message: "Failed to update designation visibility" });
+    }
+  }
+);
+
 router.patch(
   "/admin/users/:id",
   validateToken,

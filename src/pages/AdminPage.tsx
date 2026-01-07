@@ -16,6 +16,11 @@ import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
 import { uploadTemplate, getTemplates, Template } from "@/lib/templateApi";
 import {
+  getDesignationVisibility,
+  updateDesignationVisibility,
+  DesignationVisibility,
+} from "@/lib/associateApi";
+import {
   Upload,
   FileSpreadsheet,
   CheckCircle,
@@ -84,6 +89,10 @@ export default function AdminPage() {
   });
   const [showPlaceholderWarning, setShowPlaceholderWarning] = useState(false);
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+  const [designationVisibility, setDesignationVisibility] = useState<
+    DesignationVisibility[]
+  >([]);
+  const [loadingDesignations, setLoadingDesignations] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -91,15 +100,17 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersResponse, rolesResponse, templatesResponse] =
+      const [usersResponse, rolesResponse, templatesResponse, designationsResponse] =
         await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/roles"),
           getTemplates(),
+          getDesignationVisibility(),
         ]);
       setUsers(usersResponse.data.users);
       setRoles(rolesResponse.data.roles);
       setTemplates(templatesResponse);
+      setDesignationVisibility(designationsResponse);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -407,6 +418,28 @@ export default function AdminPage() {
     sendTestEmail();
   };
 
+  const handleToggleDesignationVisibility = async (
+    designation: string,
+    isVisible: boolean
+  ) => {
+    try {
+      setLoadingDesignations(true);
+      await updateDesignationVisibility(designation, isVisible);
+      setDesignationVisibility((prev) =>
+        prev.map((d) =>
+          d.designation === designation ? { ...d, isVisible } : d
+        )
+      );
+      toast.success("Designation visibility updated");
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to update designation visibility"
+      );
+    } finally {
+      setLoadingDesignations(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading...</div>;
   }
@@ -529,6 +562,67 @@ export default function AdminPage() {
                 delete all existing data.
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Designation Management Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Designation Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Control which designations appear in filters and selection dropdowns
+              throughout the application. Disabled designations will be hidden from
+              users but existing data will remain unchanged.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {designationVisibility.map((item) => (
+                <div
+                  key={item.designation}
+                  className="border rounded-lg p-4 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{item.designation}</h3>
+                      <p className="text-xs text-gray-500">
+                        {item.isVisible ? "Visible" : "Hidden"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={item.isVisible}
+                      onCheckedChange={(checked) =>
+                        handleToggleDesignationVisibility(
+                          item.designation,
+                          checked
+                        )
+                      }
+                      disabled={loadingDesignations}
+                    />
+                    {item.isVisible ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {designationVisibility.length === 0 && !loading && (
+              <div className="text-center py-8 text-gray-500">
+                No designations found
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
