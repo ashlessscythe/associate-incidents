@@ -12,7 +12,7 @@ const upload = multer({
     } else {
       cb(
         new Error(
-          "Invalid file type. Only PDF, DOC, DOCX, TXT, JPG, PNG, and GIF files are allowed."
+          "Invalid file type. Only PDF, DOC, DOCX, TXT, JPG, PNG, GIF, XLSX, and XLS files are allowed."
         ),
         false
       );
@@ -29,6 +29,8 @@ const ALLOWED_MIME_TYPES = [
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+  "application/vnd.ms-excel", // .xls
   "text/plain",
   "image/jpeg",
   "image/jpg",
@@ -45,6 +47,8 @@ const ALLOWED_EXTENSIONS = [
   ".jpeg",
   ".png",
   ".gif",
+  ".xlsx",
+  ".xls",
 ];
 
 // File type validation function

@@ -205,3 +205,21 @@ model DesignationVisibility {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
+
+enum TemplateType {
+  CA
+  OCC
+}
+
+model TemplateMapping {
+  id          String       @id @default(uuid())
+  templateType TemplateType
+  dataPoint   String       // e.g., "associateName", "location", "notificationLevels", "notifications"
+  cellValue   String       // JSON string containing cell reference(s) - can be single cell "A7" or array ["B9", "E9"] or object {"date": "B24", "type": "D24"}
+  description String?      // Human-readable description
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([templateType, dataPoint])
+  @@index([templateType])
+}

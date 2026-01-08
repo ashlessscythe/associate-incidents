@@ -810,4 +810,133 @@ router.post("/admin/test-email", validateToken, requireAdmin, async (req, res) =
   }
 });
 
+// Template Mapping routes
+router.get("/admin/template-mappings", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { templateType } = req.query;
+    const where = templateType ? { templateType } : {};
+    
+    const mappings = await prisma.templateMapping.findMany({
+      where,
+      orderBy: [{ templateType: "asc" }, { dataPoint: "asc" }],
+    });
+
+    res.json({ mappings });
+  } catch (error) {
+    console.error("Get template mappings error:", error);
+    res.status(500).json({ message: "Failed to get template mappings" });
+  }
+});
+
+router.get("/admin/template-mappings/:id", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const mapping = await prisma.templateMapping.findUnique({
+      where: { id },
+    });
+
+    if (!mapping) {
+      return res.status(404).json({ message: "Template mapping not found" });
+    }
+
+    res.json({ mapping });
+  } catch (error) {
+    console.error("Get template mapping error:", error);
+    res.status(500).json({ message: "Failed to get template mapping" });
+  }
+});
+
+router.post("/admin/template-mappings", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { templateType, dataPoint, cellValue, description } = req.body;
+
+    if (!templateType || !dataPoint || !cellValue) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Validate templateType enum
+    if (!["CA", "OCC"].includes(templateType)) {
+      return res.status(400).json({ message: "Invalid template type" });
+    }
+
+    // Validate cellValue is valid JSON
+    let parsedCellValue;
+    try {
+      parsedCellValue = typeof cellValue === "string" ? JSON.parse(cellValue) : cellValue;
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid cellValue format. Must be valid JSON." });
+    }
+
+    const mapping = await prisma.templateMapping.upsert({
+      where: {
+        templateType_dataPoint: {
+          templateType,
+          dataPoint,
+        },
+      },
+      update: {
+        cellValue: JSON.stringify(parsedCellValue),
+        description,
+      },
+      create: {
+        templateType,
+        dataPoint,
+        cellValue: JSON.stringify(parsedCellValue),
+        description,
+      },
+    });
+
+    res.json({ mapping });
+  } catch (error) {
+    console.error("Create/update template mapping error:", error);
+    res.status(500).json({ message: "Failed to create/update template mapping" });
+  }
+});
+
+router.patch("/admin/template-mappings/:id", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cellValue, description } = req.body;
+
+    const updateData = {};
+    if (cellValue !== undefined) {
+      // Validate cellValue is valid JSON
+      let parsedCellValue;
+      try {
+        parsedCellValue = typeof cellValue === "string" ? JSON.parse(cellValue) : cellValue;
+        updateData.cellValue = JSON.stringify(parsedCellValue);
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid cellValue format. Must be valid JSON." });
+      }
+    }
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    const mapping = await prisma.templateMapping.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json({ mapping });
+  } catch (error) {
+    console.error("Update template mapping error:", error);
+    res.status(500).json({ message: "Failed to update template mapping" });
+  }
+});
+
+router.delete("/admin/template-mappings/:id", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.templateMapping.delete({
+      where: { id },
+    });
+
+    res.json({ message: "Template mapping deleted successfully" });
+  } catch (error) {
+    console.error("Delete template mapping error:", error);
+    res.status(500).json({ message: "Failed to delete template mapping" });
+  }
+});
+
 export default router;

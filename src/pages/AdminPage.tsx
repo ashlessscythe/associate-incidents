@@ -34,7 +34,9 @@ import {
   RefreshCw,
   Mail,
   Send,
+  Settings,
 } from "lucide-react";
+import TemplateMappingConfig from "@/components/admin/TemplateMappingConfig";
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
 
 interface User {
@@ -93,6 +95,7 @@ export default function AdminPage() {
     DesignationVisibility[]
   >([]);
   const [loadingDesignations, setLoadingDesignations] = useState(false);
+  const [showTemplateMappingConfig, setShowTemplateMappingConfig] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -755,6 +758,20 @@ export default function AdminPage() {
               Excel files (.xlsx or .xls) with a maximum size of 10MB.
             </p>
           </div>
+
+          <div className="mt-4 pt-4 border-t">
+            <Button
+              onClick={() => setShowTemplateMappingConfig(true)}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Configure Template Mappings
+            </Button>
+            <p className="text-xs text-gray-500 mt-2">
+              Configure which Excel cells correspond to which data points (e.g., associate name, location, etc.)
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -1404,6 +1421,12 @@ export default function AdminPage() {
           </Card>
         </div>
       )}
+
+      {/* Template Mapping Config Modal */}
+      <TemplateMappingConfig
+        isOpen={showTemplateMappingConfig}
+        onClose={() => setShowTemplateMappingConfig(false)}
+      />
     </div>
   );
 }
