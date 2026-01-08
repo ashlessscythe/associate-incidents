@@ -859,12 +859,31 @@ router.post("/admin/template-mappings", validateToken, requireAdmin, async (req,
       return res.status(400).json({ message: "Invalid template type" });
     }
 
-    // Validate cellValue is valid JSON
-    let parsedCellValue;
-    try {
-      parsedCellValue = typeof cellValue === "string" ? JSON.parse(cellValue) : cellValue;
-    } catch (e) {
-      return res.status(400).json({ message: "Invalid cellValue format. Must be valid JSON." });
+    // Prepare cellValue for storage
+    // - If it's an object/array, JSON.stringify it
+    // - If it's a string that looks like JSON, try to normalize it, but fall back safely
+    // - If it's a simple string like "A7", store as-is
+    let storedCellValue;
+    if (typeof cellValue === "string") {
+      const trimmed = cellValue.trim();
+      if (
+        trimmed.startsWith("{") ||
+        trimmed.startsWith("[") ||
+        trimmed.startsWith("\"")
+      ) {
+        try {
+          storedCellValue = JSON.stringify(JSON.parse(trimmed));
+        } catch (e) {
+          // Not valid JSON, just store the raw string
+          storedCellValue = cellValue;
+        }
+      } else {
+        // Simple string, e.g. "A7"
+        storedCellValue = cellValue;
+      }
+    } else {
+      // Objects/arrays/numbers/booleans
+      storedCellValue = JSON.stringify(cellValue);
     }
 
     const mapping = await prisma.templateMapping.upsert({
@@ -875,13 +894,13 @@ router.post("/admin/template-mappings", validateToken, requireAdmin, async (req,
         },
       },
       update: {
-        cellValue: JSON.stringify(parsedCellValue),
+        cellValue: storedCellValue,
         description,
       },
       create: {
         templateType,
         dataPoint,
-        cellValue: JSON.stringify(parsedCellValue),
+        cellValue: storedCellValue,
         description,
       },
     });
@@ -900,14 +919,28 @@ router.patch("/admin/template-mappings/:id", validateToken, requireAdmin, async 
 
     const updateData = {};
     if (cellValue !== undefined) {
-      // Validate cellValue is valid JSON
-      let parsedCellValue;
-      try {
-        parsedCellValue = typeof cellValue === "string" ? JSON.parse(cellValue) : cellValue;
-        updateData.cellValue = JSON.stringify(parsedCellValue);
-      } catch (e) {
-        return res.status(400).json({ message: "Invalid cellValue format. Must be valid JSON." });
+      // Prepare cellValue for storage (same rules as POST)
+      let storedCellValue;
+      if (typeof cellValue === "string") {
+        const trimmed = cellValue.trim();
+        if (
+          trimmed.startsWith("{") ||
+          trimmed.startsWith("[") ||
+          trimmed.startsWith("\"")
+        ) {
+          try {
+            storedCellValue = JSON.stringify(JSON.parse(trimmed));
+          } catch (e) {
+            storedCellValue = cellValue;
+          }
+        } else {
+          storedCellValue = cellValue;
+        }
+      } else {
+        storedCellValue = JSON.stringify(cellValue);
       }
+
+      updateData.cellValue = storedCellValue;
     }
     if (description !== undefined) {
       updateData.description = description;

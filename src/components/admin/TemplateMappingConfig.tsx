@@ -102,20 +102,66 @@ export default function TemplateMappingConfig({
     description: "",
   });
   const [showNewForm, setShowNewForm] = useState(false);
+  const [autoLoadedTypes, setAutoLoadedTypes] = useState<Set<"CA" | "OCC">>(new Set());
 
   useEffect(() => {
     if (isOpen) {
-      loadMappings();
+      // Auto-load defaults if no mappings exist for this template type and we haven't already tried
+      const shouldAutoLoad = !autoLoadedTypes.has(selectedTemplateType);
+      loadMappings(shouldAutoLoad).then((defaultsLoaded) => {
+        if (defaultsLoaded) {
+          setAutoLoadedTypes((prev) => new Set(prev).add(selectedTemplateType));
+        }
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedTemplateType]);
 
-  const loadMappings = async () => {
+  // Reset auto-loaded types when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setAutoLoadedTypes(new Set());
+    }
+  }, [isOpen]);
+
+  const loadMappings = async (autoLoadDefaults = false): Promise<boolean> => {
     setLoading(true);
     try {
       const data = await getTemplateMappings(selectedTemplateType);
+
+      // Figure out which defaults are missing for this template type
+      const defaults = DEFAULT_MAPPINGS[selectedTemplateType];
+      const existingKeys = new Set(data.map((m) => m.dataPoint));
+      const missingDefaults = defaults.filter(
+        (mapping) => !existingKeys.has(mapping.dataPoint)
+      );
+
+      // If autoLoadDefaults is true and there are missing defaults, create just the missing ones
+      if (autoLoadDefaults && missingDefaults.length > 0) {
+        await Promise.all(
+          missingDefaults.map((mapping) =>
+            createOrUpdateTemplateMapping(
+              selectedTemplateType,
+              mapping.dataPoint,
+              mapping.cellValue,
+              mapping.description
+            )
+          )
+        );
+
+        // Reload mappings after creating missing defaults
+        const updatedData = await getTemplateMappings(selectedTemplateType);
+        setMappings(updatedData);
+        toast.success("Default mappings loaded automatically");
+        return true; // Indicates defaults were loaded
+      }
+
+      // No defaults loaded; just use what we have
       setMappings(data);
+      return false;
     } catch (error: any) {
       toast.error("Failed to load template mappings");
+      return false;
     } finally {
       setLoading(false);
     }
