@@ -22,10 +22,15 @@ import {
 } from "@/lib/associateApi";
 import {
   AdminDepartment,
+  AdminLocation,
   createDepartment,
+  createLocation,
+  deleteLocation,
   deleteDepartment,
   getAdminDepartments,
+  getAdminLocations,
   updateDepartment,
+  updateLocation,
 } from "@/lib/locationDepartmentApi";
 import {
   Upload,
@@ -43,6 +48,7 @@ import {
   Send,
   Settings,
   Building2,
+  MapPin,
   LayoutGrid,
 } from "lucide-react";
 import TemplateMappingConfig from "@/components/admin/TemplateMappingConfig";
@@ -68,6 +74,7 @@ type AdminSection =
   | "users"
   | "roles"
   | "departments"
+  | "locations"
   | "designations"
   | "templates"
   | "backup"
@@ -128,6 +135,14 @@ export default function AdminPage() {
     null
   );
 
+  const [locations, setLocations] = useState<AdminLocation[]>([]);
+  const [newLocationName, setNewLocationName] = useState("");
+  const [creatingLocation, setCreatingLocation] = useState(false);
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [editingLocationName, setEditingLocationName] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [deletingLocationId, setDeletingLocationId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -140,6 +155,7 @@ export default function AdminPage() {
         templatesResponse,
         designationsResponse,
         departmentsResponse,
+        locationsResponse,
       ] =
         await Promise.all([
           api.get("/admin/users"),
@@ -147,12 +163,14 @@ export default function AdminPage() {
           getTemplates(),
           getDesignationVisibility(),
           getAdminDepartments(),
+          getAdminLocations(),
         ]);
       setUsers(usersResponse.data.users);
       setRoles(rolesResponse.data.roles);
       setTemplates(templatesResponse);
       setDesignationVisibility(designationsResponse);
       setDepartments(departmentsResponse);
+      setLocations(locationsResponse);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -549,6 +567,73 @@ export default function AdminPage() {
     }
   };
 
+  const handleCreateLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newLocationName.trim();
+    if (!name) return;
+
+    try {
+      setCreatingLocation(true);
+      const created = await createLocation(name);
+      setLocations((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      setNewLocationName("");
+      toast.success("Location created successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to create location");
+    } finally {
+      setCreatingLocation(false);
+    }
+  };
+
+  const startEditLocation = (loc: AdminLocation) => {
+    setEditingLocationId(loc.id);
+    setEditingLocationName(loc.name);
+  };
+
+  const cancelEditLocation = () => {
+    setEditingLocationId(null);
+    setEditingLocationName("");
+  };
+
+  const handleSaveLocation = async () => {
+    if (!editingLocationId) return;
+    const name = editingLocationName.trim();
+    if (!name) return;
+
+    try {
+      setSavingLocation(true);
+      const updated = await updateLocation(editingLocationId, name);
+      setLocations((prev) =>
+        prev
+          .map((l) => (l.id === updated.id ? updated : l))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+      toast.success("Location updated successfully");
+      cancelEditLocation();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update location");
+    } finally {
+      setSavingLocation(false);
+    }
+  };
+
+  const handleDeleteLocation = async (loc: AdminLocation) => {
+    if (!confirm(`Delete location "${loc.name}"?`)) return;
+
+    try {
+      setDeletingLocationId(loc.id);
+      await deleteLocation(loc.id);
+      setLocations((prev) => prev.filter((l) => l.id !== loc.id));
+      toast.success("Location deleted successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete location");
+    } finally {
+      setDeletingLocationId(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading...</div>;
   }
@@ -607,6 +692,13 @@ export default function AdminPage() {
             >
               <Building2 className="h-4 w-4 mr-2" />
               Departments
+            </Button>
+            <Button
+              variant={activeSection === "locations" ? "default" : "outline"}
+              onClick={() => setActiveSection("locations")}
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              Locations
             </Button>
             <Button
               variant={activeSection === "designations" ? "default" : "outline"}
@@ -735,6 +827,115 @@ export default function AdminPage() {
               {departments.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   No departments found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Locations Section */}
+      {activeSection === "locations" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Locations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form
+              onSubmit={handleCreateLocation}
+              className="flex flex-col sm:flex-row gap-2 mb-4"
+            >
+              <Input
+                value={newLocationName}
+                onChange={(e) => setNewLocationName(e.target.value)}
+                placeholder="New location name"
+              />
+              <Button
+                type="submit"
+                disabled={creatingLocation || !newLocationName.trim()}
+              >
+                {creatingLocation ? "Creating..." : "Add Location"}
+              </Button>
+            </form>
+
+            <div className="space-y-2">
+              {locations.map((loc) => {
+                const isEditing = editingLocationId === loc.id;
+                const isDeleting = deletingLocationId === loc.id;
+                return (
+                  <div
+                    key={loc.id}
+                    className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      {isEditing ? (
+                        <Input
+                          value={editingLocationName}
+                          onChange={(e) => setEditingLocationName(e.target.value)}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold truncate">{loc.name}</div>
+                          <Badge variant="secondary" className="flex-shrink-0">
+                            {loc.associateCount} associate
+                            {loc.associateCount === 1 ? "" : "s"}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            onClick={handleSaveLocation}
+                            disabled={savingLocation || !editingLocationName.trim()}
+                            className="w-full sm:w-auto"
+                          >
+                            {savingLocation ? "Saving..." : "Save"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={cancelEditLocation}
+                            className="w-full sm:w-auto"
+                            disabled={savingLocation}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => startEditLocation(loc)}
+                            className="w-full sm:w-auto"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => handleDeleteLocation(loc)}
+                            className="w-full sm:w-auto"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {locations.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No locations found
                 </div>
               )}
             </div>

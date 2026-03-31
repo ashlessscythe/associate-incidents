@@ -278,6 +278,126 @@ router.get("/admin/roles", validateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Locations (admin)
+router.get("/admin/locations", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const locations = await prisma.location.findMany({
+      select: {
+        id: true,
+        name: true,
+        _count: { select: { associates: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({
+      locations: locations.map((l) => ({
+        id: l.id,
+        name: l.name,
+        associateCount: l._count.associates,
+      })),
+    });
+  } catch (error) {
+    console.error("Get locations error:", error);
+    res.status(500).json({ message: "Failed to get locations" });
+  }
+});
+
+router.post("/admin/locations", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || String(name).trim().length < 1) {
+      return res.status(400).json({ message: "Location name is required" });
+    }
+
+    const loc = await prisma.location.create({
+      data: { name: String(name).trim() },
+    });
+
+    res.json({
+      location: { id: loc.id, name: loc.name, associateCount: 0 },
+    });
+  } catch (error) {
+    console.error("Create location error:", error);
+    if (error?.code === "P2002") {
+      return res.status(400).json({ message: "Location name already exists" });
+    }
+    res.status(500).json({ message: "Failed to create location" });
+  }
+});
+
+router.patch(
+  "/admin/locations/:id",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+
+      if (!name || String(name).trim().length < 1) {
+        return res.status(400).json({ message: "Location name is required" });
+      }
+
+      const loc = await prisma.location.update({
+        where: { id },
+        data: { name: String(name).trim() },
+      });
+
+      const withCount = await prisma.location.findUnique({
+        where: { id: loc.id },
+        select: { id: true, name: true, _count: { select: { associates: true } } },
+      });
+
+      res.json({
+        location: {
+          id: withCount.id,
+          name: withCount.name,
+          associateCount: withCount._count.associates,
+        },
+      });
+    } catch (error) {
+      console.error("Update location error:", error);
+      if (error?.code === "P2002") {
+        return res.status(400).json({ message: "Location name already exists" });
+      }
+      res.status(500).json({ message: "Failed to update location" });
+    }
+  }
+);
+
+router.delete(
+  "/admin/locations/:id",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const loc = await prisma.location.findUnique({
+        where: { id },
+        select: { id: true, name: true, _count: { select: { associates: true } } },
+      });
+
+      if (!loc) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      if (loc._count.associates > 0) {
+        return res.status(400).json({
+          message: `Cannot delete "${loc.name}" because it has ${loc._count.associates} associate(s). Reassign them first.`,
+        });
+      }
+
+      await prisma.location.delete({ where: { id } });
+      res.json({ message: "Location deleted successfully" });
+    } catch (error) {
+      console.error("Delete location error:", error);
+      res.status(500).json({ message: "Failed to delete location" });
+    }
+  }
+);
+
 // Departments (admin)
 router.get("/admin/departments", validateToken, requireAdmin, async (req, res) => {
   try {
