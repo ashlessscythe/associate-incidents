@@ -278,6 +278,131 @@ router.get("/admin/roles", validateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Departments (admin)
+router.get("/admin/departments", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const departments = await prisma.department.findMany({
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { associates: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json({
+      departments: departments.map((d) => ({
+        id: d.id,
+        name: d.name,
+        associateCount: d._count.associates,
+      })),
+    });
+  } catch (error) {
+    console.error("Get departments error:", error);
+    res.status(500).json({ message: "Failed to get departments" });
+  }
+});
+
+router.post("/admin/departments", validateToken, requireAdmin, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || String(name).trim().length < 1) {
+      return res.status(400).json({ message: "Department name is required" });
+    }
+
+    const dept = await prisma.department.create({
+      data: { name: String(name).trim() },
+    });
+
+    res.json({
+      department: { id: dept.id, name: dept.name, associateCount: 0 },
+    });
+  } catch (error) {
+    console.error("Create department error:", error);
+    // Prisma unique constraint (name)
+    if (error?.code === "P2002") {
+      return res.status(400).json({ message: "Department name already exists" });
+    }
+    res.status(500).json({ message: "Failed to create department" });
+  }
+});
+
+router.patch(
+  "/admin/departments/:id",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+
+      if (!name || String(name).trim().length < 1) {
+        return res.status(400).json({ message: "Department name is required" });
+      }
+
+      const dept = await prisma.department.update({
+        where: { id },
+        data: { name: String(name).trim() },
+      });
+
+      const withCount = await prisma.department.findUnique({
+        where: { id: dept.id },
+        select: { id: true, name: true, _count: { select: { associates: true } } },
+      });
+
+      res.json({
+        department: {
+          id: withCount.id,
+          name: withCount.name,
+          associateCount: withCount._count.associates,
+        },
+      });
+    } catch (error) {
+      console.error("Update department error:", error);
+      if (error?.code === "P2002") {
+        return res
+          .status(400)
+          .json({ message: "Department name already exists" });
+      }
+      res.status(500).json({ message: "Failed to update department" });
+    }
+  }
+);
+
+router.delete(
+  "/admin/departments/:id",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const dept = await prisma.department.findUnique({
+        where: { id },
+        select: { id: true, name: true, _count: { select: { associates: true } } },
+      });
+
+      if (!dept) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+
+      if (dept._count.associates > 0) {
+        return res.status(400).json({
+          message: `Cannot delete "${dept.name}" because it has ${dept._count.associates} associate(s). Reassign them first.`,
+        });
+      }
+
+      await prisma.department.delete({ where: { id } });
+      res.json({ message: "Department deleted successfully" });
+    } catch (error) {
+      console.error("Delete department error:", error);
+      res.status(500).json({ message: "Failed to delete department" });
+    }
+  }
+);
+
 router.post("/admin/users", validateToken, requireAdmin, async (req, res) => {
   try {
     const { email, password, name, roles } = req.body;

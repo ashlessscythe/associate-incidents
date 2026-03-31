@@ -21,6 +21,13 @@ import {
   DesignationVisibility,
 } from "@/lib/associateApi";
 import {
+  AdminDepartment,
+  createDepartment,
+  deleteDepartment,
+  getAdminDepartments,
+  updateDepartment,
+} from "@/lib/locationDepartmentApi";
+import {
   Upload,
   FileSpreadsheet,
   CheckCircle,
@@ -35,6 +42,8 @@ import {
   Mail,
   Send,
   Settings,
+  Building2,
+  LayoutGrid,
 } from "lucide-react";
 import TemplateMappingConfig from "@/components/admin/TemplateMappingConfig";
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
@@ -54,6 +63,15 @@ interface Role {
   name: string;
   description: string;
 }
+
+type AdminSection =
+  | "users"
+  | "roles"
+  | "departments"
+  | "designations"
+  | "templates"
+  | "backup"
+  | "email";
 
 export default function AdminPage() {
   // const { user } = useAuth(); // Not currently used but available for future features
@@ -96,6 +114,19 @@ export default function AdminPage() {
   >([]);
   const [loadingDesignations, setLoadingDesignations] = useState(false);
   const [showTemplateMappingConfig, setShowTemplateMappingConfig] = useState(false);
+  const [activeSection, setActiveSection] = useState<AdminSection>("users");
+
+  const [departments, setDepartments] = useState<AdminDepartment[]>([]);
+  const [newDepartmentName, setNewDepartmentName] = useState("");
+  const [creatingDepartment, setCreatingDepartment] = useState(false);
+  const [editingDepartmentId, setEditingDepartmentId] = useState<string | null>(
+    null
+  );
+  const [editingDepartmentName, setEditingDepartmentName] = useState("");
+  const [savingDepartment, setSavingDepartment] = useState(false);
+  const [deletingDepartmentId, setDeletingDepartmentId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     fetchData();
@@ -103,17 +134,25 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [usersResponse, rolesResponse, templatesResponse, designationsResponse] =
+      const [
+        usersResponse,
+        rolesResponse,
+        templatesResponse,
+        designationsResponse,
+        departmentsResponse,
+      ] =
         await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/roles"),
           getTemplates(),
           getDesignationVisibility(),
+          getAdminDepartments(),
         ]);
       setUsers(usersResponse.data.users);
       setRoles(rolesResponse.data.roles);
       setTemplates(templatesResponse);
       setDesignationVisibility(designationsResponse);
+      setDepartments(departmentsResponse);
     } catch (error) {
       toast.error("Failed to fetch data");
     } finally {
@@ -443,6 +482,73 @@ export default function AdminPage() {
     }
   };
 
+  const handleCreateDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newDepartmentName.trim();
+    if (!name) return;
+
+    try {
+      setCreatingDepartment(true);
+      const created = await createDepartment(name);
+      setDepartments((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      setNewDepartmentName("");
+      toast.success("Department created successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to create department");
+    } finally {
+      setCreatingDepartment(false);
+    }
+  };
+
+  const startEditDepartment = (dept: AdminDepartment) => {
+    setEditingDepartmentId(dept.id);
+    setEditingDepartmentName(dept.name);
+  };
+
+  const cancelEditDepartment = () => {
+    setEditingDepartmentId(null);
+    setEditingDepartmentName("");
+  };
+
+  const handleSaveDepartment = async () => {
+    if (!editingDepartmentId) return;
+    const name = editingDepartmentName.trim();
+    if (!name) return;
+
+    try {
+      setSavingDepartment(true);
+      const updated = await updateDepartment(editingDepartmentId, name);
+      setDepartments((prev) =>
+        prev
+          .map((d) => (d.id === updated.id ? updated : d))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+      toast.success("Department updated successfully");
+      cancelEditDepartment();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update department");
+    } finally {
+      setSavingDepartment(false);
+    }
+  };
+
+  const handleDeleteDepartment = async (dept: AdminDepartment) => {
+    if (!confirm(`Delete department "${dept.name}"?`)) return;
+
+    try {
+      setDeletingDepartmentId(dept.id);
+      await deleteDepartment(dept.id);
+      setDepartments((prev) => prev.filter((d) => d.id !== dept.id));
+      toast.success("Department deleted successfully");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete department");
+    } finally {
+      setDeletingDepartmentId(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading...</div>;
   }
@@ -471,175 +577,245 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Backup & Restore Section */}
+      {/* Section Switcher */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Data Backup & Restore
+            <LayoutGrid className="h-5 w-5" />
+            Sections
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-            {/* Backup Section */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold">Create Backup</h3>
-                  <p className="text-sm text-gray-600">
-                    Export all company data to encrypted JSON file
-                  </p>
-                </div>
-                <Database className="h-5 w-5 text-blue-500 flex-shrink-0" />
-              </div>
-              <div className="space-y-2">
-                <Button
-                  onClick={handleCreateBackup}
-                  disabled={isBackingUp}
-                  className="w-full flex items-center justify-center gap-2"
-                >
-                  {isBackingUp ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Creating Backup...
-                    </>
-                  ) : (
-                    <>
-                      <Database className="h-4 w-4" />
-                      Create Backup
-                    </>
-                  )}
-                </Button>
-                <div className="text-xs text-gray-500">
-                  <strong>Includes:</strong> All users, associates, occurrences,
-                  corrective actions, notifications, files, and system data
-                </div>
-              </div>
-            </div>
-
-            {/* Restore Section */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold">Restore Data</h3>
-                  <p className="text-sm text-gray-600">
-                    Import data from backup file (⚠️ DESTRUCTIVE)
-                  </p>
-                </div>
-                <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              </div>
-              <div className="space-y-2">
-                <Button
-                  onClick={handleRestoreFileSelect}
-                  disabled={isRestoring}
-                  variant="destructive"
-                  className="w-full flex items-center justify-center gap-2"
-                >
-                  {isRestoring ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Restoring...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="h-4 w-4" />
-                      Select Backup File
-                    </>
-                  )}
-                </Button>
-                <div className="text-xs text-red-600">
-                  <strong>⚠️ Warning:</strong> This will completely replace all
-                  current data
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <strong>Important:</strong> Backup files are encrypted and
-                contain sensitive data. Store them securely and never share them
-                with unauthorized parties. Restore operations will permanently
-                delete all existing data.
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeSection === "users" ? "default" : "outline"}
+              onClick={() => setActiveSection("users")}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </Button>
+            <Button
+              variant={activeSection === "roles" ? "default" : "outline"}
+              onClick={() => setActiveSection("roles")}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Roles
+            </Button>
+            <Button
+              variant={activeSection === "departments" ? "default" : "outline"}
+              onClick={() => setActiveSection("departments")}
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Departments
+            </Button>
+            <Button
+              variant={activeSection === "designations" ? "default" : "outline"}
+              onClick={() => setActiveSection("designations")}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Designations
+            </Button>
+            <Button
+              variant={activeSection === "templates" ? "default" : "outline"}
+              onClick={() => setActiveSection("templates")}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Templates
+            </Button>
+            <Button
+              variant={activeSection === "backup" ? "default" : "outline"}
+              onClick={() => setActiveSection("backup")}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Backup/Restore
+            </Button>
+            <Button
+              variant={activeSection === "email" ? "default" : "outline"}
+              onClick={() => setActiveSection("email")}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Email
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Departments Section */}
+      {activeSection === "departments" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Departments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateDepartment} className="flex flex-col sm:flex-row gap-2 mb-4">
+              <Input
+                value={newDepartmentName}
+                onChange={(e) => setNewDepartmentName(e.target.value)}
+                placeholder="New department name"
+              />
+              <Button type="submit" disabled={creatingDepartment || !newDepartmentName.trim()}>
+                {creatingDepartment ? "Creating..." : "Add Department"}
+              </Button>
+            </form>
+
+            <div className="space-y-2">
+              {departments.map((dept) => {
+                const isEditing = editingDepartmentId === dept.id;
+                const isDeleting = deletingDepartmentId === dept.id;
+                return (
+                  <div
+                    key={dept.id}
+                    className="border rounded-lg p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      {isEditing ? (
+                        <Input
+                          value={editingDepartmentName}
+                          onChange={(e) => setEditingDepartmentName(e.target.value)}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="font-semibold truncate">{dept.name}</div>
+                          <Badge variant="secondary" className="flex-shrink-0">
+                            {dept.associateCount} associate{dept.associateCount === 1 ? "" : "s"}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button
+                            onClick={handleSaveDepartment}
+                            disabled={savingDepartment || !editingDepartmentName.trim()}
+                            className="w-full sm:w-auto"
+                          >
+                            {savingDepartment ? "Saving..." : "Save"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={cancelEditDepartment}
+                            className="w-full sm:w-auto"
+                            disabled={savingDepartment}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => startEditDepartment(dept)}
+                            className="w-full sm:w-auto"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => handleDeleteDepartment(dept)}
+                            className="w-full sm:w-auto"
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {departments.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No departments found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Designation Management Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Designation Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Control which designations appear in filters and selection dropdowns
-              throughout the application. Disabled designations will be hidden from
-              users but existing data will remain unchanged.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {designationVisibility.map((item) => (
-                <div
-                  key={item.designation}
-                  className="border rounded-lg p-4 flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                      <Users className="h-5 w-5 text-primary" />
+      {activeSection === "designations" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Designation Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Control which designations appear in filters and selection dropdowns
+                throughout the application. Disabled designations will be hidden from
+                users but existing data will remain unchanged.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {designationVisibility.map((item) => (
+                  <div
+                    key={item.designation}
+                    className="border rounded-lg p-4 flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{item.designation}</h3>
+                        <p className="text-xs text-gray-500">
+                          {item.isVisible ? "Visible" : "Hidden"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold">{item.designation}</h3>
-                      <p className="text-xs text-gray-500">
-                        {item.isVisible ? "Visible" : "Hidden"}
-                      </p>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={item.isVisible}
+                        onCheckedChange={(checked) =>
+                          handleToggleDesignationVisibility(
+                            item.designation,
+                            checked
+                          )
+                        }
+                        disabled={loadingDesignations}
+                      />
+                      {item.isVisible ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={item.isVisible}
-                      onCheckedChange={(checked) =>
-                        handleToggleDesignationVisibility(
-                          item.designation,
-                          checked
-                        )
-                      }
-                      disabled={loadingDesignations}
-                    />
-                    {item.isVisible ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {designationVisibility.length === 0 && !loading && (
-              <div className="text-center py-8 text-gray-500">
-                No designations found
+                ))}
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              {designationVisibility.length === 0 && !loading && (
+                <div className="text-center py-8 text-gray-500">
+                  No designations found
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Template Management Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Template Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {activeSection === "templates" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Template Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Occurrence Template */}
             <div className="border rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between">
@@ -772,256 +948,363 @@ export default function AdminPage() {
               Configure which Excel cells correspond to which data points (e.g., associate name, location, etc.)
             </p>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Users Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Users Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {users.map((user) => (
-              <div key={user.id} className="border rounded-lg p-4 space-y-4">
-                <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{user.name}</h3>
-                    <p className="text-sm text-gray-600 truncate">
-                      {user.email}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {user.roles.map((role) => (
-                        <Badge
-                          key={role}
-                          variant="secondary"
+      {activeSection === "users" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Users Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {users.map((user) => (
+                <div key={user.id} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex flex-col lg:flex-row justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{user.name}</h3>
+                      <p className="text-sm text-gray-600 truncate">
+                        {user.email}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {user.roles.map((role) => (
+                          <Badge
+                            key={role}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={user.isActive}
+                          onCheckedChange={(checked) =>
+                            handleToggleUserStatus(user.id, checked)
+                          }
+                        />
+                        <Label className="text-sm">Active</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          checked={user.isAdmin}
+                          onCheckedChange={(checked) =>
+                            handleToggleAdminStatus(user.id, checked)
+                          }
+                        />
+                        <Label className="text-sm">Admin</Label>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPasswordForm(user)}
+                          className="w-full sm:w-auto"
+                        >
+                          Change Password
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="w-full sm:w-auto"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role Management */}
+                  <div className="space-y-2">
+                    <Label className="text-sm">Roles:</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {roles.map((role) => (
+                        <Button
+                          key={role.id}
+                          variant={
+                            user.roles.includes(role.name) ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => {
+                            const newRoles = user.roles.includes(role.name)
+                              ? user.roles.filter((r) => r !== role.name)
+                              : [...user.roles, role.name];
+                            handleUpdateUserRoles(user.id, newRoles);
+                          }}
                           className="text-xs"
                         >
-                          {role}
-                        </Badge>
+                          {role.name}
+                        </Button>
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={user.isActive}
-                        onCheckedChange={(checked) =>
-                          handleToggleUserStatus(user.id, checked)
-                        }
-                      />
-                      <Label className="text-sm">Active</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={user.isAdmin}
-                        onCheckedChange={(checked) =>
-                          handleToggleAdminStatus(user.id, checked)
-                        }
-                      />
-                      <Label className="text-sm">Admin</Label>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openPasswordForm(user)}
-                        className="w-full sm:w-auto"
-                      >
-                        Change Password
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                        className="w-full sm:w-auto"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
                 </div>
-
-                {/* Role Management */}
-                <div className="space-y-2">
-                  <Label className="text-sm">Roles:</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {roles.map((role) => (
-                      <Button
-                        key={role.id}
-                        variant={
-                          user.roles.includes(role.name) ? "default" : "outline"
-                        }
-                        size="sm"
-                        onClick={() => {
-                          const newRoles = user.roles.includes(role.name)
-                            ? user.roles.filter((r) => r !== role.name)
-                            : [...user.roles, role.name];
-                          handleUpdateUserRoles(user.id, newRoles);
-                        }}
-                        className="text-xs"
-                      >
-                        {role.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Roles Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Roles Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {roles.map((role) => (
-              <div key={role.id} className="border rounded-lg p-4">
-                <h3 className="font-semibold">{role.name}</h3>
-                <p className="text-sm text-gray-600">{role.description}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {activeSection === "roles" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Roles Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {roles.map((role) => (
+                <div key={role.id} className="border rounded-lg p-4">
+                  <h3 className="font-semibold">{role.name}</h3>
+                  <p className="text-sm text-gray-600">{role.description}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Email Testing Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Email Testing
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="emailType">Email Type</Label>
-              <Select
-                value={selectedEmailType}
-                onValueChange={setSelectedEmailType}
-              >
-                <SelectTrigger id="emailType" className="mt-2">
-                  <SelectValue placeholder="Select an email type to test" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="welcome">Welcome Email</SelectItem>
-                  <SelectItem value="password-reset">
-                    Password Reset Email
-                  </SelectItem>
-                  <SelectItem value="password-reset-success">
-                    Password Reset Success Email
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedEmailType && (
-              <div className="space-y-4 border rounded-lg p-4">
-                <div>
-                  <Label htmlFor="testUserEmail">
-                    Email Address <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="testUserEmail"
-                    type="email"
-                    value={testEmailData.userEmail}
-                    onChange={(e) =>
-                      setTestEmailData({
-                        ...testEmailData,
-                        userEmail: e.target.value,
-                      })
-                    }
-                    placeholder="test@example.com"
-                    className="mt-2"
-                  />
-                </div>
-
-                {(selectedEmailType === "welcome" ||
-                  selectedEmailType === "password-reset-success") && (
-                  <div>
-                    <Label htmlFor="testUserName">User Name</Label>
-                    <Input
-                      id="testUserName"
-                      type="text"
-                      value={testEmailData.userName}
-                      onChange={(e) =>
-                        setTestEmailData({
-                          ...testEmailData,
-                          userName: e.target.value,
-                        })
-                      }
-                      placeholder="Test User"
-                      className="mt-2"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      If not provided, "Test User" will be used
-                    </p>
-                  </div>
-                )}
-
-                {selectedEmailType === "password-reset" && (
-                  <div>
-                    <Label htmlFor="testResetToken">Reset Token</Label>
-                    <Input
-                      id="testResetToken"
-                      type="text"
-                      value={testEmailData.resetToken}
-                      onChange={(e) =>
-                        setTestEmailData({
-                          ...testEmailData,
-                          resetToken: e.target.value,
-                        })
-                      }
-                      placeholder="test-reset-token-12345"
-                      className="mt-2"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      If not provided, "test-reset-token-12345" will be used
-                    </p>
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleSendTestEmail}
-                  disabled={isSendingTestEmail || !testEmailData.userEmail}
-                  className="w-full sm:w-auto"
+      {activeSection === "email" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Testing
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="emailType">Email Type</Label>
+                <Select
+                  value={selectedEmailType}
+                  onValueChange={setSelectedEmailType}
                 >
-                  {isSendingTestEmail ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Send Test Email
-                    </>
-                  )}
-                </Button>
+                  <SelectTrigger id="emailType" className="mt-2">
+                    <SelectValue placeholder="Select an email type to test" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="welcome">Welcome Email</SelectItem>
+                    <SelectItem value="password-reset">
+                      Password Reset Email
+                    </SelectItem>
+                    <SelectItem value="password-reset-success">
+                      Password Reset Success Email
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This tool allows you to test email
-                templates. If required fields are not provided, placeholder
-                values will be used and you will be warned before sending.
-              </p>
+              {selectedEmailType && (
+                <div className="space-y-4 border rounded-lg p-4">
+                  <div>
+                    <Label htmlFor="testUserEmail">
+                      Email Address <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="testUserEmail"
+                      type="email"
+                      value={testEmailData.userEmail}
+                      onChange={(e) =>
+                        setTestEmailData({
+                          ...testEmailData,
+                          userEmail: e.target.value,
+                        })
+                      }
+                      placeholder="test@example.com"
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {(selectedEmailType === "welcome" ||
+                    selectedEmailType === "password-reset-success") && (
+                    <div>
+                      <Label htmlFor="testUserName">User Name</Label>
+                      <Input
+                        id="testUserName"
+                        type="text"
+                        value={testEmailData.userName}
+                        onChange={(e) =>
+                          setTestEmailData({
+                            ...testEmailData,
+                            userName: e.target.value,
+                          })
+                        }
+                        placeholder="Test User"
+                        className="mt-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        If not provided, "Test User" will be used
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedEmailType === "password-reset" && (
+                    <div>
+                      <Label htmlFor="testResetToken">Reset Token</Label>
+                      <Input
+                        id="testResetToken"
+                        type="text"
+                        value={testEmailData.resetToken}
+                        onChange={(e) =>
+                          setTestEmailData({
+                            ...testEmailData,
+                            resetToken: e.target.value,
+                          })
+                        }
+                        placeholder="test-reset-token-12345"
+                        className="mt-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        If not provided, "test-reset-token-12345" will be used
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleSendTestEmail}
+                    disabled={isSendingTestEmail || !testEmailData.userEmail}
+                    className="w-full sm:w-auto"
+                  >
+                    {isSendingTestEmail ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Test Email
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> This tool allows you to test email
+                  templates. If required fields are not provided, placeholder
+                  values will be used and you will be warned before sending.
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Backup & Restore Section */}
+      {activeSection === "backup" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Data Backup & Restore
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Backup Section */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Create Backup</h3>
+                    <p className="text-sm text-gray-600">
+                      Export all company data to encrypted JSON file
+                    </p>
+                  </div>
+                  <Database className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleCreateBackup}
+                    disabled={isBackingUp}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    {isBackingUp ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Creating Backup...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="h-4 w-4" />
+                        Create Backup
+                      </>
+                    )}
+                  </Button>
+                  <div className="text-xs text-gray-500">
+                    <strong>Includes:</strong> All users, associates, occurrences,
+                    corrective actions, notifications, files, and system data
+                  </div>
+                </div>
+              </div>
+
+              {/* Restore Section */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Restore Data</h3>
+                    <p className="text-sm text-gray-600">
+                      Import data from backup file (⚠️ DESTRUCTIVE)
+                    </p>
+                  </div>
+                  <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleRestoreFileSelect}
+                    disabled={isRestoring}
+                    variant="destructive"
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    {isRestoring ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Restoring...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-4 w-4" />
+                        Select Backup File
+                      </>
+                    )}
+                  </Button>
+                  <div className="text-xs text-red-600">
+                    <strong>⚠️ Warning:</strong> This will completely replace all
+                    current data
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <strong>Important:</strong> Backup files are encrypted and
+                  contain sensitive data. Store them securely and never share them
+                  with unauthorized parties. Restore operations will permanently
+                  delete all existing data.
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* New User Modal */}
       {showNewUserForm && (
