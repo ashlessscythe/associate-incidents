@@ -75,6 +75,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
       files,
       exportRecords,
       designationVisibility,
+      templateMappings,
     ] = await Promise.all([
       prisma.user.findMany({
         include: {
@@ -130,12 +131,13 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
         },
       }),
       prisma.designationVisibility.findMany(),
+      prisma.templateMapping.findMany(),
     ]);
 
     // Create backup object
     const backupData = {
       metadata: {
-        version: "1.0",
+        version: "1.1",
         createdAt: new Date().toISOString(),
         createdBy: req.user.email,
         recordCounts: {
@@ -154,6 +156,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
           files: files.length,
           exportRecords: exportRecords.length,
           designationVisibility: designationVisibility.length,
+          templateMappings: templateMappings.length,
         },
       },
       data: {
@@ -172,6 +175,7 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
         files,
         exportRecords,
         designationVisibility,
+        templateMappings,
       },
     };
 
@@ -272,6 +276,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
       await tx.rule.deleteMany();
       await tx.notificationLevel.deleteMany();
       await tx.designationVisibility.deleteMany();
+      await tx.templateMapping.deleteMany();
       await tx.user.deleteMany();
       await tx.role.deleteMany();
 
@@ -408,7 +413,24 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 7. Restore associates
+      // 7. Restore template mappings (added in newer schema; may be missing in older backups)
+      const templateMappingsToRestore = backupData.data.templateMappings || [];
+      if (templateMappingsToRestore.length > 0) {
+        await tx.templateMapping.createMany({
+          data: templateMappingsToRestore.map((m) => ({
+            id: m.id,
+            templateType: m.templateType,
+            dataPoint: m.dataPoint,
+            cellValue: m.cellValue,
+            description: m.description ?? null,
+            createdAt: new Date(m.createdAt),
+            updatedAt: new Date(m.updatedAt),
+          })),
+        });
+        console.log(`Restored ${templateMappingsToRestore.length} template mappings`);
+      }
+
+      // 8. Restore associates
       if (backupData.data.associates.length > 0) {
         await tx.associate.createMany({
           data: backupData.data.associates.map((associate) => ({
@@ -425,7 +447,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         console.log(`Restored ${backupData.data.associates.length} associates`);
       }
 
-      // 8. Restore attendance occurrences
+      // 9. Restore attendance occurrences
       if (backupData.data.attendanceOccurrences.length > 0) {
         await tx.attendanceOccurrence.createMany({
           data: backupData.data.attendanceOccurrences.map((occurrence) => ({
@@ -444,7 +466,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 9. Restore corrective actions
+      // 10. Restore corrective actions
       if (backupData.data.correctiveActions.length > 0) {
         await tx.correctiveAction.createMany({
           data: backupData.data.correctiveActions.map((action) => ({
@@ -463,7 +485,7 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
         );
       }
 
-      // 10. Restore notifications
+      // 11. Restore notifications
       if (backupData.data.notifications.length > 0) {
         await tx.notification.createMany({
           data: backupData.data.notifications.map((notification) => ({

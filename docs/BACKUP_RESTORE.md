@@ -25,6 +25,7 @@ Backups include all system data:
 - **Files**: All uploaded documents and attachments
 - **Export Records**: Historical export tracking
 - **System Configuration**: Rules, occurrence types, and notification levels
+- **Template Mappings**: Admin template mapping configuration
 
 ### ⚠️ **Destructive Restore Operations**
 
@@ -50,7 +51,7 @@ Authorization: Bearer <admin-token>
   "message": "Backup created successfully",
   "filename": "company-backup-2024-01-15T10-30-00-000Z.json",
   "metadata": {
-    "version": "1.0",
+    "version": "1.1",
     "createdAt": "2024-01-15T10:30:00.000Z",
     "createdBy": "admin@company.com",
     "recordCounts": {
