@@ -44,11 +44,13 @@ export const deleteAssociate = async (id: string): Promise<void> => {
   return res.data;
 };
 
-export const updateAssociatePoints = async (
-  associateId: string
-): Promise<Associate> => {
-  const response = await api.put<Associate>(
-    `/associates/${associateId}/update-points`
+export const setAssociatePointsAdjustment = async (
+  associateId: string,
+  pointsAdjustment: number
+): Promise<{ id: string; name: string; pointsAdjustment: number }> => {
+  const response = await api.put(
+    `/associates/${associateId}/points-adjustment`,
+    { pointsAdjustment }
   );
   return response.data;
 };

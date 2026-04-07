@@ -23,7 +23,7 @@ router.post("/export-excel-occurrence", async (req, res) => {
     // Fetch associate's designation from the database
     const associate = await prisma.associate.findUnique({
       where: { name: associateName },
-      select: { designation: true },
+      select: { designation: true, pointsAdjustment: true },
     });
 
     if (!associate) {
@@ -38,7 +38,8 @@ router.post("/export-excel-occurrence", async (req, res) => {
       occurrences,
       notificationLevel,
       notifications,
-      associate.designation
+      associate.designation,
+      associate.pointsAdjustment ?? 0
     );
 
     res.setHeader(

@@ -440,6 +440,10 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
             isActive: associate.isActive,
             designation: associate.designation,
             currentPoints: associate.currentPoints,
+            pointsAdjustment:
+              associate.pointsAdjustment !== undefined
+                ? associate.pointsAdjustment
+                : 0,
             locationId: associate.locationId,
             departmentId: associate.departmentId,
           })),

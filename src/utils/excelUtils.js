@@ -75,7 +75,8 @@ export async function generateExcelOccurrence(
   occurrences,
   notificationLevel,
   notifications,
-  designation
+  designation,
+  pointsAdjustment = 0
 ) {
   if (!associateName || !location || !department || !date || !designation) {
     throw new Error("Missing required parameters");
@@ -130,11 +131,12 @@ export async function generateExcelOccurrence(
     sheet.cell(level.cell).value(cellValue);
   });
 
-  // Calculate and set total points
-  const totalPoints = occurrences.reduce(
-    (sum, occ) => sum + (occ.type?.points || 0),
-    0
-  );
+  // Calculate and set total points (occurrences in window + manual adjustment)
+  const totalPoints =
+    occurrences.reduce(
+      (sum, occ) => sum + (occ.type?.points || 0),
+      0
+    ) + (pointsAdjustment || 0);
 
   // Create misconduct text
   const blurb = `Associate ${associateName} has the following occurrences. Total points: ${totalPoints}\n\n`;

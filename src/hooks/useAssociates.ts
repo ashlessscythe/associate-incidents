@@ -28,6 +28,8 @@ export function useAssociatesWithOccurrences() {
             id: associate.info.id,
             name: associate.info.name,
             points: associate.info.points,
+            occurrencePoints: associate.info.occurrencePoints,
+            pointsAdjustment: associate.info.pointsAdjustment,
             notificationLevel: associate.info.notificationLevel,
             designation: associate.info.designation as Designation,
             isActive: associate.info.isActive,

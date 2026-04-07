@@ -50,6 +50,8 @@ model Associate {
   isActive          Boolean                @default(true)
   designation       Designation            @default(NONE)
   currentPoints     Float                  @default(0)
+  /// Manual offset added to occurrence-based points (same window as reports).
+  pointsAdjustment  Float                  @default(0)
   locationId        String?
   location          Location?              @relation(fields: [locationId], references: [id])
   departmentId      String?

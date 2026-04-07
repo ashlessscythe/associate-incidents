@@ -60,3 +60,11 @@ export const requireAdmin = (req, res, next) => {
   }
   next();
 };
+
+export const requireEditor = (req, res, next) => {
+  const roles = req.user?.roles;
+  if (!Array.isArray(roles) || !roles.includes("user-edit")) {
+    return res.status(403).json({ error: "Editor access required" });
+  }
+  next();
+};

@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2, Pencil, ChevronUp, ChevronDown } from "lucide-react";
+import { Trash2, Pencil, ChevronUp, ChevronDown, SlidersHorizontal } from "lucide-react";
 import {
   AssociateAndDesignation,
   Department,
@@ -49,6 +49,7 @@ interface AssociatesTableProps {
   ) => void;
   onToggleActive: (id: string, isActive: boolean) => void;
   hasEditorRole: boolean;
+  onOpenPointsAdjustment?: (associate: AssociateAndDesignation) => void;
 }
 
 type SortKey = "name" | "department" | "designation" | "location";
@@ -61,6 +62,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
   onEdit,
   onToggleActive,
   hasEditorRole,
+  onOpenPointsAdjustment,
 }) => {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -199,6 +201,7 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
               Location <SortIcon columnKey="location" />
             </TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-right">Points (12 mo)</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -299,6 +302,24 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                     onCheckedChange={() => onToggleActive(associate.id, associate.isActive)}
                     aria-label="Toggle active status"
                   />
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <span className="tabular-nums font-medium">
+                  {associate.points !== undefined ? associate.points : "—"}
+                </span>
+                {hasEditorRole && onOpenPointsAdjustment && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ml-2 align-middle"
+                    onClick={() => onOpenPointsAdjustment(associate)}
+                    aria-label={`Adjust points for ${associate.name}`}
+                    title="Adjust points"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
                 )}
               </TableCell>
               <TableCell>

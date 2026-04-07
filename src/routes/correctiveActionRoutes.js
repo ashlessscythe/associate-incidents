@@ -172,20 +172,27 @@ router.get("/ca-by-type-with-info", async (req, res) => {
       },
     });
 
-    const formattedData = caDataWithInfo.map((associate) => ({
-      id: associate.id,
-      name: associate.name,
-      correctiveActions: associate.correctiveActions,
-      info: {
+    const formattedData = caDataWithInfo.map((associate) => {
+      const occurrencePoints = associate.occurrences.reduce(
+        (sum, occ) => sum + occ.type.points,
+        0
+      );
+      const points =
+        occurrencePoints + (associate.pointsAdjustment ?? 0);
+      return {
         id: associate.id,
         name: associate.name,
-        points: associate.occurrences.reduce(
-          (sum, occ) => sum + occ.type.points,
-          0
-        ),
-        designation: associate.designation,
-      },
-    }));
+        correctiveActions: associate.correctiveActions,
+        info: {
+          id: associate.id,
+          name: associate.name,
+          points,
+          occurrencePoints,
+          pointsAdjustment: associate.pointsAdjustment ?? 0,
+          designation: associate.designation,
+        },
+      };
+    });
 
     res.json(formattedData);
   } catch (error) {

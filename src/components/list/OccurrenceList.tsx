@@ -88,6 +88,10 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
 }) => {
   const { user } = useAuth();
   const [totalPoints, setTotalPoints] = useState<number>(0);
+  const [occurrenceSubtotal, setOccurrenceSubtotal] = useState<number | null>(
+    null
+  );
+  const [manualAdjustment, setManualAdjustment] = useState<number | null>(null);
   const [notificationLevel, setNotificationLevel] = useState<string>("None");
   const [designation, setDesignation] = useState<string>("");
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
@@ -224,13 +228,27 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
       if (associateInfo.id) {
         try {
           const [
-            { points, notificationLevel, designation, location, department },
+            {
+              points,
+              occurrencePoints,
+              pointsAdjustment,
+              notificationLevel,
+              designation,
+              location,
+              department,
+            },
             notificationsData,
           ] = await Promise.all([
             getAssociatePointsAndNotification(associateInfo.id),
             getNotifications(associateInfo.id, "OCCURRENCE"),
           ]);
           setTotalPoints(points);
+          setOccurrenceSubtotal(
+            occurrencePoints !== undefined ? occurrencePoints : null
+          );
+          setManualAdjustment(
+            pointsAdjustment !== undefined ? pointsAdjustment : null
+          );
           setNotificationLevel(notificationLevel);
           setDesignation(designation);
           if (location) {
@@ -397,6 +415,15 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Total Points (last 12 months): {totalPoints}
               </p>
+              {manualAdjustment !== null &&
+                manualAdjustment !== 0 &&
+                occurrenceSubtotal !== null && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Occurrence subtotal: {occurrenceSubtotal} · Manual
+                    adjustment: {manualAdjustment > 0 ? "+" : ""}
+                    {manualAdjustment}
+                  </p>
+                )}
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Current Notification Level: {notificationLevel}
               </p>

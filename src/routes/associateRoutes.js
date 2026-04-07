@@ -4,8 +4,20 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { parse } from "csv-parse";
+import { requireEditor } from "../middleware/auth.js";
 
 const router = express.Router();
+
+function sumOccurrencePoints(occurrences) {
+  return occurrences.reduce(
+    (sum, o) => sum + (o.type?.points ?? 0),
+    0
+  );
+}
+
+function totalPointsWithAdjustment(occurrences, adjustment) {
+  return sumOccurrencePoints(occurrences) + (adjustment ?? 0);
+}
 
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
@@ -127,6 +139,9 @@ router.delete("/associates/:id", async (req, res) => {
 // Get associates with designation
 router.get("/associates-with-designation", async (req, res) => {
   try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
     const associates = await prisma.associate.findMany({
       select: {
         id: true,
@@ -135,17 +150,39 @@ router.get("/associates-with-designation", async (req, res) => {
         department: true,
         location: true,
         isActive: true,
+        pointsAdjustment: true,
+        occurrences: {
+          where: {
+            date: {
+              gte: oneYearAgo,
+            },
+          },
+          select: {
+            type: {
+              select: {
+                points: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    const result = associates.map((associate) => ({
-      id: associate.id,
-      name: associate.name,
-      designation: associate.designation,
-      department: associate.department,
-      location: associate.location,
-      isActive: associate.isActive,
-    }));
+    const result = associates.map((associate) => {
+      const occurrencePoints = sumOccurrencePoints(associate.occurrences);
+      const adj = associate.pointsAdjustment ?? 0;
+      return {
+        id: associate.id,
+        name: associate.name,
+        designation: associate.designation,
+        department: associate.department,
+        location: associate.location,
+        isActive: associate.isActive,
+        occurrencePoints,
+        pointsAdjustment: adj,
+        points: occurrencePoints + adj,
+      };
+    });
 
     res.json(result);
   } catch (error) {
@@ -167,6 +204,7 @@ router.get("/associates-data", async (req, res) => {
       select: {
         id: true,
         name: true,
+        pointsAdjustment: true,
         occurrences: {
           where: {
             date: {
@@ -193,9 +231,11 @@ router.get("/associates-data", async (req, res) => {
     const formattedData = associatesData.map((associate) => ({
       id: associate.id,
       name: associate.name,
-      currentPoints: associate.occurrences.reduce(
-        (sum, occurrence) => sum + occurrence.type.points,
-        0
+      occurrencePoints: sumOccurrencePoints(associate.occurrences),
+      pointsAdjustment: associate.pointsAdjustment ?? 0,
+      currentPoints: totalPointsWithAdjustment(
+        associate.occurrences,
+        associate.pointsAdjustment
       ),
       totalOccurrences: associate.occurrences.length,
       totalCA: associate.correctiveActions.length,
@@ -237,9 +277,10 @@ router.get("/all-with-occurrences", async (req, res) => {
 
     const associatesWithDetails = await Promise.all(
       associates.map(async (associate) => {
-        const points = associate.occurrences.reduce(
-          (sum, occurrence) => sum + (occurrence.type?.points || 0),
-          0
+        const occurrencePoints = sumOccurrencePoints(associate.occurrences);
+        const points = totalPointsWithAdjustment(
+          associate.occurrences,
+          associate.pointsAdjustment
         );
 
         // Fetch notification levels for the associate's designation
@@ -274,6 +315,8 @@ router.get("/all-with-occurrences", async (req, res) => {
             id: associate.id,
             name: associate.name,
             points: points,
+            occurrencePoints,
+            pointsAdjustment: associate.pointsAdjustment ?? 0,
             notificationLevel: notificationLevel,
             designation: associate.designation,
             department: associate.department,
@@ -325,9 +368,10 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       return res.status(404).json({ error: "Associate not found" });
     }
 
-    const points = associate.occurrences.reduce(
-      (sum, occurrence) => sum + occurrence.type.points,
-      0
+    const occurrencePoints = sumOccurrencePoints(associate.occurrences);
+    const points = totalPointsWithAdjustment(
+      associate.occurrences,
+      associate.pointsAdjustment
     );
 
     // Fetch notification levels from the database for the associate's designation
@@ -351,6 +395,8 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       id: associate.id,
       name: associate.name,
       points: points,
+      occurrencePoints,
+      pointsAdjustment: associate.pointsAdjustment ?? 0,
       notificationLevel: notificationLevel,
       designation: associate.designation,
       department: associate.department,
@@ -366,6 +412,43 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       .json({ error: "Error fetching associate points and notification" });
   }
 });
+
+// Set manual points adjustment (offset added to occurrence-based total)
+router.put(
+  "/associates/:id/points-adjustment",
+  requireEditor,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const raw = req.body?.pointsAdjustment;
+      const pointsAdjustment =
+        typeof raw === "number" ? raw : parseFloat(raw);
+      if (Number.isNaN(pointsAdjustment)) {
+        return res
+          .status(400)
+          .json({ error: "pointsAdjustment must be a number" });
+      }
+
+      const updated = await prisma.associate.update({
+        where: { id },
+        data: { pointsAdjustment },
+        select: {
+          id: true,
+          name: true,
+          pointsAdjustment: true,
+        },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      if (error.code === "P2025") {
+        return res.status(404).json({ error: "Associate not found" });
+      }
+      console.error("Error updating points adjustment:", error);
+      res.status(500).json({ error: "Error updating points adjustment" });
+    }
+  }
+);
 
 // Get all available designations (only visible ones)
 router.get("/designations", async (req, res) => {
@@ -633,6 +716,7 @@ router.get("/associates-points-report", async (req, res) => {
         name: true,
         designation: true,
         isActive: true,
+        pointsAdjustment: true,
         department: {
           select: {
             name: true,
@@ -659,9 +743,9 @@ router.get("/associates-points-report", async (req, res) => {
       associate_name: associate.name,
       department_name: associate.department?.name || "No Department",
       associate_designation: associate.designation,
-      total_points: associate.occurrences.reduce(
-        (sum, occ) => sum + (occ.type?.points || 0),
-        0
+      total_points: totalPointsWithAdjustment(
+        associate.occurrences,
+        associate.pointsAdjustment
       ),
       status: associate.isActive ? "Active" : "Inactive",
     }));

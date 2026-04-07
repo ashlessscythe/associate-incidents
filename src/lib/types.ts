@@ -50,6 +50,10 @@ export interface AssociateInfo {
   id: string;
   name: string;
   points: number;
+  /** Sum of occurrence type points in the rolling window (before adjustment). */
+  occurrencePoints?: number;
+  /** Manual offset stored on the associate; included in `points`. */
+  pointsAdjustment?: number;
   notificationLevel: string;
   designation: string;
   department?: Department;
@@ -64,6 +68,11 @@ export interface AssociateAndDesignation {
   department?: Department;
   location?: Location;
   isActive: boolean;
+  /** Rolling-window occurrence sum (same window as `points` elsewhere). */
+  occurrencePoints?: number;
+  pointsAdjustment?: number;
+  /** occurrencePoints + pointsAdjustment */
+  points?: number;
 }
 
 export interface AssociateAndOccurrences {

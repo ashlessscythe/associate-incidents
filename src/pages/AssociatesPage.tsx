@@ -4,6 +4,7 @@ import ImportErrorModal, {
 } from "@/components/modals/ImportErrorModal";
 import AssociatesTable from "@/components/AssociatesTable";
 import NewAssociateModal from "@/components/modals/NewAssociateModal";
+import AssociatePointsAdjustmentModal from "@/components/modals/AssociatePointsAdjustmentModal";
 import { addAssociate, deleteAssociate, updateAssociate, toggleAssociateActive, getDepartments, getLocations } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ import { useAssociatesWithDesignation } from "@/hooks/useAssociates";
 import { toast } from "react-hot-toast";
 import api from "@/lib/apiConfig";
 import { Department, Location } from "@/lib/api";
+import type { AssociateAndDesignation } from "@/lib/types";
 import { Users, Upload, Download, FileText } from "lucide-react";
 
 const AssociatesPage: React.FC = () => {
@@ -32,6 +34,8 @@ const AssociatesPage: React.FC = () => {
   });
   const [departments, setDepartments] = useState<Department[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [pointsModalAssociate, setPointsModalAssociate] =
+    useState<AssociateAndDesignation | null>(null);
 
   useEffect(() => {
     fetchAssociatesWithDesignation();
@@ -300,6 +304,7 @@ const AssociatesPage: React.FC = () => {
           onEdit={handleEditAssociate}
           onToggleActive={handleToggleActive}
           hasEditorRole={hasEditorRole}
+          onOpenPointsAdjustment={(a) => setPointsModalAssociate(a)}
         />
       </div>
 
@@ -308,6 +313,15 @@ const AssociatesPage: React.FC = () => {
         onClose={() => setShowErrorModal(false)}
         errors={importErrors}
         summary={importSummary}
+      />
+
+      <AssociatePointsAdjustmentModal
+        associate={pointsModalAssociate}
+        open={!!pointsModalAssociate}
+        onOpenChange={(o) => {
+          if (!o) setPointsModalAssociate(null);
+        }}
+        onSaved={() => fetchAssociatesWithDesignation()}
       />
     </div>
   );
