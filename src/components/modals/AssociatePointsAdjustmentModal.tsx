@@ -14,6 +14,7 @@ import {
   setAssociatePointsAdjustment,
 } from "@/lib/api";
 import type { AssociateAndDesignation } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
 interface AssociatePointsAdjustmentModalProps {
@@ -98,12 +99,31 @@ const AssociatePointsAdjustmentModal: React.FC<
           </p>
           <div className="grid gap-2">
             <Label>Points from occurrences (last 12 months)</Label>
-            <div className="text-lg font-medium tabular-nums">
+            <div
+              className={cn(
+                "text-lg font-medium tabular-nums",
+                !loading && occurrencePoints < 0 && "text-destructive"
+              )}
+            >
               {loading ? "…" : occurrencePoints}
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="points-adjustment">Manual adjustment</Label>
+            <Label
+              htmlFor="points-adjustment"
+              className={cn(
+                adjustmentValid &&
+                  adjustment < 0 &&
+                  "text-destructive"
+              )}
+            >
+              Manual adjustment
+              {adjustmentValid && adjustment < 0 ? (
+                <span className="ml-2 text-xs font-normal text-destructive">
+                  (subtracting from total)
+                </span>
+              ) : null}
+            </Label>
             <Input
               id="points-adjustment"
               type="number"
@@ -111,14 +131,51 @@ const AssociatePointsAdjustmentModal: React.FC<
               value={adjustmentInput}
               onChange={(e) => setAdjustmentInput(e.target.value)}
               disabled={loading}
+              className={cn(
+                adjustmentValid &&
+                  adjustment < 0 &&
+                  "border-destructive/60 text-destructive focus-visible:ring-destructive"
+              )}
             />
-            <p className="text-xs text-muted-foreground">
+            <p
+              className={cn(
+                "text-xs",
+                adjustmentValid && adjustment < 0
+                  ? "text-destructive/90"
+                  : "text-muted-foreground"
+              )}
+            >
               Use negative values to subtract (e.g. -2.5).
             </p>
           </div>
-          <div className="rounded-md border border-border bg-muted/50 p-3">
-            <div className="text-sm text-muted-foreground">Total points</div>
-            <div className="text-xl font-semibold tabular-nums">
+          <div
+            className={cn(
+              "rounded-md border border-border bg-muted/50 p-3 transition-colors",
+              !loading &&
+                adjustmentValid &&
+                totalPreview < 0 &&
+                "border-destructive/50 bg-destructive/10"
+            )}
+          >
+            <div
+              className={cn(
+                "text-sm",
+                !loading && adjustmentValid && totalPreview < 0
+                  ? "text-destructive"
+                  : "text-muted-foreground"
+              )}
+            >
+              Total points
+            </div>
+            <div
+              className={cn(
+                "text-xl font-semibold tabular-nums",
+                !loading &&
+                  adjustmentValid &&
+                  totalPreview < 0 &&
+                  "text-destructive"
+              )}
+            >
               {loading ? "…" : adjustmentValid ? totalPreview : "—"}
             </div>
           </div>

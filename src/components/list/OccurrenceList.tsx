@@ -58,6 +58,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
 import OccurrenceItem from "./OccurrenceItem";
 import { toast } from "react-hot-toast";
+import { cn } from "@/lib/utils";
 
 interface OccurrenceType {
   id: string;
@@ -412,16 +413,34 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               Summary for: {associateInfo.name}
             </h3>
             <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <p className="font-semibold text-gray-800 dark:text-gray-200">
+              <p
+                className={cn(
+                  "font-semibold text-gray-800 dark:text-gray-200",
+                  totalPoints < 0 && "text-destructive dark:text-destructive"
+                )}
+              >
                 Total Points (last 12 months): {totalPoints}
               </p>
               {manualAdjustment !== null &&
                 manualAdjustment !== 0 &&
                 occurrenceSubtotal !== null && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Occurrence subtotal: {occurrenceSubtotal} · Manual
-                    adjustment: {manualAdjustment > 0 ? "+" : ""}
-                    {manualAdjustment}
+                    <span
+                      className={cn(
+                        occurrenceSubtotal < 0 && "text-destructive font-medium"
+                      )}
+                    >
+                      Occurrence subtotal: {occurrenceSubtotal}
+                    </span>
+                    {" · "}
+                    <span
+                      className={cn(
+                        manualAdjustment < 0 && "text-destructive font-medium"
+                      )}
+                    >
+                      Manual adjustment: {manualAdjustment > 0 ? "+" : ""}
+                      {manualAdjustment}
+                    </span>
                   </p>
                 )}
               <p className="font-semibold text-gray-800 dark:text-gray-200">

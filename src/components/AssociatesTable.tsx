@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 type SortOrder = "asc" | "desc";
 
@@ -305,7 +306,14 @@ const AssociatesTable: React.FC<AssociatesTableProps> = ({
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <span className="tabular-nums font-medium">
+                <span
+                  className={cn(
+                    "tabular-nums font-medium",
+                    associate.points !== undefined &&
+                      associate.points < 0 &&
+                      "text-destructive"
+                  )}
+                >
                   {associate.points !== undefined ? associate.points : "—"}
                 </span>
                 {hasEditorRole && onOpenPointsAdjustment && (

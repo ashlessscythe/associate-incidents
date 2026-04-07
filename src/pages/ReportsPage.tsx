@@ -28,6 +28,7 @@ import {
   BarChart3,
   Users,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CAByTypeData {
   id: string;
@@ -531,7 +532,14 @@ const ReportsPage: React.FC = () => {
                       <div className="p-2 text-sm font-semibold">
                         {associate.info.name}
                       </div>
-                      <div className="p-2 text-sm">{associate.info.points}</div>
+                      <div
+                        className={cn(
+                          "p-2 text-sm tabular-nums",
+                          associate.info.points < 0 && "text-destructive font-semibold"
+                        )}
+                      >
+                        {associate.info.points}
+                      </div>
                       <div className="p-2 text-sm">
                         {associate.info.notificationLevel}
                       </div>

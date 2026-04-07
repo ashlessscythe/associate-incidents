@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OccurrenceList from "@/components/list/OccurrenceList";
 import { AssociateInfo, Occurrence, OccurrenceType } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 interface OccurrenceByTypeRowProps {
   associateInfo: AssociateInfo;
@@ -71,8 +72,16 @@ const OccurrenceByTypeRow: React.FC<OccurrenceByTypeRowProps> = ({
         </div>
         <div className="flex items-center space-x-4">
           <span className="text-sm text-muted-foreground">
-            Total Points: {associateInfo.points}, Level:{" "}
-            {associateInfo.notificationLevel}
+            Total Points:{" "}
+            <span
+              className={cn(
+                "tabular-nums",
+                associateInfo.points < 0 && "text-destructive font-semibold"
+              )}
+            >
+              {associateInfo.points}
+            </span>
+            , Level: {associateInfo.notificationLevel}
           </span>
           <Button onClick={toggleExpand} variant="ghost" size="sm">
             {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
