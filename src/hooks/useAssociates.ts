@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   AssociateAndDesignation,
   AssociateAndOccurrences,
@@ -68,14 +68,19 @@ export function useAssociatesWithDesignation() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** After first successful load, refetches refresh data without toggling `loading` (avoids unmounting UIs that gate on loading). */
+  const associatesDesignationLoadSucceeded = useRef(false);
 
   const fetchAssociatesWithDesignation = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!associatesDesignationLoadSucceeded.current) {
+        setLoading(true);
+      }
       const data = await getAssociatesAndDesignation();
 
       setAssociatesWithDesignation(data);
       setError(null);
+      associatesDesignationLoadSucceeded.current = true;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

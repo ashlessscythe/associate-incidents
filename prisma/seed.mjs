@@ -2,14 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import csv from "csv-parser";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
-import {
-  locations,
-  departments,
-  rules,
-  occurrenceTypes,
-  notificationLevels,
-} from "./definitions.js";
+import { fileURLToPath, pathToFileURL } from "url";
 import { faker } from "@faker-js/faker";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -20,6 +13,37 @@ const associatesFileName = "associates.csv";
 const occurrencesFileName = "occurrences.csv";
 
 const prisma = new PrismaClient();
+
+/** Set in main() from definitions files or from the DB when using --associates-only. */
+let locations = [];
+let departments = [];
+let rules = [];
+let occurrenceTypes = [];
+let notificationLevels = [];
+
+async function loadSeedDefinitionsFromFiles() {
+  const customPath = path.join(__dirname, "definitions.js");
+  if (fs.existsSync(customPath)) {
+    return import(pathToFileURL(customPath).href);
+  }
+  console.warn(
+    "prisma/definitions.js not found; using prisma/definitions-sample.js for reference data."
+  );
+  return import(new URL("./definitions-sample.js", import.meta.url).href);
+}
+
+async function loadDefinitionsContextForAssociatesOnly() {
+  const [locs, depts, types] = await Promise.all([
+    prisma.location.findMany({ select: { name: true } }),
+    prisma.department.findMany({ select: { name: true } }),
+    prisma.occurrenceType.findMany(),
+  ]);
+  locations = locs.map((l) => l.name);
+  departments = depts.map((d) => d.name);
+  occurrenceTypes = types;
+  rules = [];
+  notificationLevels = [];
+}
 
 async function clearFiles() {
   await prisma.file.deleteMany();
@@ -162,12 +186,14 @@ function generateFakeAssociates(count) {
       currentPoints: 0,
       ssoid: faker.string.alphanumeric(8),
       designation: faker.helpers.arrayElement(designations),
-      locationName: faker.datatype.boolean()
-        ? faker.helpers.arrayElement(locations)
-        : null,
-      departmentName: faker.datatype.boolean()
-        ? faker.helpers.arrayElement(departments)
-        : null,
+      locationName:
+        locations.length > 0 && faker.datatype.boolean()
+          ? faker.helpers.arrayElement(locations)
+          : null,
+      departmentName:
+        departments.length > 0 && faker.datatype.boolean()
+          ? faker.helpers.arrayElement(departments)
+          : null,
     });
   }
 
@@ -242,6 +268,12 @@ async function readOccurrencesFromCSV(filePath) {
 
 function generateFakeOccurrences(associates, count, multiplier = 5) {
   const occurrences = [];
+  if (!occurrenceTypes.length) {
+    console.error(
+      "No occurrence types available; cannot generate fake occurrences."
+    );
+    return occurrences;
+  }
   const occurrenceCodes = occurrenceTypes.map((type) => type.code);
   const actualCount = Math.floor(count * multiplier);
 
@@ -661,6 +693,11 @@ async function main() {
         type: "boolean",
         description: "Seed only files",
       })
+      .option("associates-only", {
+        type: "boolean",
+        description:
+          "Only upsert associates (from associates.csv or with --use-faker). Skips rules, locations, occurrence types, etc. Uses existing DB reference data for faker location/department picks; no prisma/definitions.js required.",
+      })
       .option("use-faker", {
         type: "boolean",
         description:
@@ -687,6 +724,23 @@ async function main() {
       })
       .help().argv;
 
+    if (argv.clear && argv.associatesOnly) {
+      console.error("Cannot combine --clear with --associates-only.");
+      process.exitCode = 1;
+      return;
+    }
+
+    if (argv.associatesOnly) {
+      await loadDefinitionsContextForAssociatesOnly();
+    } else {
+      const mod = await loadSeedDefinitionsFromFiles();
+      locations = mod.locations;
+      departments = mod.departments;
+      rules = mod.rules;
+      occurrenceTypes = mod.occurrenceTypes;
+      notificationLevels = mod.notificationLevels;
+    }
+
     // If clear flag is set, clear all data regardless of other flags
     if (argv.clear) {
       await clearData(); // This now includes clearFiles
@@ -710,7 +764,8 @@ async function main() {
       argv.usersOnly ||
       argv.caOnly ||
       argv.notificationsOnly ||
-      argv.filesOnly;
+      argv.filesOnly ||
+      argv.associatesOnly;
 
     // If clear flag is set without any "only" flags, create all data
     // Otherwise, respect the "only" flags
@@ -718,26 +773,31 @@ async function main() {
     const useFaker = argv.useFaker;
     const recordCount = argv.count;
 
-    // Always upsert base data types
-    if (createAllData || !onlyFlagUsed) {
-      // If creating all data or no "only" flags are used, upsert all base data
-      await upsertOccurrenceTypes();
-      await upsertLocations();
-      await upsertDepartments();
-      await upsertNotificationLevels();
-      await upsertRules();
-    } else {
-      // Selectively upsert based on flags
-      if (argv.occurrencesOnly) await upsertOccurrenceTypes();
-      if (argv.rulesOnly) await upsertRules();
-      if (argv.notificationsOnly) await upsertNotificationLevels();
+    // Always upsert base data types (skipped for --associates-only: DB already has reference data)
+    if (!argv.associatesOnly) {
+      if (createAllData || !onlyFlagUsed) {
+        await upsertOccurrenceTypes();
+        await upsertLocations();
+        await upsertDepartments();
+        await upsertNotificationLevels();
+        await upsertRules();
+      } else {
+        if (argv.occurrencesOnly) await upsertOccurrenceTypes();
+        if (argv.rulesOnly) await upsertRules();
+        if (argv.notificationsOnly) await upsertNotificationLevels();
+      }
     }
 
     let associates = [];
     let occurrenceCount = 0;
 
     // Generate or fetch associates
-    if (createAllData || argv.usersOnly || (!onlyFlagUsed && useFaker)) {
+    if (
+      createAllData ||
+      argv.usersOnly ||
+      (!onlyFlagUsed && useFaker) ||
+      argv.associatesOnly
+    ) {
       if (useFaker) {
         associates = generateFakeAssociates(recordCount);
         await upsertAssociates(associates);
