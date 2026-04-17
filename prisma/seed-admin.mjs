@@ -8,7 +8,6 @@ async function main() {
 
   // Create roles
   const roles = [
-    { name: 'admin', description: 'Administrator with full access' },
     { name: 'att-view', description: 'Can view attendance occurrences' },
     { name: 'att-edit', description: 'Can create and edit attendance occurrences' },
     { name: 'ca-view', description: 'Can view corrective actions' },
@@ -43,7 +42,6 @@ async function main() {
       isActive: true,
       roles: {
         create: [
-          { role: { connect: { name: 'admin' } } },
           { role: { connect: { name: 'att-view' } } },
           { role: { connect: { name: 'att-edit' } } },
           { role: { connect: { name: 'ca-view' } } },

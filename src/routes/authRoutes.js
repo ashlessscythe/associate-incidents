@@ -22,6 +22,20 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
 }
 
+/** Legacy DB role name. Access to the admin app is controlled only by `User.isAdmin`. */
+const LEGACY_ADMIN_ROLE_NAME = "admin";
+
+function roleNamesForClient(userRoles) {
+  return userRoles
+    .map((ur) => ur.role.name)
+    .filter((name) => name !== LEGACY_ADMIN_ROLE_NAME);
+}
+
+function sanitizeRoleAssignmentNames(roleNames) {
+  if (!Array.isArray(roleNames)) return [];
+  return roleNames.filter((name) => name !== LEGACY_ADMIN_ROLE_NAME);
+}
+
 // Register new user
 router.post("/auth/register", async (req, res) => {
   try {
@@ -122,7 +136,7 @@ router.post("/auth/register", async (req, res) => {
         name: user.name,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
       },
     });
   } catch (error) {
@@ -169,7 +183,7 @@ router.post("/auth/login", loginRateLimit, async (req, res) => {
         email: user.email,
         name: user.name,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
       },
       JWT_SECRET,
       { expiresIn: "24h" }
@@ -183,7 +197,7 @@ router.post("/auth/login", loginRateLimit, async (req, res) => {
         name: user.name,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
       },
     });
   } catch (error) {
@@ -224,7 +238,7 @@ router.get("/auth/me", validateToken, async (req, res) => {
         name: user.name,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
       },
     });
   } catch (error) {
@@ -258,7 +272,7 @@ router.get("/admin/users", validateToken, requireAdmin, async (req, res) => {
         name: user.name,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
         createdAt: user.createdAt,
       })),
     });
@@ -270,7 +284,9 @@ router.get("/admin/users", validateToken, requireAdmin, async (req, res) => {
 
 router.get("/admin/roles", validateToken, requireAdmin, async (req, res) => {
   try {
-    const roles = await prisma.role.findMany();
+    const roles = await prisma.role.findMany({
+      where: { NOT: { name: LEGACY_ADMIN_ROLE_NAME } },
+    });
     res.json({ roles });
   } catch (error) {
     console.error("Get roles error:", error);
@@ -526,6 +542,7 @@ router.delete(
 router.post("/admin/users", validateToken, requireAdmin, async (req, res) => {
   try {
     const { email, password, name, roles } = req.body;
+    const roleNames = sanitizeRoleAssignmentNames(roles);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -546,7 +563,7 @@ router.post("/admin/users", validateToken, requireAdmin, async (req, res) => {
         password: hashedPassword,
         name,
         roles: {
-          create: roles.map((roleName) => ({
+          create: roleNames.map((roleName) => ({
             role: {
               connectOrCreate: {
                 where: { name: roleName },
@@ -572,7 +589,7 @@ router.post("/admin/users", validateToken, requireAdmin, async (req, res) => {
         name: user.name,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
-        roles: user.roles.map((ur) => ur.role.name),
+        roles: roleNamesForClient(user.roles),
       },
     });
   } catch (error) {
@@ -584,6 +601,13 @@ router.post("/admin/users", validateToken, requireAdmin, async (req, res) => {
 router.post("/admin/roles", validateToken, requireAdmin, async (req, res) => {
   try {
     const { name, description } = req.body;
+
+    if (name === LEGACY_ADMIN_ROLE_NAME) {
+      return res.status(400).json({
+        message:
+          "The admin app is granted with the Admin switch on a user, not a role name.",
+      });
+    }
 
     const role = await prisma.role.create({
       data: { name, description },
@@ -728,7 +752,7 @@ router.patch(
           name: user.name,
           isActive: user.isActive,
           isAdmin: user.isAdmin,
-          roles: user.roles.map((ur) => ur.role.name),
+          roles: roleNamesForClient(user.roles),
         },
       });
     } catch (error) {
@@ -787,7 +811,7 @@ router.patch(
           name: user.name,
           isActive: user.isActive,
           isAdmin: user.isAdmin,
-          roles: user.roles.map((ur) => ur.role.name),
+          roles: roleNamesForClient(user.roles),
         },
         message: "Password updated successfully",
       });
@@ -806,28 +830,29 @@ router.patch(
     try {
       const { id } = req.params;
       const { roles } = req.body;
+      const roleNames = sanitizeRoleAssignmentNames(roles);
 
       // Delete existing roles
       await prisma.userRole.deleteMany({
         where: { userId: id },
       });
 
-      // Add new roles
-      const roleIds = await Promise.all(
-        roles.map(async (roleName) => {
-          const role = await prisma.role.findUnique({
-            where: { name: roleName },
-          });
-          return role.id;
-        })
-      );
-
-      await prisma.userRole.createMany({
-        data: roles.map((roleName, index) => ({
-          userId: id,
-          roleId: roleIds[index],
-        })),
-      });
+      if (roleNames.length > 0) {
+        const resolvedRoles = await Promise.all(
+          roleNames.map((roleName) =>
+            prisma.role.findUnique({ where: { name: roleName } })
+          )
+        );
+        if (resolvedRoles.some((r) => !r)) {
+          return res.status(400).json({ message: "Unknown role in list" });
+        }
+        await prisma.userRole.createMany({
+          data: resolvedRoles.map((role) => ({
+            userId: id,
+            roleId: role.id,
+          })),
+        });
+      }
 
       const user = await prisma.user.findUnique({
         where: { id },
@@ -847,7 +872,7 @@ router.patch(
           name: user.name,
           isActive: user.isActive,
           isAdmin: user.isAdmin,
-          roles: user.roles.map((ur) => ur.role.name),
+          roles: roleNamesForClient(user.roles),
         },
       });
     } catch (error) {

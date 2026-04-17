@@ -6,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'react-hot-toast';
 import { api } from '@/lib/api';
 
+const PASSWORD_POLICY_HINT =
+  'At least 8 characters with uppercase, lowercase, a number, and a special character from @$!%*?&. Other symbols are not accepted.';
+
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -37,8 +40,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
       return;
     }
 
@@ -110,10 +113,12 @@ export default function ResetPassword() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              minLength={6}
+              minLength={8}
+              autoComplete="new-password"
               placeholder="Enter your new password"
               className="text-sm sm:text-base"
             />
+            <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
           </div>
           
           <div className="space-y-2">
@@ -125,7 +130,7 @@ export default function ResetPassword() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               disabled={isLoading}
-              minLength={6}
+              minLength={8}
               placeholder="Confirm your new password"
               className="text-sm sm:text-base"
             />

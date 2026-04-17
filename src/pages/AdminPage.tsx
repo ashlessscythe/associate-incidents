@@ -236,7 +236,8 @@ export default function AdminPage() {
 
   const handleUpdateUserRoles = async (userId: string, roles: string[]) => {
     try {
-      await api.patch(`/admin/users/${userId}/roles`, { roles });
+      const rolesPayload = roles.filter((r) => r !== "admin");
+      await api.patch(`/admin/users/${userId}/roles`, { roles: rolesPayload });
       toast.success("User roles updated");
       fetchData();
     } catch (error) {
@@ -1293,6 +1294,11 @@ export default function AdminPage() {
                         {user.email}
                       </p>
                       <div className="flex flex-wrap gap-2 mt-2">
+                        {user.isAdmin && (
+                          <Badge variant="default" className="text-xs">
+                            Admin app access
+                          </Badge>
+                        )}
                         {user.roles.map((role) => (
                           <Badge
                             key={role}
@@ -1321,7 +1327,7 @@ export default function AdminPage() {
                             handleToggleAdminStatus(user.id, checked)
                           }
                         />
-                        <Label className="text-sm">Admin</Label>
+                        <Label className="text-sm">Admin app</Label>
                       </div>
                       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <Button
@@ -1346,7 +1352,11 @@ export default function AdminPage() {
 
                   {/* Role Management */}
                   <div className="space-y-2">
-                    <Label className="text-sm">Roles:</Label>
+                    <Label className="text-sm">App roles</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Permissions for attendance, associates, and reports. Admin
+                      section access uses the Admin app switch only.
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {roles.map((role) => (
                         <Button

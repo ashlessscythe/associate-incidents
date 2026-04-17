@@ -13,6 +13,9 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
+const PASSWORD_POLICY_HINT =
+  'At least 8 characters with uppercase, lowercase, a number, and a special character from @$!%*?&. Other symbols are not accepted.';
+
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -157,8 +160,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  minLength={6}
+                  minLength={8}
+                  autoComplete="new-password"
                 />
+                <p className="text-xs text-muted-foreground">{PASSWORD_POLICY_HINT}</p>
               </div>
               
               <Button type="submit" className="w-full" disabled={isLoading}>
