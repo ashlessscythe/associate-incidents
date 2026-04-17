@@ -29,7 +29,13 @@ export function useAssociatesWithOccurrences() {
             name: associate.info.name,
             points: associate.info.points,
             occurrencePoints: associate.info.occurrencePoints,
+            priorOccurrencePoints: associate.info.priorOccurrencePoints,
             pointsAdjustment: associate.info.pointsAdjustment,
+            pointTotalsEffectiveDate: associate.info.pointTotalsEffectiveDate,
+            designationPointTotalsEffectiveDate:
+              associate.info.designationPointTotalsEffectiveDate,
+            resolvedPointTotalsEffectiveDate:
+              associate.info.resolvedPointTotalsEffectiveDate,
             notificationLevel: associate.info.notificationLevel,
             designation: associate.info.designation as Designation,
             isActive: associate.info.isActive,

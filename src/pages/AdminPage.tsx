@@ -119,6 +119,9 @@ export default function AdminPage() {
   const [designationVisibility, setDesignationVisibility] = useState<
     DesignationVisibility[]
   >([]);
+  const [designationDateDrafts, setDesignationDateDrafts] = useState<
+    Record<string, string>
+  >({});
   const [loadingDesignations, setLoadingDesignations] = useState(false);
   const [showTemplateMappingConfig, setShowTemplateMappingConfig] = useState(false);
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
@@ -169,6 +172,13 @@ export default function AdminPage() {
       setRoles(rolesResponse.data.roles);
       setTemplates(templatesResponse);
       setDesignationVisibility(designationsResponse);
+      const drafts: Record<string, string> = {};
+      for (const d of designationsResponse) {
+        drafts[d.designation] = d.pointTotalsEffectiveDate
+          ? new Date(d.pointTotalsEffectiveDate).toISOString().slice(0, 10)
+          : "";
+      }
+      setDesignationDateDrafts(drafts);
       setDepartments(departmentsResponse);
       setLocations(locationsResponse);
     } catch (error) {
@@ -484,7 +494,7 @@ export default function AdminPage() {
   ) => {
     try {
       setLoadingDesignations(true);
-      await updateDesignationVisibility(designation, isVisible);
+      await updateDesignationVisibility(designation, { isVisible });
       setDesignationVisibility((prev) =>
         prev.map((d) =>
           d.designation === designation ? { ...d, isVisible } : d
@@ -494,6 +504,29 @@ export default function AdminPage() {
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Failed to update designation visibility"
+      );
+    } finally {
+      setLoadingDesignations(false);
+    }
+  };
+
+  const handleSaveDesignationEffectiveDate = async (designation: string) => {
+    const raw = (designationDateDrafts[designation] ?? "").trim();
+    try {
+      setLoadingDesignations(true);
+      const updated = await updateDesignationVisibility(designation, {
+        pointTotalsEffectiveDate: raw === "" ? null : raw,
+      });
+      setDesignationVisibility((prev) =>
+        prev.map((d) =>
+          d.designation === designation ? { ...d, ...updated } : d
+        )
+      );
+      toast.success(`Point totals date saved for ${designation}`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(
+        err.response?.data?.message || "Failed to save designation date"
       );
     } finally {
       setLoadingDesignations(false);
@@ -954,44 +987,131 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 Control which designations appear in filters and selection dropdowns
                 throughout the application. Disabled designations will be hidden from
                 users but existing data will remain unchanged.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <strong>Point totals effective date</strong> (per designation): only
+                occurrences on or after this date count toward totals for associates
+                in that designation, unless an individual associate has their own
+                override (Associates → Adjust points).
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {designationVisibility.map((item) => (
                   <div
                     key={item.designation}
-                    className="border rounded-lg p-4 flex items-center justify-between"
+                    className="border rounded-lg p-4 flex flex-col gap-4 min-w-0"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                        <Users className="h-5 w-5 text-primary" />
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                          <Users className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">
+                            {item.designation}
+                          </h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {item.isVisible ? "Visible" : "Hidden"}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{item.designation}</h3>
-                        <p className="text-xs text-gray-500">
-                          {item.isVisible ? "Visible" : "Hidden"}
-                        </p>
+                      <div className="flex items-center justify-end gap-2 shrink-0">
+                        <Switch
+                          checked={item.isVisible}
+                          onCheckedChange={(checked) =>
+                            handleToggleDesignationVisibility(
+                              item.designation,
+                              checked
+                            )
+                          }
+                          disabled={loadingDesignations}
+                        />
+                        {item.isVisible ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-gray-400" />
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={item.isVisible}
-                        onCheckedChange={(checked) =>
-                          handleToggleDesignationVisibility(
-                            item.designation,
-                            checked
-                          )
-                        }
-                        disabled={loadingDesignations}
-                      />
-                      {item.isVisible ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <AlertCircle className="h-5 w-5 text-gray-400" />
-                      )}
+                    <div className="flex flex-col gap-2 pt-1 border-t border-border">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Point totals effective (inclusive)
+                      </Label>
+                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                        <Input
+                          type="date"
+                          className="w-full min-w-0 sm:max-w-[11rem]"
+                          value={designationDateDrafts[item.designation] ?? ""}
+                          onChange={(e) =>
+                            setDesignationDateDrafts((prev) => ({
+                              ...prev,
+                              [item.designation]: e.target.value,
+                            }))
+                          }
+                          disabled={loadingDesignations}
+                        />
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            disabled={loadingDesignations}
+                            onClick={() =>
+                              handleSaveDesignationEffectiveDate(item.designation)
+                            }
+                          >
+                            Save date
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="w-full sm:w-auto"
+                            disabled={loadingDesignations}
+                            onClick={() => {
+                              setDesignationDateDrafts((prev) => ({
+                                ...prev,
+                                [item.designation]: "",
+                              }));
+                              void (async () => {
+                                try {
+                                  setLoadingDesignations(true);
+                                  const updated =
+                                    await updateDesignationVisibility(
+                                      item.designation,
+                                      { pointTotalsEffectiveDate: null }
+                                    );
+                                  setDesignationVisibility((prev) =>
+                                    prev.map((d) =>
+                                      d.designation === item.designation
+                                        ? { ...d, ...updated }
+                                        : d
+                                    )
+                                  );
+                                  toast.success(
+                                    `Cleared effective date for ${item.designation}`
+                                  );
+                                } catch (error: unknown) {
+                                  const err = error as {
+                                    response?: { data?: { message?: string } };
+                                  };
+                                  toast.error(
+                                    err.response?.data?.message ||
+                                      "Failed to clear date"
+                                  );
+                                } finally {
+                                  setLoadingDesignations(false);
+                                }
+                              })();
+                            }}
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

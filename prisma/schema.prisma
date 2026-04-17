@@ -52,6 +52,8 @@ model Associate {
   currentPoints     Float                  @default(0)
   /// Manual offset added to occurrence-based points (same window as reports).
   pointsAdjustment  Float                  @default(0)
+  /// When set, only occurrences on or after this instant count toward occurrence subtotal and totals (still subject to the rolling 12-month window). Older rows in the window are excluded unless exported as "prior".
+  pointTotalsEffectiveDate DateTime?
   locationId        String?
   location          Location?              @relation(fields: [locationId], references: [id])
   departmentId      String?
@@ -204,6 +206,8 @@ model DesignationVisibility {
   id          String      @id @default(uuid())
   designation Designation @unique
   isVisible   Boolean     @default(true)
+  /// Inclusive: associates with this designation count occurrences on or after this date (within rolling window), unless the associate has their own pointTotalsEffectiveDate.
+  pointTotalsEffectiveDate DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }

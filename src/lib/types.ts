@@ -50,10 +50,18 @@ export interface AssociateInfo {
   id: string;
   name: string;
   points: number;
-  /** Sum of occurrence type points in the rolling window (before adjustment). */
+  /** Sum of counted occurrence type points in the rolling window (before adjustment). */
   occurrencePoints?: number;
+  /** Sum of points for in-window occurrences before pointTotalsEffectiveDate (excluded from totals). */
+  priorOccurrencePoints?: number;
   /** Manual offset stored on the associate; included in `points`. */
   pointsAdjustment?: number;
+  /** Inclusive: associate-only cutoff; overrides designation policy when set. */
+  pointTotalsEffectiveDate?: string | null;
+  /** Admin default for this associate's designation (inclusive). */
+  designationPointTotalsEffectiveDate?: string | null;
+  /** Cutoff actually used for totals (associate if set, else designation). */
+  resolvedPointTotalsEffectiveDate?: string | null;
   notificationLevel: string;
   designation: string;
   department?: Department;
@@ -71,6 +79,10 @@ export interface AssociateAndDesignation {
   /** Rolling-window occurrence sum (same window as `points` elsewhere). */
   occurrencePoints?: number;
   pointsAdjustment?: number;
+  /** Inclusive associate-only cutoff (overrides designation when set). */
+  pointTotalsEffectiveDate?: string | null;
+  /** Designation-level default from admin. */
+  designationPointTotalsEffectiveDate?: string | null;
   /** occurrencePoints + pointsAdjustment */
   points?: number;
 }

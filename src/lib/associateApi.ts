@@ -55,6 +55,21 @@ export const setAssociatePointsAdjustment = async (
   return response.data;
 };
 
+export const setAssociatePointTotalsEffectiveDate = async (
+  associateId: string,
+  pointTotalsEffectiveDate: string | null
+): Promise<{
+  id: string;
+  name: string;
+  pointTotalsEffectiveDate: string | null;
+}> => {
+  const response = await api.put(
+    `/associates/${associateId}/point-totals-effective-date`,
+    { pointTotalsEffectiveDate }
+  );
+  return response.data;
+};
+
 export const getAssociatePointsAndNotification = async (
   associateId: string
 ): Promise<AssociateInfo> => {
@@ -121,7 +136,13 @@ export const toggleAssociateActive = async (
 export interface DesignationVisibility {
   designation: string;
   isVisible: boolean;
+  pointTotalsEffectiveDate?: string | null;
 }
+
+export type DesignationVisibilityUpdate = {
+  isVisible?: boolean;
+  pointTotalsEffectiveDate?: string | null;
+};
 
 export const getDesignationVisibility = async (): Promise<DesignationVisibility[]> => {
   try {
@@ -137,12 +158,12 @@ export const getDesignationVisibility = async (): Promise<DesignationVisibility[
 
 export const updateDesignationVisibility = async (
   designation: string,
-  isVisible: boolean
+  updates: DesignationVisibilityUpdate
 ): Promise<DesignationVisibility> => {
   try {
     const response = await api.patch<{ designation: DesignationVisibility }>(
       `/admin/designations/${designation}`,
-      { isVisible }
+      updates
     );
     return response.data.designation;
   } catch (error) {

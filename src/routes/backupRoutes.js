@@ -404,6 +404,9 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
             id: dv.id,
             designation: dv.designation,
             isVisible: dv.isVisible,
+            pointTotalsEffectiveDate: dv.pointTotalsEffectiveDate
+              ? new Date(dv.pointTotalsEffectiveDate)
+              : null,
             createdAt: new Date(dv.createdAt),
             updatedAt: new Date(dv.updatedAt),
           })),
@@ -444,6 +447,9 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
               associate.pointsAdjustment !== undefined
                 ? associate.pointsAdjustment
                 : 0,
+            pointTotalsEffectiveDate: associate.pointTotalsEffectiveDate
+              ? new Date(associate.pointTotalsEffectiveDate)
+              : null,
             locationId: associate.locationId,
             departmentId: associate.departmentId,
           })),

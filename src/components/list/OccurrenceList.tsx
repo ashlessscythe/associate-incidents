@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -303,15 +303,70 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     return sortDirection === "asc" ? comparison : -comparison;
   });
 
-  const filteredOccurrences = sortedOccurrences.filter((occurrence) => {
-    if (hideZeroPoints && occurrence.type.points === 0) {
-      return false;
+  const rollupYearStart = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d;
+  }, []);
+
+  const resolvedEffectiveYmd = useMemo(() => {
+    const raw =
+      associateInfo?.pointTotalsEffectiveDate ??
+      associateInfo?.designationPointTotalsEffectiveDate ??
+      null;
+    return raw ? new Date(raw) : null;
+  }, [
+    associateInfo?.pointTotalsEffectiveDate,
+    associateInfo?.designationPointTotalsEffectiveDate,
+  ]);
+
+  /** Partition for print/export (ignores hide-zero / hide-old toggles). */
+  const docRollup = useMemo(() => {
+    const counted: Occurrence[] = [];
+    const prior: Occurrence[] = [];
+    const outside: Occurrence[] = [];
+    const eff = resolvedEffectiveYmd;
+    for (const occ of sortedOccurrences) {
+      const d = new Date(occ.date);
+      if (d < rollupYearStart) outside.push(occ);
+      else if (eff && d < eff) prior.push(occ);
+      else counted.push(occ);
     }
-    if (hideOldOccurrences && isOverOneYearOld(occurrence.date)) {
-      return false;
-    }
-    return true;
-  });
+    return { counted, prior, outside };
+  }, [sortedOccurrences, resolvedEffectiveYmd, rollupYearStart]);
+
+  const rowsWithVariant = useMemo(() => {
+    const eff = resolvedEffectiveYmd;
+    return sortedOccurrences
+      .filter((occurrence) => {
+        if (hideZeroPoints && occurrence.type.points === 0) return false;
+        if (hideOldOccurrences && isOverOneYearOld(occurrence.date))
+          return false;
+        return true;
+      })
+      .map((occ) => {
+        const d = new Date(occ.date);
+        let variant: "counted" | "prior" | "outside";
+        if (d < rollupYearStart) variant = "outside";
+        else if (eff && d < eff) variant = "prior";
+        else variant = "counted";
+        return { occ, variant };
+      });
+  }, [
+    sortedOccurrences,
+    hideZeroPoints,
+    hideOldOccurrences,
+    resolvedEffectiveYmd,
+    rollupYearStart,
+  ]);
+
+  const sectionTitle = (variant: "counted" | "prior" | "outside") => {
+    if (variant === "counted")
+      return "Counted toward current total (rolling window)";
+    if (variant === "prior")
+      return "Prior in rolling window (not counted toward current total)";
+    return "Outside rolling 12-month window (not in totals)";
+  };
 
   const renderSortIcon = (column: SortColumn) => {
     if (column === sortColumn) {
@@ -370,10 +425,12 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
         location,
         department,
         currentDateStr,
-        filteredOccurrences,
+        docRollup.counted,
+        docRollup.prior,
+        docRollup.outside,
         notificationLevel,
         notificationsWithoutFiles,
-        designation // Add designation parameter
+        designation
       );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -449,6 +506,27 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Designation: {designation}
               </p>
+              {associateInfo?.resolvedPointTotalsEffectiveDate && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Cutoff applied (inclusive):{" "}
+                  {new Date(associateInfo.resolvedPointTotalsEffectiveDate)
+                    .toISOString()
+                    .split("T")[0]}
+                  {associateInfo.pointTotalsEffectiveDate
+                    ? " (associate override)"
+                    : associateInfo.designationPointTotalsEffectiveDate
+                      ? " (designation default)"
+                      : ""}
+                  {associateInfo?.priorOccurrencePoints != null &&
+                    associateInfo.priorOccurrencePoints > 0 && (
+                      <>
+                        {" "}
+                        · Prior in window (excluded):{" "}
+                        {associateInfo.priorOccurrencePoints} pts
+                      </>
+                    )}
+                </p>
+              )}
               <p className="font-semibold text-gray-800 dark:text-gray-200">
                 Location: {associateLocation?.name || "Not set"}
               </p>
@@ -494,10 +572,14 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
               onClick={() =>
                 handlePrint({
                   associateInfo,
+                  occurrenceSubtotal: occurrenceSubtotal ?? 0,
+                  pointsAdjustment: manualAdjustment ?? 0,
                   totalPoints,
                   notificationLevel,
                   designation,
-                  filteredOccurrences,
+                  filteredCountedOccurrences: docRollup.counted,
+                  filteredPriorOccurrences: docRollup.prior,
+                  filteredOutsideOccurrences: docRollup.outside,
                 })
               }
               className="text-light-500 hover:text-light-700 mr-2"
@@ -557,14 +639,35 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOccurrences.map((occurrence) => {
-                  const isOld = isOverOneYearOld(occurrence.date);
-                  const rowStyle = isOld
-                    ? { color: "gray", textDecoration: "line-through" }
-                    : {};
+                {rowsWithVariant.map(({ occ: occurrence, variant }, idx) => {
+                  const prev = rowsWithVariant[idx - 1];
+                  const showSection =
+                    !!associateInfo?.resolvedPointTotalsEffectiveDate &&
+                    (!prev || prev.variant !== variant);
+                  const isOld = variant === "outside";
+                  const rowStyle =
+                    isOld || variant === "prior"
+                      ? {
+                          color: variant === "prior" ? undefined : "gray",
+                          textDecoration:
+                            variant === "outside" ? "line-through" : undefined,
+                          opacity: variant === "prior" ? 0.85 : undefined,
+                        }
+                      : {};
 
                   return (
-                    <TableRow key={occurrence.id} style={rowStyle}>
+                    <React.Fragment key={occurrence.id}>
+                      {showSection && (
+                        <TableRow className="bg-muted/80 hover:bg-muted/80">
+                          <TableCell
+                            colSpan={showEditActions ? 6 : 5}
+                            className="font-semibold text-sm py-2"
+                          >
+                            {sectionTitle(variant)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    <TableRow style={rowStyle}>
                       <TableCell className="w-24">
                         {occurrence.type.code}
                         {occurrence.files && occurrence.files.length > 0 && (
@@ -587,6 +690,11 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                         {isOld && (
                           <span className="ml-2 text-sm text-gray-500">
                             (rolled out)
+                          </span>
+                        )}
+                        {variant === "prior" && (
+                          <span className="ml-2 text-sm text-muted-foreground">
+                            (not counted)
                           </span>
                         )}
                       </TableCell>
@@ -648,6 +756,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
                         </TableCell>
                       )}
                     </TableRow>
+                    </React.Fragment>
                   );
                 })}
               </TableBody>
@@ -655,7 +764,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           </div>
         ) : (
           <ul className="space-y-4">
-            {filteredOccurrences.map((occurrence) => (
+            {rowsWithVariant.map(({ occ: occurrence }) => (
               <OccurrenceItem
                 key={occurrence.id}
                 occurrence={occurrence}
@@ -671,7 +780,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           </ul>
         )}
 
-        {filteredOccurrences.length === 0 && (
+        {rowsWithVariant.length === 0 && (
           <p className="text-center text-gray-500 mt-4">
             No occurrences recorded
           </p>

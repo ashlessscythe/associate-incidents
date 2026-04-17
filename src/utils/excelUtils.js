@@ -67,20 +67,40 @@ export async function getTemplate(type) {
   }
 }
 
+function sumOccPoints(occurrences) {
+  return (occurrences || []).reduce(
+    (sum, occ) => sum + (occ.type?.points || 0),
+    0
+  );
+}
+
+function formatOccurrenceLine(occ) {
+  const formattedDate = new Date(occ.date).toISOString().split("T")[0];
+  return `${formattedDate} ${occ.type?.code || "Unknown"} - ${
+    occ.type?.points || 0
+  } pts`;
+}
+
 export async function generateExcelOccurrence(
   associateName,
   location,
   department,
   date,
-  occurrences,
+  countedOccurrences,
   notificationLevel,
   notifications,
   designation,
-  pointsAdjustment = 0
+  pointsAdjustment = 0,
+  priorOccurrences = [],
+  outsideOccurrences = []
 ) {
   if (!associateName || !location || !department || !date || !designation) {
     throw new Error("Missing required parameters");
   }
+
+  const counted = countedOccurrences || [];
+  const prior = priorOccurrences || [];
+  const outside = outsideOccurrences || [];
 
   const templatePath = await getTemplate("occ");
   let workbook;
@@ -131,24 +151,31 @@ export async function generateExcelOccurrence(
     sheet.cell(level.cell).value(cellValue);
   });
 
-  // Calculate and set total points (occurrences in window + manual adjustment)
-  const totalPoints =
-    occurrences.reduce(
-      (sum, occ) => sum + (occ.type?.points || 0),
-      0
-    ) + (pointsAdjustment || 0);
+  const occurrenceSubtotal = sumOccPoints(counted);
+  const totalPoints = occurrenceSubtotal + (pointsAdjustment || 0);
 
-  // Create misconduct text
-  const blurb = `Associate ${associateName} has the following occurrences. Total points: ${totalPoints}\n\n`;
-  const misconduct = occurrences
-    .map((occ) => {
-      const formattedDate = new Date(occ.date).toISOString().split("T")[0];
-      return `${formattedDate} ${occ.type?.code || "Unknown"} - ${
-        occ.type?.points || 0
-      } pts`;
-    })
-    .join(", ");
-  const fullMisconductText = blurb + misconduct;
+  const countedLines = counted.map(formatOccurrenceLine).join(", ");
+  const priorLines = prior.length
+    ? `\n\nPrior in rolling window (not counted toward current total): ${prior
+        .map(formatOccurrenceLine)
+        .join(", ")}`
+    : "";
+
+  const outsideLines = outside.length
+    ? `\n\nOlder than rolling 12-month window (reference only, not in totals): ${outside
+        .map(formatOccurrenceLine)
+        .join(", ")}`
+    : "";
+
+  const fullMisconductText =
+    `Associate ${associateName} — point summary (last 12 months, counted occurrences only): ` +
+    `occurrence subtotal ${occurrenceSubtotal}; manual adjustment ${
+      pointsAdjustment > 0 ? "+" : ""
+    }${pointsAdjustment || 0}; total ${totalPoints}. ` +
+    `Line items below are raw logged points.\n\n` +
+    `Counted toward current total: ${countedLines || "(none)"}` +
+    priorLines +
+    outsideLines;
   
   const misconductCell = getCellValue(mappings, "misconductText", "A14");
   sheet.cell(misconductCell).value(fullMisconductText);

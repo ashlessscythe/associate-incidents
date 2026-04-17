@@ -16,9 +16,18 @@ router.post("/export-excel-occurrence", async (req, res) => {
       department,
       date,
       occurrences,
+      countedOccurrences,
+      priorOccurrences,
+      outsideOccurrences,
       notificationLevel,
       notifications,
     } = req.body;
+
+    const counted = Array.isArray(countedOccurrences)
+      ? countedOccurrences
+      : occurrences || [];
+    const prior = Array.isArray(priorOccurrences) ? priorOccurrences : [];
+    const outside = Array.isArray(outsideOccurrences) ? outsideOccurrences : [];
 
     // Fetch associate's designation from the database
     const associate = await prisma.associate.findUnique({
@@ -35,11 +44,13 @@ router.post("/export-excel-occurrence", async (req, res) => {
       location,
       department,
       date,
-      occurrences,
+      counted,
       notificationLevel,
       notifications,
       associate.designation,
-      associate.pointsAdjustment ?? 0
+      associate.pointsAdjustment ?? 0,
+      prior,
+      outside
     );
 
     res.setHeader(

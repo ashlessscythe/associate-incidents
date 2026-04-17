@@ -608,14 +608,18 @@ router.get("/admin/designations", validateToken, requireAdmin, async (req, res) 
     // Get visibility settings
     const visibilitySettings = await prisma.designationVisibility.findMany();
     const visibilityMap = new Map(
-      visibilitySettings.map((v) => [v.designation, v.isVisible])
+      visibilitySettings.map((v) => [v.designation, v])
     );
-    
+
     // Combine with visibility status (default to visible if not in DB)
-    const designations = allDesignations.map((row) => ({
-      designation: row.designation,
-      isVisible: visibilityMap.get(row.designation) !== false,
-    }));
+    const designations = allDesignations.map((row) => {
+      const v = visibilityMap.get(row.designation);
+      return {
+        designation: row.designation,
+        isVisible: v ? v.isVisible !== false : true,
+        pointTotalsEffectiveDate: v?.pointTotalsEffectiveDate ?? null,
+      };
+    });
     
     res.json({ designations });
   } catch (error) {
@@ -632,7 +636,7 @@ router.patch(
   async (req, res) => {
     try {
       const { designation } = req.params;
-      const { isVisible } = req.body;
+      const { isVisible, pointTotalsEffectiveDate } = req.body;
 
       // Validate designation enum value
       const validDesignations = await prisma.$queryRaw`
@@ -646,11 +650,46 @@ router.patch(
         return res.status(400).json({ message: "Invalid designation" });
       }
 
+      const updatePayload = {};
+      if (typeof isVisible === "boolean") {
+        updatePayload.isVisible = isVisible;
+      }
+      if (pointTotalsEffectiveDate !== undefined) {
+        if (
+          pointTotalsEffectiveDate === null ||
+          pointTotalsEffectiveDate === ""
+        ) {
+          updatePayload.pointTotalsEffectiveDate = null;
+        } else {
+          const d = new Date(pointTotalsEffectiveDate);
+          if (Number.isNaN(d.getTime())) {
+            return res.status(400).json({
+              message: "pointTotalsEffectiveDate must be a valid date or null",
+            });
+          }
+          updatePayload.pointTotalsEffectiveDate = d;
+        }
+      }
+
+      if (Object.keys(updatePayload).length === 0) {
+        return res
+          .status(400)
+          .json({ message: "No valid fields to update" });
+      }
+
       // Upsert visibility setting
       const visibility = await prisma.designationVisibility.upsert({
         where: { designation },
-        update: { isVisible },
-        create: { designation, isVisible },
+        update: updatePayload,
+        create: {
+          designation,
+          isVisible:
+            typeof isVisible === "boolean" ? isVisible : true,
+          pointTotalsEffectiveDate:
+            pointTotalsEffectiveDate !== undefined
+              ? updatePayload.pointTotalsEffectiveDate ?? null
+              : null,
+        },
       });
 
       res.json({ designation: visibility });

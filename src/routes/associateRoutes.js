@@ -5,19 +5,16 @@ import fs from "fs";
 import path from "path";
 import { parse } from "csv-parse";
 import { requireEditor } from "../middleware/auth.js";
+import {
+  sumOccurrencePoints,
+  partitionCountedOccurrences,
+  totalPointsWithAdjustment,
+  resolvePointTotalsEffectiveDate,
+  loadDesignationEffectiveDateMap,
+  resolvedEffectiveForAssociate,
+} from "../utils/pointsRollup.js";
 
 const router = express.Router();
-
-function sumOccurrencePoints(occurrences) {
-  return occurrences.reduce(
-    (sum, o) => sum + (o.type?.points ?? 0),
-    0
-  );
-}
-
-function totalPointsWithAdjustment(occurrences, adjustment) {
-  return sumOccurrencePoints(occurrences) + (adjustment ?? 0);
-}
 
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
@@ -142,6 +139,8 @@ router.get("/associates-with-designation", async (req, res) => {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
+
     const associates = await prisma.associate.findMany({
       select: {
         id: true,
@@ -151,6 +150,7 @@ router.get("/associates-with-designation", async (req, res) => {
         location: true,
         isActive: true,
         pointsAdjustment: true,
+        pointTotalsEffectiveDate: true,
         occurrences: {
           where: {
             date: {
@@ -158,6 +158,7 @@ router.get("/associates-with-designation", async (req, res) => {
             },
           },
           select: {
+            date: true,
             type: {
               select: {
                 points: true,
@@ -169,7 +170,13 @@ router.get("/associates-with-designation", async (req, res) => {
     });
 
     const result = associates.map((associate) => {
-      const occurrencePoints = sumOccurrencePoints(associate.occurrences);
+      const resolved = resolvedEffectiveForAssociate(associate, visMap);
+      const { counted } = partitionCountedOccurrences(
+        associate.occurrences,
+        resolved,
+        oneYearAgo
+      );
+      const occurrencePoints = sumOccurrencePoints(counted);
       const adj = associate.pointsAdjustment ?? 0;
       return {
         id: associate.id,
@@ -178,6 +185,9 @@ router.get("/associates-with-designation", async (req, res) => {
         department: associate.department,
         location: associate.location,
         isActive: associate.isActive,
+        pointTotalsEffectiveDate: associate.pointTotalsEffectiveDate,
+        designationPointTotalsEffectiveDate:
+          visMap.get(associate.designation) ?? null,
         occurrencePoints,
         pointsAdjustment: adj,
         points: occurrencePoints + adj,
@@ -200,11 +210,15 @@ router.get("/associates-data", async (req, res) => {
   cutoffDate.setMonth(cutoffDate.getMonth() - months);
 
   try {
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
+
     const associatesData = await prisma.associate.findMany({
       select: {
         id: true,
         name: true,
+        designation: true,
         pointsAdjustment: true,
+        pointTotalsEffectiveDate: true,
         occurrences: {
           where: {
             date: {
@@ -212,6 +226,7 @@ router.get("/associates-data", async (req, res) => {
             },
           },
           select: {
+            date: true,
             type: {
               select: {
                 points: true,
@@ -228,18 +243,26 @@ router.get("/associates-data", async (req, res) => {
       orderBy: { name: "asc" },
     });
 
-    const formattedData = associatesData.map((associate) => ({
-      id: associate.id,
-      name: associate.name,
-      occurrencePoints: sumOccurrencePoints(associate.occurrences),
-      pointsAdjustment: associate.pointsAdjustment ?? 0,
-      currentPoints: totalPointsWithAdjustment(
+    const formattedData = associatesData.map((associate) => {
+      const resolved = resolvedEffectiveForAssociate(associate, visMap);
+      const { counted } = partitionCountedOccurrences(
         associate.occurrences,
-        associate.pointsAdjustment
-      ),
-      totalOccurrences: associate.occurrences.length,
-      totalCA: associate.correctiveActions.length,
-    }));
+        resolved,
+        cutoffDate
+      );
+      return {
+        id: associate.id,
+        name: associate.name,
+        occurrencePoints: sumOccurrencePoints(counted),
+        pointsAdjustment: associate.pointsAdjustment ?? 0,
+        currentPoints: totalPointsWithAdjustment(
+          counted,
+          associate.pointsAdjustment
+        ),
+        totalOccurrences: associate.occurrences.length,
+        totalCA: associate.correctiveActions.length,
+      };
+    });
 
     res.json(formattedData);
   } catch (error) {
@@ -253,6 +276,7 @@ router.get("/associates-data", async (req, res) => {
 // Get all associates with occurrences
 router.get("/all-with-occurrences", async (req, res) => {
   try {
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const associates = await prisma.associate.findMany({
@@ -277,9 +301,16 @@ router.get("/all-with-occurrences", async (req, res) => {
 
     const associatesWithDetails = await Promise.all(
       associates.map(async (associate) => {
-        const occurrencePoints = sumOccurrencePoints(associate.occurrences);
-        const points = totalPointsWithAdjustment(
+        const resolved = resolvedEffectiveForAssociate(associate, visMap);
+        const { counted, priorInWindow } = partitionCountedOccurrences(
           associate.occurrences,
+          resolved,
+          oneYearAgo
+        );
+        const occurrencePoints = sumOccurrencePoints(counted);
+        const priorOccurrencePoints = sumOccurrencePoints(priorInWindow);
+        const points = totalPointsWithAdjustment(
+          counted,
           associate.pointsAdjustment
         );
 
@@ -316,7 +347,12 @@ router.get("/all-with-occurrences", async (req, res) => {
             name: associate.name,
             points: points,
             occurrencePoints,
+            priorOccurrencePoints,
             pointsAdjustment: associate.pointsAdjustment ?? 0,
+            pointTotalsEffectiveDate: associate.pointTotalsEffectiveDate,
+            designationPointTotalsEffectiveDate:
+              visMap.get(associate.designation) ?? null,
+            resolvedPointTotalsEffectiveDate: resolved,
             notificationLevel: notificationLevel,
             designation: associate.designation,
             department: associate.department,
@@ -338,6 +374,7 @@ router.get("/all-with-occurrences", async (req, res) => {
 router.get("/associates/:id/points-and-notification", async (req, res) => {
   try {
     const { id } = req.params;
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -368,9 +405,22 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       return res.status(404).json({ error: "Associate not found" });
     }
 
-    const occurrencePoints = sumOccurrencePoints(associate.occurrences);
-    const points = totalPointsWithAdjustment(
+    const designationPointTotalsEffectiveDate =
+      visMap.get(associate.designation) ?? null;
+    const resolved = resolvePointTotalsEffectiveDate(
+      associate.pointTotalsEffectiveDate,
+      designationPointTotalsEffectiveDate
+    );
+
+    const { counted, priorInWindow } = partitionCountedOccurrences(
       associate.occurrences,
+      resolved,
+      oneYearAgo
+    );
+    const occurrencePoints = sumOccurrencePoints(counted);
+    const priorOccurrencePoints = sumOccurrencePoints(priorInWindow);
+    const points = totalPointsWithAdjustment(
+      counted,
       associate.pointsAdjustment
     );
 
@@ -396,7 +446,11 @@ router.get("/associates/:id/points-and-notification", async (req, res) => {
       name: associate.name,
       points: points,
       occurrencePoints,
+      priorOccurrencePoints,
       pointsAdjustment: associate.pointsAdjustment ?? 0,
+      pointTotalsEffectiveDate: associate.pointTotalsEffectiveDate,
+      designationPointTotalsEffectiveDate,
+      resolvedPointTotalsEffectiveDate: resolved,
       notificationLevel: notificationLevel,
       designation: associate.designation,
       department: associate.department,
@@ -446,6 +500,48 @@ router.put(
       }
       console.error("Error updating points adjustment:", error);
       res.status(500).json({ error: "Error updating points adjustment" });
+    }
+  }
+);
+
+// Set first date (inclusive) for which occurrences count toward point totals within the rolling window
+router.put(
+  "/associates/:id/point-totals-effective-date",
+  requireEditor,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const raw = req.body?.pointTotalsEffectiveDate;
+      let pointTotalsEffectiveDate = null;
+      if (raw !== null && raw !== undefined && raw !== "") {
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) {
+          return res.status(400).json({
+            error: "pointTotalsEffectiveDate must be a valid ISO date or null",
+          });
+        }
+        pointTotalsEffectiveDate = d;
+      }
+
+      const updated = await prisma.associate.update({
+        where: { id },
+        data: { pointTotalsEffectiveDate },
+        select: {
+          id: true,
+          name: true,
+          pointTotalsEffectiveDate: true,
+        },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      if (error.code === "P2025") {
+        return res.status(404).json({ error: "Associate not found" });
+      }
+      console.error("Error updating point totals effective date:", error);
+      res
+        .status(500)
+        .json({ error: "Error updating point totals effective date" });
     }
   }
 );
@@ -708,6 +804,7 @@ router.get("/download-current-associates", async (req, res) => {
 // Get associates points report
 router.get("/associates-points-report", async (req, res) => {
   try {
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
@@ -717,6 +814,7 @@ router.get("/associates-points-report", async (req, res) => {
         designation: true,
         isActive: true,
         pointsAdjustment: true,
+        pointTotalsEffectiveDate: true,
         department: {
           select: {
             name: true,
@@ -729,6 +827,7 @@ router.get("/associates-points-report", async (req, res) => {
             },
           },
           select: {
+            date: true,
             type: {
               select: {
                 points: true,
@@ -739,16 +838,24 @@ router.get("/associates-points-report", async (req, res) => {
       },
     });
 
-    const report = associates.map((associate) => ({
-      associate_name: associate.name,
-      department_name: associate.department?.name || "No Department",
-      associate_designation: associate.designation,
-      total_points: totalPointsWithAdjustment(
+    const report = associates.map((associate) => {
+      const resolved = resolvedEffectiveForAssociate(associate, visMap);
+      const { counted } = partitionCountedOccurrences(
         associate.occurrences,
-        associate.pointsAdjustment
-      ),
-      status: associate.isActive ? "Active" : "Inactive",
-    }));
+        resolved,
+        oneYearAgo
+      );
+      return {
+        associate_name: associate.name,
+        department_name: associate.department?.name || "No Department",
+        associate_designation: associate.designation,
+        total_points: totalPointsWithAdjustment(
+          counted,
+          associate.pointsAdjustment
+        ),
+        status: associate.isActive ? "Active" : "Inactive",
+      };
+    });
 
     // Convert to CSV
     const csvHeader =

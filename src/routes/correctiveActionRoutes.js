@@ -1,5 +1,11 @@
 import express from "express";
 import { prisma } from "../server.js";
+import {
+  partitionCountedOccurrences,
+  sumOccurrencePoints,
+  loadDesignationEffectiveDateMap,
+  resolvedEffectiveForAssociate,
+} from "../utils/pointsRollup.js";
 
 const router = express.Router();
 
@@ -147,6 +153,8 @@ router.get("/ca-by-type-with-info", async (req, res) => {
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - months);
 
+    const visMap = await loadDesignationEffectiveDateMap(prisma);
+
     const caDataWithInfo = await prisma.associate.findMany({
       include: {
         correctiveActions: {
@@ -173,10 +181,13 @@ router.get("/ca-by-type-with-info", async (req, res) => {
     });
 
     const formattedData = caDataWithInfo.map((associate) => {
-      const occurrencePoints = associate.occurrences.reduce(
-        (sum, occ) => sum + occ.type.points,
-        0
+      const resolved = resolvedEffectiveForAssociate(associate, visMap);
+      const { counted } = partitionCountedOccurrences(
+        associate.occurrences,
+        resolved,
+        cutoffDate
       );
+      const occurrencePoints = sumOccurrencePoints(counted);
       const points =
         occurrencePoints + (associate.pointsAdjustment ?? 0);
       return {
