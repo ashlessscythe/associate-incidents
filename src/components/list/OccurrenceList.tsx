@@ -59,6 +59,7 @@ import { useOccurrencePrint } from "@/hooks/useOccurrencePrint";
 import OccurrenceItem from "./OccurrenceItem";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { isOverOneYearOld } from "@/lib/dateUtils";
 
 interface OccurrenceType {
   id: string;
@@ -268,13 +269,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     fetchPointsAndNotification();
   }, [associateInfo.id, occurrences]);
 
-  const isOverOneYearOld = (date: Date) => {
-    const occurenceDate = new Date(date);
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    return occurenceDate < oneYearAgo;
-  };
-
   const handleSort = (column: SortColumn) => {
     if (column === sortColumn) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -320,45 +314,43 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
     associateInfo?.designationPointTotalsEffectiveDate,
   ]);
 
-  /** Partition for print/export (ignores hide-zero / hide-old toggles). */
+  /** Same row set as the table; print/export use `docRollup` derived from this. */
+  const visibleSortedOccurrences = useMemo(
+    () =>
+      sortedOccurrences.filter((occurrence) => {
+        if (hideZeroPoints && occurrence.type.points === 0) return false;
+        if (hideOldOccurrences && isOverOneYearOld(occurrence.date))
+          return false;
+        return true;
+      }),
+    [sortedOccurrences, hideZeroPoints, hideOldOccurrences]
+  );
+
   const docRollup = useMemo(() => {
     const counted: Occurrence[] = [];
     const prior: Occurrence[] = [];
     const outside: Occurrence[] = [];
     const eff = resolvedEffectiveYmd;
-    for (const occ of sortedOccurrences) {
+    for (const occ of visibleSortedOccurrences) {
       const d = new Date(occ.date);
       if (d < rollupYearStart) outside.push(occ);
       else if (eff && d < eff) prior.push(occ);
       else counted.push(occ);
     }
     return { counted, prior, outside };
-  }, [sortedOccurrences, resolvedEffectiveYmd, rollupYearStart]);
+  }, [visibleSortedOccurrences, resolvedEffectiveYmd, rollupYearStart]);
 
   const rowsWithVariant = useMemo(() => {
     const eff = resolvedEffectiveYmd;
-    return sortedOccurrences
-      .filter((occurrence) => {
-        if (hideZeroPoints && occurrence.type.points === 0) return false;
-        if (hideOldOccurrences && isOverOneYearOld(occurrence.date))
-          return false;
-        return true;
-      })
-      .map((occ) => {
-        const d = new Date(occ.date);
-        let variant: "counted" | "prior" | "outside";
-        if (d < rollupYearStart) variant = "outside";
-        else if (eff && d < eff) variant = "prior";
-        else variant = "counted";
-        return { occ, variant };
-      });
-  }, [
-    sortedOccurrences,
-    hideZeroPoints,
-    hideOldOccurrences,
-    resolvedEffectiveYmd,
-    rollupYearStart,
-  ]);
+    return visibleSortedOccurrences.map((occ) => {
+      const d = new Date(occ.date);
+      let variant: "counted" | "prior" | "outside";
+      if (d < rollupYearStart) variant = "outside";
+      else if (eff && d < eff) variant = "prior";
+      else variant = "counted";
+      return { occ, variant };
+    });
+  }, [visibleSortedOccurrences, resolvedEffectiveYmd, rollupYearStart]);
 
   const sectionTitle = (variant: "counted" | "prior" | "outside") => {
     if (variant === "counted")
