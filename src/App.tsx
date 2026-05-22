@@ -9,6 +9,7 @@ import { Button } from "./components/ui/button";
 import { ThemeProvider, useTheme } from "next-themes";
 import AuthModal from "./components/modals/AuthModal";
 import Header from "./components/Header";
+import CookieConsentFooter from "./components/CookieConsentFooter";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./index.css";
 
@@ -344,6 +345,7 @@ function AppContent() {
         </main>
       </div>
       <AuthModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <CookieConsentFooter />
     </Router>
   );
 }
