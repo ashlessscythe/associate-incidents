@@ -63,6 +63,94 @@ describe("API 500 regression coverage", () => {
     expect(mockPrisma.occurrenceType.findMany).not.toHaveBeenCalled();
   });
 
+  it("blocks non-admin users from admin backup routes", async () => {
+    const response = await authorized(request(app).post("/zapi/admin/backup"));
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ error: "Admin access required" });
+  });
+
+  it("returns occurrence types for authorized users", async () => {
+    mockPrisma.occurrenceType.findMany.mockResolvedValue([
+      {
+        id: "type-1",
+        code: "LATE",
+        description: "Late arrival",
+        points: 1,
+      },
+    ]);
+
+    const response = await authorized(request(app).get("/zapi/occurrence-types"));
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        id: "type-1",
+        code: "LATE",
+        description: "Late arrival",
+        points: 1,
+      },
+    ]);
+    expect(mockPrisma.occurrenceType.findMany).toHaveBeenCalledWith({
+      orderBy: {
+        code: "asc",
+      },
+    });
+  });
+
+  it("creates an occurrence with points captured from the selected type", async () => {
+    mockPrisma.occurrenceType.findUnique.mockResolvedValue({ points: 0.5 });
+    mockPrisma.attendanceOccurrence.create.mockResolvedValue({
+      id: "occurrence-1",
+      associateId: "associate-1",
+      typeId: "type-1",
+      date: "2026-05-26T00:00:00.000Z",
+      notes: "Late arrival",
+      pointsAtTime: 0.5,
+      type: {
+        id: "type-1",
+        code: "LATE",
+        description: "Late arrival",
+        points: 0.5,
+      },
+    });
+
+    const response = await authorized(
+      request(app).post("/zapi/attendance-occurrences")
+    ).send({
+      associateId: "associate-1",
+      typeId: "type-1",
+      date: "2026-05-26",
+      notes: "Late arrival",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      id: "occurrence-1",
+      associateId: "associate-1",
+      typeId: "type-1",
+      date: "2026-05-26T00:00:00.000Z",
+      notes: "Late arrival",
+      pointsAtTime: 0.5,
+      type: {
+        id: "type-1",
+        code: "LATE",
+        description: "Late arrival",
+        points: 0.5,
+      },
+    });
+    expect(mockPrisma.attendanceOccurrence.create).toHaveBeenCalledWith({
+      data: {
+        associateId: "associate-1",
+        typeId: "type-1",
+        date: new Date("2026-05-26"),
+        notes: "Late arrival",
+        pointsAtTime: 0.5,
+      },
+      include: { type: true },
+    });
+  });
+
   it("returns 400 when creating an occurrence without a type", async () => {
     const response = await authorized(
       request(app).post("/zapi/attendance-occurrences")
