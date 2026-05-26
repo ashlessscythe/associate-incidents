@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma } from "../server.js";
+import { prisma } from "../prisma.js";
 import multer from "multer";
 
 const router = express.Router();
@@ -19,6 +19,16 @@ const upload = multer({
     }
   },
 });
+
+const handleUpload = (req, res, next) => {
+  upload.single("file")(req, res, (error) => {
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    next();
+  });
+};
 
 // Maximum file size (1MB for regular files, 10MB for templates)
 const MAX_FILE_SIZE = 1024 * 1024;
@@ -51,6 +61,8 @@ const ALLOWED_EXTENSIONS = [
   ".xls",
 ];
 
+const ALLOWED_FILE_TYPES = ["ASSOCIATE_FILE", "TEMPLATE"];
+
 // File type validation function
 function validateFileType(mimetype, filename) {
   const extension = filename.toLowerCase().substring(filename.lastIndexOf("."));
@@ -62,7 +74,7 @@ function validateFileType(mimetype, filename) {
 }
 
 // Upload a file
-router.post("/upload", upload.single("file"), async (req, res) => {
+router.post("/upload", handleUpload, async (req, res) => {
   // Handle multer errors
   if (req.fileValidationError) {
     return res.status(400).json({ error: req.fileValidationError.message });
@@ -75,6 +87,15 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       attendanceOccurrenceId,
       fileType,
     } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "File is required" });
+    }
+
+    if (fileType && !ALLOWED_FILE_TYPES.includes(fileType)) {
+      return res.status(400).json({ error: "Invalid file type" });
+    }
+
     const { originalname, buffer, mimetype, size } = req.file;
 
     // Check file size based on type

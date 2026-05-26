@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma } from "../server.js";
+import { prisma } from "../prisma.js";
 import {
   getTemplate,
   generateExcelOccurrence,
@@ -23,6 +23,10 @@ router.post("/export-excel-occurrence", async (req, res) => {
       notifications,
     } = req.body;
 
+    if (!associateName || !location || !department || !date) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
     const counted = Array.isArray(countedOccurrences)
       ? countedOccurrences
       : occurrences || [];
@@ -36,7 +40,7 @@ router.post("/export-excel-occurrence", async (req, res) => {
     });
 
     if (!associate) {
-      throw new Error("Associate not found");
+      return res.status(404).json({ error: "Associate not found" });
     }
 
     const excelBuffer = await generateExcelOccurrence(
@@ -82,12 +86,16 @@ router.post("/export-excel-ca", async (req, res) => {
 
     if (
       !associateName ||
-      !correctiveActions ||
+      !location ||
+      !department ||
+      !date ||
+      !notificationLevel ||
+      !Array.isArray(correctiveActions) ||
       correctiveActions.length === 0
     ) {
-      throw new Error(
-        "Missing required fields or no corrective actions provided"
-      );
+      return res.status(400).json({
+        error: "Missing required fields or no corrective actions provided",
+      });
     }
 
     const excelBuffer = await generateExcelCA(

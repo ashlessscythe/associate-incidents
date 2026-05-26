@@ -1,0 +1,230 @@
+import request from "supertest";
+import jwt from "jsonwebtoken";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { createApp } from "../app.js";
+
+const mockPrisma = vi.hoisted(() => ({
+  occurrenceType: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+  },
+  attendanceOccurrence: {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  associate: {
+    findUnique: vi.fn(),
+  },
+  file: {
+    create: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
+const mockExcelUtils = vi.hoisted(() => ({
+  getTemplate: vi.fn(),
+  generateExcelOccurrence: vi.fn(),
+  generateExcelCA: vi.fn(),
+}));
+
+vi.mock("../prisma.js", () => ({ prisma: mockPrisma }));
+vi.mock("../utils/excelUtils.js", () => mockExcelUtils);
+
+const app = createApp();
+const authToken = jwt.sign(
+  { userId: "test-user", roles: ["user-edit"], isAdmin: false },
+  process.env.JWT_SECRET
+);
+const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+function authorized(requestBuilder) {
+  return requestBuilder.set("Authorization", `Bearer ${authToken}`);
+}
+
+describe("API 500 regression coverage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("returns 401 for protected routes without a token", async () => {
+    const response = await request(app).get("/zapi/occurrence-types");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: "No authorization header" });
+    expect(mockPrisma.occurrenceType.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when creating an occurrence without a type", async () => {
+    const response = await authorized(
+      request(app).post("/zapi/attendance-occurrences")
+    ).send({
+      associateId: "associate-1",
+      date: "2026-05-26",
+      notes: "Late arrival",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Missing required fields");
+    expect(mockPrisma.occurrenceType.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when creating an occurrence with an invalid date", async () => {
+    const response = await authorized(
+      request(app).post("/zapi/attendance-occurrences")
+    ).send({
+      associateId: "associate-1",
+      typeId: "type-1",
+      date: "not-a-date",
+      notes: "Bad date",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid date");
+    expect(mockPrisma.occurrenceType.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the occurrence type does not exist", async () => {
+    mockPrisma.occurrenceType.findUnique.mockResolvedValue(null);
+
+    const response = await authorized(
+      request(app).post("/zapi/attendance-occurrences")
+    ).send({
+      associateId: "associate-1",
+      typeId: "missing-type",
+      date: "2026-05-26",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid occurrence type");
+    expect(mockPrisma.attendanceOccurrence.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when Prisma rejects an occurrence foreign key", async () => {
+    mockPrisma.occurrenceType.findUnique.mockResolvedValue({ points: 0.5 });
+    mockPrisma.attendanceOccurrence.create.mockRejectedValue({ code: "P2003" });
+
+    const response = await authorized(
+      request(app).post("/zapi/attendance-occurrences")
+    ).send({
+      associateId: "missing-associate",
+      typeId: "type-1",
+      date: "2026-05-26",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid associate or type ID");
+  });
+
+  it("returns 404 when deleting a missing occurrence", async () => {
+    mockPrisma.attendanceOccurrence.delete.mockRejectedValue({ code: "P2025" });
+
+    const response = await authorized(
+      request(app).delete("/zapi/attendance-occurrences/missing-occurrence")
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("Attendance occurrence not found");
+  });
+
+  it("returns 400 when upload is submitted without a file", async () => {
+    const response = await authorized(request(app).post("/zapi/upload")).field(
+      "fileType",
+      "ASSOCIATE_FILE"
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("File is required");
+    expect(mockPrisma.file.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when upload has an unsupported MIME type", async () => {
+    const response = await authorized(request(app).post("/zapi/upload")).attach(
+      "file",
+      Buffer.from("not allowed"),
+      {
+        filename: "script.exe",
+        contentType: "application/x-msdownload",
+      }
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid file type");
+    expect(mockPrisma.file.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when upload uses an unknown app file type", async () => {
+    const response = await authorized(request(app).post("/zapi/upload"))
+      .field("fileType", "BAD_TYPE")
+      .attach("file", Buffer.from("ok"), {
+        filename: "notes.txt",
+        contentType: "text/plain",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid file type");
+    expect(mockPrisma.file.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when occurrence export request is missing required fields", async () => {
+    const response = await authorized(
+      request(app).post("/zapi/export-excel-occurrence")
+    ).send({
+      location: "Denver",
+      department: "Ops",
+      date: "2026-05-26",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Missing required fields");
+    expect(mockPrisma.associate.findUnique).not.toHaveBeenCalled();
+    expect(mockExcelUtils.generateExcelOccurrence).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when occurrence export associate cannot be found", async () => {
+    mockPrisma.associate.findUnique.mockResolvedValue(null);
+
+    const response = await authorized(
+      request(app).post("/zapi/export-excel-occurrence")
+    ).send({
+      associateName: "Missing User",
+      location: "Denver",
+      department: "Ops",
+      date: "2026-05-26",
+      countedOccurrences: [],
+      notificationLevel: "Level 1",
+      notifications: [],
+    });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("Associate not found");
+    expect(mockExcelUtils.generateExcelOccurrence).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when corrective action export request is malformed", async () => {
+    const response = await authorized(
+      request(app).post("/zapi/export-excel-ca")
+    ).send({
+      associateName: "Test User",
+      location: "Denver",
+      department: "Ops",
+      date: "2026-05-26",
+      notificationLevel: "1 - Coaching Conversation",
+      correctiveActions: [],
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(
+      "Missing required fields or no corrective actions provided"
+    );
+    expect(mockExcelUtils.generateExcelCA).not.toHaveBeenCalled();
+  });
+});

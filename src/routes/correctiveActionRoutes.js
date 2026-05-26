@@ -1,5 +1,5 @@
 import express from "express";
-import { prisma } from "../server.js";
+import { prisma } from "../prisma.js";
 import {
   partitionCountedOccurrences,
   sumOccurrencePoints,

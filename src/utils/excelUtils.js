@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import os from "os";
 import axios from "axios";
-import { prisma } from "../server.js";
+import { prisma } from "../prisma.js";
 
 // Helper function to get template mappings from database
 async function getTemplateMappings(templateType) {

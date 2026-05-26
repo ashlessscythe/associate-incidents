@@ -1,8 +1,11 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
+import dotenv from "dotenv";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
 import process from "process";
+
+dotenv.config();
 
 const router = express.Router();
 const prisma = new PrismaClient();
