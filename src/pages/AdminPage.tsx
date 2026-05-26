@@ -70,6 +70,31 @@ interface Role {
   description: string;
 }
 
+interface BackupData {
+  success?: boolean;
+  filename?: string;
+  encryptedData?: string;
+  metadata: {
+    createdAt: string;
+    createdBy: string;
+    recordCounts: Record<string, number>;
+  };
+}
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+      error?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  const data = (error as ApiError).response?.data;
+  return data?.message || data?.error || fallback;
+};
+
 type AdminSection =
   | "users"
   | "roles"
@@ -103,7 +128,7 @@ export default function AdminPage() {
   );
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
-  const [backupData, setBackupData] = useState<any>(null);
+  const [backupData, setBackupData] = useState<BackupData | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [restoreConfirmText, setRestoreConfirmText] = useState("");
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -196,8 +221,8 @@ export default function AdminPage() {
       setNewUser({ email: "", name: "", password: "", roles: [] });
       setShowNewUserForm(false);
       fetchData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create user");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to create user"));
     }
   };
 
@@ -209,8 +234,8 @@ export default function AdminPage() {
       setNewRole({ name: "", description: "" });
       setShowNewRoleForm(false);
       fetchData();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create role");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to create role"));
     }
   };
 
@@ -269,8 +294,8 @@ export default function AdminPage() {
       setNewPassword("");
       setSelectedUser(null);
       setShowPasswordForm(false);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to change password");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to change password"));
     }
   };
 
@@ -286,8 +311,8 @@ export default function AdminPage() {
       const result = await uploadTemplate(file);
       toast.success(result.message);
       await fetchData(); // Refresh templates
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to upload template");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to upload template"));
     } finally {
       setUploadingTemplate(null);
     }
@@ -343,8 +368,8 @@ export default function AdminPage() {
       } else {
         toast.error(response.data.message || "Failed to create backup");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create backup");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to create backup"));
     } finally {
       setIsBackingUp(false);
     }
@@ -392,15 +417,15 @@ export default function AdminPage() {
     setIsRestoring(true);
     try {
       const fileContent = await restoreFile.text();
-      const backupData = JSON.parse(fileContent);
+      const parsedBackupData = JSON.parse(fileContent) as Partial<BackupData>;
 
-      if (!backupData.encryptedData) {
+      if (!parsedBackupData.encryptedData) {
         toast.error("Invalid backup file format");
         return;
       }
 
       const response = await api.post("/admin/restore", {
-        encryptedData: backupData.encryptedData,
+        encryptedData: parsedBackupData.encryptedData,
         confirmRestore: true,
       });
 
@@ -414,8 +439,8 @@ export default function AdminPage() {
       } else {
         toast.error(response.data.message || "Failed to restore data");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to restore data");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to restore data"));
     } finally {
       setIsRestoring(false);
     }
@@ -477,8 +502,8 @@ export default function AdminPage() {
       } else {
         toast.error(response.data.message || "Failed to send test email");
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to send test email");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to send test email"));
     } finally {
       setIsSendingTestEmail(false);
     }
@@ -502,9 +527,9 @@ export default function AdminPage() {
         )
       );
       toast.success("Designation visibility updated");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error.response?.data?.message || "Failed to update designation visibility"
+        getApiErrorMessage(error, "Failed to update designation visibility")
       );
     } finally {
       setLoadingDesignations(false);
@@ -547,8 +572,8 @@ export default function AdminPage() {
       );
       setNewDepartmentName("");
       toast.success("Department created successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create department");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to create department"));
     } finally {
       setCreatingDepartment(false);
     }
@@ -579,8 +604,8 @@ export default function AdminPage() {
       );
       toast.success("Department updated successfully");
       cancelEditDepartment();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update department");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to update department"));
     } finally {
       setSavingDepartment(false);
     }
@@ -594,8 +619,8 @@ export default function AdminPage() {
       await deleteDepartment(dept.id);
       setDepartments((prev) => prev.filter((d) => d.id !== dept.id));
       toast.success("Department deleted successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete department");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to delete department"));
     } finally {
       setDeletingDepartmentId(null);
     }
@@ -614,8 +639,8 @@ export default function AdminPage() {
       );
       setNewLocationName("");
       toast.success("Location created successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to create location");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to create location"));
     } finally {
       setCreatingLocation(false);
     }
@@ -646,8 +671,8 @@ export default function AdminPage() {
       );
       toast.success("Location updated successfully");
       cancelEditLocation();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update location");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to update location"));
     } finally {
       setSavingLocation(false);
     }
@@ -661,8 +686,8 @@ export default function AdminPage() {
       await deleteLocation(loc.id);
       setLocations((prev) => prev.filter((l) => l.id !== loc.id));
       toast.success("Location deleted successfully");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to delete location");
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, "Failed to delete location"));
     } finally {
       setDeletingLocationId(null);
     }

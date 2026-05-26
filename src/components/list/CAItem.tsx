@@ -15,6 +15,7 @@ import UploadedFiles from "@/components/UploadedFiles";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useExpiredItem } from "@/hooks/useExpiredItem";
+import { omitFiles } from "@/lib/exportPayload";
 
 interface CAItemProps {
   ca: CorrectiveAction;
@@ -84,7 +85,7 @@ const CAItem: React.FC<CAItemProps> = ({
     const location = associateLocation || selectedLocation;
     const department = associateDepartment || selectedDepartment;
     try {
-      const { files, ...caWithoutFiles } = ca;
+      const caWithoutFiles = omitFiles(ca);
 
       const blob = await exportExcelCA(
         associate.name,

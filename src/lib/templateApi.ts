@@ -114,7 +114,7 @@ export const updateTemplateMapping = async (
   description?: string
 ): Promise<TemplateMapping> => {
   try {
-    const data: any = {};
+    const data: { cellValue?: string; description?: string } = {};
     if (cellValue !== undefined) {
       data.cellValue =
         typeof cellValue === "string" ? cellValue : JSON.stringify(cellValue);

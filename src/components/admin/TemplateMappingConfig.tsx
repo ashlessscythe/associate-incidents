@@ -159,7 +159,7 @@ export default function TemplateMappingConfig({
       // No defaults loaded; just use what we have
       setMappings(data);
       return false;
-    } catch (error: any) {
+    } catch {
       toast.error("Failed to load template mappings");
       return false;
     } finally {
@@ -182,7 +182,7 @@ export default function TemplateMappingConfig({
       toast.success("Mapping saved successfully");
       setEditingMapping(null);
       loadMappings();
-    } catch (error: any) {
+    } catch {
       toast.error("Failed to save mapping");
     }
   };
@@ -194,7 +194,7 @@ export default function TemplateMappingConfig({
       await deleteTemplateMapping(id);
       toast.success("Mapping deleted successfully");
       loadMappings();
-    } catch (error: any) {
+    } catch {
       toast.error("Failed to delete mapping");
     }
   };
@@ -216,7 +216,7 @@ export default function TemplateMappingConfig({
       setNewMapping({ dataPoint: "", cellValue: "", description: "" });
       setShowNewForm(false);
       loadMappings();
-    } catch (error: any) {
+    } catch {
       toast.error("Failed to create mapping");
     }
   };
@@ -240,7 +240,7 @@ export default function TemplateMappingConfig({
       );
       toast.success("Default mappings loaded successfully");
       loadMappings();
-    } catch (error: any) {
+    } catch {
       toast.error("Failed to load default mappings");
     }
   };

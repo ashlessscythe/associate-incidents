@@ -60,6 +60,7 @@ import OccurrenceItem from "./OccurrenceItem";
 import { toast } from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { isOverOneYearOld } from "@/lib/dateUtils";
+import { omitFiles } from "@/lib/exportPayload";
 
 interface OccurrenceType {
   id: string;
@@ -406,8 +407,7 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
           );
         })
         .map((notification) => {
-          const { files, ...notificationWithoutFiles } = notification;
-          return notificationWithoutFiles;
+          return omitFiles(notification);
         });
 
       const currentDateStr = currentDate.toISOString().split("T")[0];

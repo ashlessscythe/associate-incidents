@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Designation,
   Notification,
@@ -53,6 +53,10 @@ interface NotificationTrackerProps {
   notificationType: NotificationType;
 }
 
+const nTypeAsString = (nType: NotificationType) => {
+  return NotificationType[nType].toUpperCase();
+};
+
 export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
   associateId,
   associateDesignation,
@@ -87,16 +91,7 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
       (notificationType === NotificationType.CORRECTIVE_ACTION &&
         user.roles.includes("ca-edit")));
 
-  useEffect(() => {
-    fetchNotifications();
-    fetchNotificationLevels();
-  }, [associateId, notificationType, associateDesignation]);
-
-  const nTypeAsString = (nType: NotificationType) => {
-    return NotificationType[nType].toUpperCase();
-  };
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const fetchedNotifications = await getNotifications(
       associateId,
       nTypeAsString(notificationType)
@@ -110,14 +105,19 @@ export const NotificationTracker: React.FC<NotificationTrackerProps> = ({
       {} as { [key: string]: boolean }
     );
     setViewFiles(initialViewFiles);
-  };
+  }, [associateId, notificationType]);
 
-  const fetchNotificationLevels = async () => {
+  const fetchNotificationLevels = useCallback(async () => {
     const levels = await getNotificationLevels(associateDesignation);
     // Sort levels by level number
     const sortedLevels = [...levels].sort((a, b) => a.level - b.level);
     setNotificationLevels(sortedLevels);
-  };
+  }, [associateDesignation]);
+
+  useEffect(() => {
+    fetchNotifications();
+    fetchNotificationLevels();
+  }, [fetchNotifications, fetchNotificationLevels]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

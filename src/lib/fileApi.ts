@@ -1,6 +1,14 @@
 import api from "./apiConfig";
 import { UploadedFile } from "./api";
 
+interface UploadedFileResponse {
+  id: string;
+  filename: string;
+  createdAt: string;
+  mimetype: string;
+  size?: number;
+}
+
 export const uploadFile = async (
   formData: FormData
 ): Promise<{ message: string; fileId: string }> => {
@@ -20,7 +28,7 @@ export const getUploadedFiles = async (
     const response = await api.get(`/files/${associateId}`);
 
     // Map the response to match the UploadedFile interface
-    const files: UploadedFile[] = response.data.map((file: any) => ({
+    const files: UploadedFile[] = (response.data as UploadedFileResponse[]).map((file) => ({
       id: file.id,
       filename: file.filename,
       uploadDate: file.createdAt,

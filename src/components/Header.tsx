@@ -3,13 +3,14 @@ import { Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import ThemeSelector from "./ThemeSelector";
+import type { User } from "@/contexts/AuthContext";
 
 type PageType = "attendance" | "ca" | "associates" | "reports" | "admin" | null;
 
 interface HeaderProps {
   currentPage: PageType;
   onPageSelect: (page: PageType) => void;
-  user: any;
+  user: User | null;
   onLoginClick: () => void;
   onLogOut: () => Promise<void>;
 }

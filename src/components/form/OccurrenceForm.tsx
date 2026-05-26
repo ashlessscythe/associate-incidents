@@ -77,7 +77,7 @@ const OccurrenceForm: React.FC<OccurrenceFormProps> = ({
 
   // set max date today plus 5 days
   const maxDate = () => {
-    let d = new Date();
+    const d = new Date();
     d.setDate(d.getDate() + 5);
     return d.toISOString().split("T")[0];
   };

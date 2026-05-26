@@ -9,6 +9,8 @@ import { api } from '@/lib/api';
 const PASSWORD_POLICY_HINT =
   'At least 8 characters with uppercase, lowercase, a number, and a special character from @$!%*?&. Other symbols are not accepted.';
 
+type ApiError = { response?: { data?: { message?: string } } };
+
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -55,8 +57,10 @@ export default function ResetPassword() {
       
       toast.success(response.data.message);
       navigate('/');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to reset password';
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        'Failed to reset password';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

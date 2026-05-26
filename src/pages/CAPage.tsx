@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import {
   getRules,
@@ -21,6 +21,7 @@ import { useAssociatesWithDesignation } from "../hooks/useAssociates";
 import { uploadFile, downloadFile, deleteFile } from "../lib/api";
 import { toast } from "react-hot-toast";
 import { AlertTriangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { omitFiles } from "@/lib/exportPayload";
 
 function CAPage() {
   const { user } = useAuth();
@@ -51,50 +52,7 @@ function CAPage() {
 
   const location = useLocation();
 
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const associateId = searchParams.get("associateId");
-    console.log("AssociateId from URL:", associateId);
-    if (associateId) {
-      handleAssociateSelect(associateId);
-    }
-  }, [location]);
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const [rulesData] = await Promise.all([
-          getRules(),
-          fetchAssociatesWithDesignation(),
-        ]);
-        setRules(rulesData);
-        console.log("Rules fetched:", rulesData);
-        console.log("Associates fetched:", associatesWithDesignation);
-      } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : "An unknown error occurred";
-        console.error("Error fetching initial data:", errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
-  }, [fetchAssociatesWithDesignation]);
-
-  useEffect(() => {
-    if (selectedAssociateId) {
-      console.log("Selected Associate ID changed:", selectedAssociateId);
-      fetchCorrectiveActions();
-      fetchAssociateInfo(selectedAssociateId);
-    } else {
-      setCorrectiveActions([]);
-      setAssociateInfo(null);
-    }
-  }, [selectedAssociateId]);
-
-  const fetchCorrectiveActions = async () => {
+  const fetchCorrectiveActions = useCallback(async () => {
     if (selectedAssociateId) {
       try {
         const caData = await getCorrectiveActions(selectedAssociateId);
@@ -109,9 +67,9 @@ function CAPage() {
     } else {
       setCorrectiveActions([]);
     }
-  };
+  }, [selectedAssociateId]);
 
-  const fetchAssociateInfo = async (associateId: string) => {
+  const fetchAssociateInfo = useCallback(async (associateId: string) => {
     try {
       const associateInfoData = await getAssociatePointsAndNotification(
         associateId
@@ -124,7 +82,7 @@ function CAPage() {
       console.error("Error fetching associate info:", errorMessage);
       setError(errorMessage);
     }
-  };
+  }, []);
 
   const handleEditCA = (ca: CorrectiveAction) => {
     setEditingCA(ca);
@@ -132,7 +90,7 @@ function CAPage() {
 
   const handleUpdateCA = async (updatedCA: CorrectiveAction) => {
     try {
-      const { files, ...caWithoutFiles } = updatedCA;
+      const caWithoutFiles = omitFiles(updatedCA);
       await updateCorrectiveAction(updatedCA.id, caWithoutFiles);
       await fetchCorrectiveActions();
       setEditingCA(null);
@@ -146,7 +104,7 @@ function CAPage() {
     }
   };
 
-  const handleAssociateSelect = async (associateId: string | null) => {
+  const handleAssociateSelect = useCallback(async (associateId: string | null) => {
     console.log("Associate selected:", associateId);
     setSelectedAssociateId(associateId);
     if (associateId) {
@@ -186,7 +144,49 @@ function CAPage() {
       setSelectedAssociate(null);
       setAssociateInfo(null);
     }
-  };
+  }, [associatesWithDesignation, fetchAssociateInfo]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const associateId = searchParams.get("associateId");
+    console.log("AssociateId from URL:", associateId);
+    if (associateId) {
+      handleAssociateSelect(associateId);
+    }
+  }, [location.search, handleAssociateSelect]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [rulesData] = await Promise.all([
+          getRules(),
+          fetchAssociatesWithDesignation(),
+        ]);
+        setRules(rulesData);
+        console.log("Rules fetched:", rulesData);
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "An unknown error occurred";
+        console.error("Error fetching initial data:", errorMessage);
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [fetchAssociatesWithDesignation]);
+
+  useEffect(() => {
+    if (selectedAssociateId) {
+      console.log("Selected Associate ID changed:", selectedAssociateId);
+      fetchCorrectiveActions();
+      fetchAssociateInfo(selectedAssociateId);
+    } else {
+      setCorrectiveActions([]);
+      setAssociateInfo(null);
+    }
+  }, [selectedAssociateId, fetchCorrectiveActions, fetchAssociateInfo]);
 
   const handleAddCorrectiveAction = async (caData: {
     ruleId: string;

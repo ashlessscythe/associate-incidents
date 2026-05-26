@@ -39,15 +39,16 @@ const AssociatePointsAdjustmentModal: React.FC<
   const [designationDefaultYmd, setDesignationDefaultYmd] = useState<string | null>(
     null
   );
+  const associateId = associate?.id;
 
   useEffect(() => {
-    if (!open || !associate) return;
+    if (!open || !associateId) return;
 
     let cancelled = false;
     (async () => {
       setLoading(true);
       try {
-        const data = await getAssociatePointsAndNotification(associate.id);
+        const data = await getAssociatePointsAndNotification(associateId);
         if (cancelled) return;
         setOccurrencePoints(data.occurrencePoints ?? 0);
         setAdjustmentInput(String(data.pointsAdjustment ?? 0));
@@ -76,7 +77,7 @@ const AssociatePointsAdjustmentModal: React.FC<
     return () => {
       cancelled = true;
     };
-  }, [open, associate?.id]);
+  }, [open, associateId]);
 
   const adjustment = parseFloat(adjustmentInput);
   const adjustmentValid = !Number.isNaN(adjustment);

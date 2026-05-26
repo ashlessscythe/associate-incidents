@@ -9,7 +9,7 @@ declare module "xlsx-populate" {
   }
 
   interface Cell {
-    value(value?: any): any;
+    value(value?: unknown): unknown;
   }
 
   function fromFileAsync(path: string): Promise<Workbook>;

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import CAItem from "./CAItem";
 import { useCAPrint } from "@/hooks/useCAPrint";
 import { toast } from "react-hot-toast";
+import { omitFiles } from "@/lib/exportPayload";
 
 interface CAListProps {
   associate: Associate;
@@ -105,8 +106,7 @@ const CAList: React.FC<CAListProps> = ({
 
       // Remove file items from the corrective actions
       const exportCAsWithoutFiles = exportCAs.map((ca) => {
-        const { files, ...caWithoutFiles } = ca;
-        return caWithoutFiles;
+        return omitFiles(ca);
       });
 
       const blob = await exportExcelCA(
@@ -265,8 +265,7 @@ const CAList: React.FC<CAListProps> = ({
                       onClick={async () => {
                         try {
                           const exportCAsWithoutFiles = groupCAs.map((ca) => {
-                            const { files, ...caWithoutFiles } = ca;
-                            return caWithoutFiles;
+                            return omitFiles(ca);
                           });
 
                           const blob = await exportExcelCA(

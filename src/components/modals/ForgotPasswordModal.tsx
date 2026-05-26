@@ -11,6 +11,8 @@ interface ForgotPasswordModalProps {
   onClose: () => void;
 }
 
+type ApiError = { response?: { data?: { message?: string } } };
+
 export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +26,10 @@ export default function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordM
       toast.success(response.data.message);
       onClose();
       setEmail('');
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to send password reset email';
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as ApiError).response?.data?.message ||
+        'Failed to send password reset email';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
