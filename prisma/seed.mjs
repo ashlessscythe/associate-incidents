@@ -219,7 +219,7 @@ async function upsertAssociates(associates) {
       departmentId = department ? department.id : null;
     }
 
-    await prisma.associate.upsert({
+    const row = await prisma.associate.upsert({
       where: {
         name: associate.name,
       },
@@ -238,6 +238,7 @@ async function upsertAssociates(associates) {
         departmentId: departmentId,
       },
     });
+    associate.id = row.id;
   }
   console.log(`${associates.length} associates upserted.`);
 }
@@ -848,6 +849,11 @@ async function main() {
       }
     }
 
+    const fakerVolumeBase =
+      occurrenceCount > 0
+        ? occurrenceCount
+        : Math.floor(recordCount * (argv.occurrenceMultiplier || 5));
+
     // Generate corrective actions
     if (createAllData || argv.caOnly || (!onlyFlagUsed && useFaker)) {
       const rules = await prisma.rule.findMany();
@@ -860,7 +866,7 @@ async function main() {
           const correctiveActions = generateFakeCorrectiveActions(
             associates,
             rules,
-            occurrenceCount,
+            fakerVolumeBase,
             argv.caMultiplier
           );
           if (correctiveActions.length > 0) {
@@ -885,7 +891,7 @@ async function main() {
       if (useFaker && associates.length > 0) {
         const fakeNotifications = generateFakeNotifications(
           associates,
-          occurrenceCount,
+          fakerVolumeBase,
           argv.notificationMultiplier
         );
         await upsertNotifications(fakeNotifications);
