@@ -371,7 +371,7 @@ describe("API 500 regression coverage", () => {
     expect(mockPrisma.associate.create).not.toHaveBeenCalled();
   });
 
-  it("includes isActive on CA-by-type-with-info rows", async () => {
+  it("includes boolean isActive on every CA-by-type-with-info row", async () => {
     mockPrisma.designationVisibility.findMany.mockResolvedValue([]);
     mockPrisma.associate.findMany.mockResolvedValue([
       {
@@ -397,7 +397,13 @@ describe("API 500 regression coverage", () => {
         isActive: false,
         pointsAdjustment: 0,
         pointTotalsEffectiveDate: null,
-        correctiveActions: [],
+        correctiveActions: [
+          {
+            id: "ca-2",
+            ruleId: "rule-2",
+            rule: { id: "rule-2", code: "WRK-1", type: "WORK" },
+          },
+        ],
         occurrences: [],
       },
     ]);
@@ -407,17 +413,92 @@ describe("API 500 regression coverage", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual(
-      expect.arrayContaining([
+    expect(response.body).toHaveLength(2);
+
+    for (const row of response.body) {
+      expect(row.info).toEqual(
         expect.objectContaining({
-          name: "Active Alex",
-          info: expect.objectContaining({ isActive: true }),
-        }),
-        expect.objectContaining({
-          name: "Inactive Irene",
-          info: expect.objectContaining({ isActive: false }),
-        }),
-      ])
+          id: expect.any(String),
+          name: expect.any(String),
+          designation: expect.any(String),
+          isActive: expect.any(Boolean),
+        })
+      );
+      expect(Object.prototype.hasOwnProperty.call(row.info, "isActive")).toBe(
+        true
+      );
+    }
+
+    expect(response.body.find((row) => row.name === "Active Alex").info.isActive).toBe(
+      true
     );
+    expect(
+      response.body.find((row) => row.name === "Inactive Irene").info.isActive
+    ).toBe(false);
+  });
+
+  it("regression: CA API payload must keep active associates under active-only filtering", async () => {
+    const { filterCAReportRows } = await import("../lib/caReportUtils.js");
+
+    mockPrisma.designationVisibility.findMany.mockResolvedValue([]);
+    mockPrisma.associate.findMany.mockResolvedValue([
+      {
+        id: "associate-1",
+        name: "Active Alex",
+        designation: "MH",
+        isActive: true,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-1",
+            ruleId: "rule-1",
+            rule: { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+          },
+        ],
+        occurrences: [],
+      },
+      {
+        id: "associate-2",
+        name: "Inactive Irene",
+        designation: "CLERK",
+        isActive: false,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-2",
+            ruleId: "rule-2",
+            rule: { id: "rule-2", code: "WRK-1", type: "WORK" },
+          },
+        ],
+        occurrences: [],
+      },
+    ]);
+
+    const response = await authorized(
+      request(app).get("/zapi/ca-by-type-with-info")
+    );
+    expect(response.status).toBe(200);
+
+    const rules = [
+      { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+      { id: "rule-2", code: "WRK-1", type: "WORK" },
+    ];
+
+    const activeOnly = filterCAReportRows(response.body, {
+      activeOnly: true,
+      rules,
+    });
+    const allAssociates = filterCAReportRows(response.body, {
+      activeOnly: false,
+      rules,
+    });
+
+    expect(activeOnly.map((row) => row.name)).toEqual(["Active Alex"]);
+    expect(allAssociates.map((row) => row.name)).toEqual([
+      "Active Alex",
+      "Inactive Irene",
+    ]);
   });
 });
