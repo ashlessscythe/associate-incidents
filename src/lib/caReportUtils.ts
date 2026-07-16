@@ -86,7 +86,8 @@ export function filterCAReportRows(
       const designationMatch =
         selectedDesignation === "ALL" ||
         associate.info.designation === selectedDesignation;
-      const activeMatch = !activeOnly || associate.info.isActive;
+      const activeMatch =
+        !activeOnly || associate.info.isActive === true;
       const hasVisibleActions = associate.correctiveActions.length > 0;
       return nameMatch && designationMatch && activeMatch && hasVisibleActions;
     });

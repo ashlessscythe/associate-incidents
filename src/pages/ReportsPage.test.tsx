@@ -86,11 +86,19 @@ describe("ReportsPage", () => {
 
     expect(await screen.findByText("Active Alex")).toBeInTheDocument();
     expect(screen.queryByText("Inactive Irene")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /ca report options/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/active associates only · 2 of 2 rules enabled/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /ca report options/i }));
+
     expect(screen.getByLabelText(/active associates only/i)).toBeChecked();
     expect(screen.getByLabelText("SAF-1")).toBeChecked();
 
     await user.click(screen.getByLabelText(/active associates only/i));
 
     expect(await screen.findByText("Inactive Irene")).toBeInTheDocument();
+    expect(screen.getByText(/all associates · 2 of 2 rules enabled/i)).toBeInTheDocument();
   });
 });

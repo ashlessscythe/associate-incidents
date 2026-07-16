@@ -71,4 +71,20 @@ describe("caReportUtils", () => {
     expect(filtered).toHaveLength(1);
     expect(filtered[0].name).toBe("Inactive Irene");
   });
+
+  it("treats missing isActive as inactive when active-only is on", () => {
+    const filtered = filterCAReportRows(
+      [
+        {
+          id: "a3",
+          name: "Mystery Max",
+          correctiveActions: [{ ruleId: "r1" }],
+          info: { designation: "MH", isActive: undefined as unknown as boolean },
+        },
+      ],
+      { activeOnly: true, rules }
+    );
+
+    expect(filtered).toHaveLength(0);
+  });
 });

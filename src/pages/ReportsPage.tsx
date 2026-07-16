@@ -23,6 +23,7 @@ import {
 import { AssociateInfo, CorrectiveAction, Rule } from "../lib/api";
 import {
   ArrowUpDown,
+  ChevronDown,
   Download,
   FileText,
   BarChart3,
@@ -31,6 +32,11 @@ import {
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   filterCAReportRows,
   formatCaTotals,
@@ -85,6 +91,7 @@ const ReportsPage: React.FC = () => {
   const [enabledRuleCodes, setEnabledRuleCodes] = useState<Set<string>>(
     () => new Set()
   );
+  const [caOptionsOpen, setCaOptionsOpen] = useState(false);
 
   // Sort states for each report
   const [occurrencesSortField, setOccurrencesSortField] =
@@ -975,59 +982,88 @@ const ReportsPage: React.FC = () => {
             )}
           </div>
           {activeReport === "ca" && (
-            <div className="mb-4 space-y-3 rounded-lg border bg-muted/30 p-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="ca-active-only"
-                    checked={caActiveOnly}
-                    onCheckedChange={setCaActiveOnly}
+            <Collapsible
+              open={caOptionsOpen}
+              onOpenChange={setCaOptionsOpen}
+              className="mb-4 rounded-lg border bg-muted/30"
+            >
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted/50"
+                >
+                  <div>
+                    <p className="text-sm font-semibold">CA report options</p>
+                    <p className="text-xs text-muted-foreground">
+                      {caActiveOnly
+                        ? "Active associates only"
+                        : "All associates"}
+                      {" · "}
+                      {enabledRuleCodes.size} of {rules.length} rules enabled
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 transition-transform",
+                      caOptionsOpen && "rotate-180"
+                    )}
                   />
-                  <Label htmlFor="ca-active-only" className="text-sm">
-                    Active associates only
-                  </Label>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-3 border-t px-4 py-3">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="ca-active-only"
+                      checked={caActiveOnly}
+                      onCheckedChange={setCaActiveOnly}
+                    />
+                    <Label htmlFor="ca-active-only" className="text-sm">
+                      Active associates only
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setEnabledRuleCodes(new Set(rules.map((r) => r.code)))
+                      }
+                    >
+                      Enable all rules
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEnabledRuleCodes(new Set())}
+                    >
+                      Disable all rules
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setEnabledRuleCodes(new Set(rules.map((r) => r.code)))
-                    }
-                  >
-                    Enable all rules
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEnabledRuleCodes(new Set())}
-                  >
-                    Disable all rules
-                  </Button>
+                <div className="flex flex-wrap gap-3">
+                  {[...rules]
+                    .sort((a, b) => a.code.localeCompare(b.code))
+                    .map((rule) => (
+                      <div key={rule.id} className="flex items-center gap-2">
+                        <Switch
+                          id={`ca-rule-${rule.code}`}
+                          checked={enabledRuleCodes.has(rule.code)}
+                          onCheckedChange={() => toggleRuleCode(rule.code)}
+                        />
+                        <Label
+                          htmlFor={`ca-rule-${rule.code}`}
+                          className="text-sm font-mono"
+                        >
+                          {rule.code}
+                        </Label>
+                      </div>
+                    ))}
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {[...rules]
-                  .sort((a, b) => a.code.localeCompare(b.code))
-                  .map((rule) => (
-                    <div key={rule.id} className="flex items-center gap-2">
-                      <Switch
-                        id={`ca-rule-${rule.code}`}
-                        checked={enabledRuleCodes.has(rule.code)}
-                        onCheckedChange={() => toggleRuleCode(rule.code)}
-                      />
-                      <Label
-                        htmlFor={`ca-rule-${rule.code}`}
-                        className="text-sm font-mono"
-                      >
-                        {rule.code}
-                      </Label>
-                    </div>
-                  ))}
-              </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
           {error && (
             <p className="text-destructive mt-2 mb-4 text-sm">{error}</p>

@@ -16,6 +16,7 @@ const mockPrisma = vi.hoisted(() => ({
   },
   associate: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
   },
   location: {
@@ -23,6 +24,9 @@ const mockPrisma = vi.hoisted(() => ({
   },
   department: {
     findUnique: vi.fn(),
+  },
+  designationVisibility: {
+    findMany: vi.fn(),
   },
   file: {
     create: vi.fn(),
@@ -365,5 +369,55 @@ describe("API 500 regression coverage", () => {
     expect(response.status).toBe(400);
     expect(response.body.error).toBe("Name is required");
     expect(mockPrisma.associate.create).not.toHaveBeenCalled();
+  });
+
+  it("includes isActive on CA-by-type-with-info rows", async () => {
+    mockPrisma.designationVisibility.findMany.mockResolvedValue([]);
+    mockPrisma.associate.findMany.mockResolvedValue([
+      {
+        id: "associate-1",
+        name: "Active Alex",
+        designation: "MH",
+        isActive: true,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-1",
+            ruleId: "rule-1",
+            rule: { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+          },
+        ],
+        occurrences: [],
+      },
+      {
+        id: "associate-2",
+        name: "Inactive Irene",
+        designation: "CLERK",
+        isActive: false,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [],
+        occurrences: [],
+      },
+    ]);
+
+    const response = await authorized(
+      request(app).get("/zapi/ca-by-type-with-info")
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "Active Alex",
+          info: expect.objectContaining({ isActive: true }),
+        }),
+        expect.objectContaining({
+          name: "Inactive Irene",
+          info: expect.objectContaining({ isActive: false }),
+        }),
+      ])
+    );
   });
 });
