@@ -201,6 +201,7 @@ router.get("/ca-by-type-with-info", async (req, res) => {
           occurrencePoints,
           pointsAdjustment: associate.pointsAdjustment ?? 0,
           designation: associate.designation,
+          isActive: associate.isActive,
         },
       };
     });

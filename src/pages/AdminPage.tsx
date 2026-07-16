@@ -206,7 +206,7 @@ export default function AdminPage() {
       setDesignationDateDrafts(drafts);
       setDepartments(departmentsResponse);
       setLocations(locationsResponse);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to fetch data");
     } finally {
       setLoading(false);
@@ -244,7 +244,7 @@ export default function AdminPage() {
       await api.patch(`/admin/users/${userId}`, { isActive });
       toast.success("User status updated");
       fetchData();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update user status");
     }
   };
@@ -254,7 +254,7 @@ export default function AdminPage() {
       await api.patch(`/admin/users/${userId}`, { isAdmin });
       toast.success("Admin status updated");
       fetchData();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update admin status");
     }
   };
@@ -265,7 +265,7 @@ export default function AdminPage() {
       await api.patch(`/admin/users/${userId}/roles`, { roles: rolesPayload });
       toast.success("User roles updated");
       fetchData();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to update user roles");
     }
   };
@@ -277,7 +277,7 @@ export default function AdminPage() {
       await api.delete(`/admin/users/${userId}`);
       toast.success("User deleted successfully");
       fetchData();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to delete user");
     }
   };
@@ -351,7 +351,7 @@ export default function AdminPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to download template");
     }
   };

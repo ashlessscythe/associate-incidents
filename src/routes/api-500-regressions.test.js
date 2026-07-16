@@ -16,6 +16,17 @@ const mockPrisma = vi.hoisted(() => ({
   },
   associate: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+  },
+  location: {
+    findUnique: vi.fn(),
+  },
+  department: {
+    findUnique: vi.fn(),
+  },
+  designationVisibility: {
+    findMany: vi.fn(),
   },
   file: {
     create: vi.fn(),
@@ -314,5 +325,180 @@ describe("API 500 regression coverage", () => {
       "Missing required fields or no corrective actions provided"
     );
     expect(mockExcelUtils.generateExcelCA).not.toHaveBeenCalled();
+  });
+
+  it("creates an associate with optional department, location, and designation", async () => {
+    mockPrisma.location.findUnique.mockResolvedValue({ id: "loc-1" });
+    mockPrisma.department.findUnique.mockResolvedValue({ id: "dept-1" });
+    mockPrisma.associate.create.mockResolvedValue({
+      id: "associate-2",
+      name: "Blake Builder",
+      designation: "MH",
+      departmentId: "dept-1",
+      locationId: "loc-1",
+      department: { id: "dept-1", name: "Operations" },
+      location: { id: "loc-1", name: "Denver" },
+    });
+
+    const response = await authorized(request(app).post("/zapi/associates")).send({
+      name: "Blake Builder",
+      designation: "MH",
+      departmentId: "dept-1",
+      locationId: "loc-1",
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.name).toBe("Blake Builder");
+    expect(mockPrisma.associate.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: "Blake Builder",
+          designation: "MH",
+          departmentId: "dept-1",
+          locationId: "loc-1",
+        }),
+      })
+    );
+  });
+
+  it("rejects associate creation when name is missing", async () => {
+    const response = await authorized(request(app).post("/zapi/associates")).send(
+      {}
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Name is required");
+    expect(mockPrisma.associate.create).not.toHaveBeenCalled();
+  });
+
+  it("includes boolean isActive on every CA-by-type-with-info row", async () => {
+    mockPrisma.designationVisibility.findMany.mockResolvedValue([]);
+    mockPrisma.associate.findMany.mockResolvedValue([
+      {
+        id: "associate-1",
+        name: "Active Alex",
+        designation: "MH",
+        isActive: true,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-1",
+            ruleId: "rule-1",
+            rule: { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+          },
+        ],
+        occurrences: [],
+      },
+      {
+        id: "associate-2",
+        name: "Inactive Irene",
+        designation: "CLERK",
+        isActive: false,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-2",
+            ruleId: "rule-2",
+            rule: { id: "rule-2", code: "WRK-1", type: "WORK" },
+          },
+        ],
+        occurrences: [],
+      },
+    ]);
+
+    const response = await authorized(
+      request(app).get("/zapi/ca-by-type-with-info")
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(2);
+
+    for (const row of response.body) {
+      expect(row.info).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          name: expect.any(String),
+          designation: expect.any(String),
+          isActive: expect.any(Boolean),
+        })
+      );
+      expect(Object.prototype.hasOwnProperty.call(row.info, "isActive")).toBe(
+        true
+      );
+    }
+
+    expect(response.body.find((row) => row.name === "Active Alex").info.isActive).toBe(
+      true
+    );
+    expect(
+      response.body.find((row) => row.name === "Inactive Irene").info.isActive
+    ).toBe(false);
+  });
+
+  it("regression: CA API payload must keep active associates under active-only filtering", async () => {
+    const { filterCAReportRows } = await import("../lib/caReportUtils.js");
+
+    mockPrisma.designationVisibility.findMany.mockResolvedValue([]);
+    mockPrisma.associate.findMany.mockResolvedValue([
+      {
+        id: "associate-1",
+        name: "Active Alex",
+        designation: "MH",
+        isActive: true,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-1",
+            ruleId: "rule-1",
+            rule: { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+          },
+        ],
+        occurrences: [],
+      },
+      {
+        id: "associate-2",
+        name: "Inactive Irene",
+        designation: "CLERK",
+        isActive: false,
+        pointsAdjustment: 0,
+        pointTotalsEffectiveDate: null,
+        correctiveActions: [
+          {
+            id: "ca-2",
+            ruleId: "rule-2",
+            rule: { id: "rule-2", code: "WRK-1", type: "WORK" },
+          },
+        ],
+        occurrences: [],
+      },
+    ]);
+
+    const response = await authorized(
+      request(app).get("/zapi/ca-by-type-with-info")
+    );
+    expect(response.status).toBe(200);
+
+    const rules = [
+      { id: "rule-1", code: "SAF-1", type: "SAFETY" },
+      { id: "rule-2", code: "WRK-1", type: "WORK" },
+    ];
+
+    const activeOnly = filterCAReportRows(response.body, {
+      activeOnly: true,
+      rules,
+    });
+    const allAssociates = filterCAReportRows(response.body, {
+      activeOnly: false,
+      rules,
+    });
+
+    expect(activeOnly.map((row) => row.name)).toEqual(["Active Alex"]);
+    expect(allAssociates.map((row) => row.name)).toEqual([
+      "Active Alex",
+      "Inactive Irene",
+    ]);
   });
 });

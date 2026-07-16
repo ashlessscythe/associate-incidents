@@ -18,8 +18,26 @@ export const getAssociateById = async (
   return response.data;
 };
 
-export async function addAssociate(name: string, currentPoints: number = 0) {
-  const res = await api.post<Associate>("/associates", { name, currentPoints });
+export type AddAssociateInput = {
+  name: string;
+  currentPoints?: number;
+  departmentId?: string;
+  designation?: string;
+  locationId?: string;
+};
+
+export async function addAssociate(input: AddAssociateInput | string) {
+  const payload =
+    typeof input === "string"
+      ? { name: input, currentPoints: 0 }
+      : {
+          name: input.name,
+          currentPoints: input.currentPoints ?? 0,
+          departmentId: input.departmentId,
+          designation: input.designation,
+          locationId: input.locationId,
+        };
+  const res = await api.post<Associate>("/associates", payload);
   return res.data;
 }
 

@@ -2,6 +2,8 @@
  * Utility functions for date-based operations
  */
 
+import type { CSSProperties } from "react";
+
 /**
  * Checks if a date is older than 12 months from today
  * @param date - The date to check
@@ -19,8 +21,8 @@ export const isOverOneYearOld = (date: Date): boolean => {
  * @param date - The date to check
  * @returns CSS style object for crossed-out appearance
  */
-export const getExpiredItemStyle = (date: Date): React.CSSProperties => {
-  return isOverOneYearOld(date) 
+export const getExpiredItemStyle = (date: Date): CSSProperties => {
+  return isOverOneYearOld(date)
     ? { color: "gray", textDecoration: "line-through" }
     : {};
 };

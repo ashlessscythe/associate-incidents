@@ -1,2 +1,2 @@
-- add toggles to CA report
-- add associates page with add and edit
+- [x] add toggles to CA report
+- [x] add associates page with add and edit

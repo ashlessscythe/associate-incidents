@@ -1,14 +1,13 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
 import process from "process";
+import { prisma } from "../prisma.js";
 
 dotenv.config();
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Encryption key - must be set via environment variable
 const ENCRYPTION_KEY = process.env.BACKUP_ENCRYPTION_KEY;
