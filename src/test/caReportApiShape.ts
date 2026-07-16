@@ -4,25 +4,29 @@
  * regressions from a missing `info.isActive` field are not masked.
  */
 
+export type CaByTypeApiInfo = {
+  id: string;
+  name: string;
+  points: number;
+  occurrencePoints: number;
+  pointsAdjustment: number;
+  designation: string;
+  isActive?: boolean;
+};
+
 export type CaByTypeApiRow = {
   id: string;
   name: string;
   correctiveActions: Array<{ id: string; ruleId: string }>;
-  info: {
-    id: string;
-    name: string;
-    points: number;
-    occurrencePoints: number;
-    pointsAdjustment: number;
-    designation: string;
-    isActive?: boolean;
-  };
+  info: CaByTypeApiInfo;
+};
+
+type BuildCaByTypeApiRowInput = Partial<Omit<CaByTypeApiRow, "info">> & {
+  info?: Partial<CaByTypeApiInfo>;
 };
 
 export function buildCaByTypeApiRow(
-  overrides: Partial<CaByTypeApiRow> & {
-    info?: Partial<CaByTypeApiRow["info"]>;
-  } = {}
+  overrides: BuildCaByTypeApiRowInput = {}
 ): CaByTypeApiRow {
   const id = overrides.id ?? "associate-1";
   const name = overrides.name ?? "Active Alex";
@@ -31,9 +35,7 @@ export function buildCaByTypeApiRow(
   return {
     id,
     name,
-    correctiveActions: [
-      { id: "ca-1", ruleId: "rule-1" },
-    ],
+    correctiveActions: [{ id: "ca-1", ruleId: "rule-1" }],
     ...rest,
     info: {
       id,

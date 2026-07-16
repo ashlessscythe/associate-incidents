@@ -14,7 +14,8 @@ export type CAReportRow = {
   correctiveActions: CAReportAction[];
   info: {
     designation: string;
-    isActive: boolean;
+    /** Absent on older API payloads; treated as inactive by the filter. */
+    isActive?: boolean;
   };
 };
 
