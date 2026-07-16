@@ -56,7 +56,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       } else {
         toast.error(result.error || 'Authentication failed');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('An unexpected error occurred');
     } finally {
       setIsLoading(false);

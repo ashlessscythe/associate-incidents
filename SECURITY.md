@@ -9,6 +9,7 @@ This document outlines the security measures implemented in the Associate Incide
 - **Fixed**: All npm audit vulnerabilities (previously 10 vulnerabilities including 1 critical, 2 high, 1 moderate, 6 low)
 - **Action**: Updated vulnerable packages and removed unused `expo-secure-store` dependency
 - **Action (2026-07)**: Refreshed lockfile within semver ranges; pinned `axios` to `^1.18.1` (prototype-pollution / supply-chain hardening) and `multer` to `^2.0.1` (was open-ended `>=`)
+- **Action (2026-07)**: Migrated to ESLint 9 flat config; added Dependabot + `.npmrc` `min-release-age`; upgraded `bcryptjs` 3 / `dotenv` 17 / `next-themes` 0.4 / `concurrently` 9
 - **Result**: `npm audit` reports 0 vulnerabilities
 
 ### 2. Hardcoded Secrets

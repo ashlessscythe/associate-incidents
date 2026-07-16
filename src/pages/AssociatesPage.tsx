@@ -57,12 +57,20 @@ const AssociatesPage: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleAddAssociate = async (name: string) => {
+  const handleAddAssociate = async (input: {
+    name: string;
+    departmentId?: string;
+    designation?: string;
+    locationId?: string;
+  }) => {
     try {
-      await addAssociate(name);
+      await addAssociate(input);
       await fetchAssociatesWithDesignation();
+      toast.success("Associate added successfully");
     } catch (err) {
       console.error("Error adding associate:", err);
+      toast.error("Failed to add associate");
+      throw err;
     }
   };
 
@@ -261,6 +269,8 @@ const AssociatesPage: React.FC = () => {
             <NewAssociateModal
               onAddAssociate={handleAddAssociate}
               hasEditorRole={hasEditorRole}
+              departments={departments}
+              locations={locations}
             />
             {hasEditorRole && (
               <>

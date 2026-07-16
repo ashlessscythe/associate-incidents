@@ -29,6 +29,13 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import {
+  filterCAReportRows,
+  formatCaTotals,
+  summarizeCorrectiveActionsByRuleCode,
+} from "@/lib/caReportUtils";
 
 interface CAByTypeData {
   id: string;
@@ -74,6 +81,10 @@ const ReportsPage: React.FC = () => {
   const [selectedDesignation, setSelectedDesignation] = useState<string>("ALL");
   const [selectedCode, setSelectedCode] = useState<string>("ALL");
   const [selectedRuleType, setSelectedRuleType] = useState<string>("ALL");
+  const [caActiveOnly, setCaActiveOnly] = useState(true);
+  const [enabledRuleCodes, setEnabledRuleCodes] = useState<Set<string>>(
+    () => new Set()
+  );
 
   // Sort states for each report
   const [occurrencesSortField, setOccurrencesSortField] =
@@ -110,6 +121,7 @@ const ReportsPage: React.FC = () => {
         setDesignations(designationsData);
         setRuleTypes(ruleTypesData);
         setOccurrenceCodes(occurrenceTypesData.map((ot) => ot.code));
+        setEnabledRuleCodes(new Set(rulesData.map((rule) => rule.code)));
       } catch (err) {
         console.error("Failed to fetch initial data:", err);
         setError("Failed to fetch initial data");
@@ -117,6 +129,18 @@ const ReportsPage: React.FC = () => {
     };
     fetchInitialData();
   }, []);
+
+  const toggleRuleCode = (code: string) => {
+    setEnabledRuleCodes((current) => {
+      const next = new Set(current);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
+  };
 
   const handleGetAllOccurrences = async () => {
     setLoading(true);
@@ -281,29 +305,24 @@ const ReportsPage: React.FC = () => {
   const handleDownloadCAReport = () => {
     try {
       const csvData = sortedAndFilteredCAByTypeData.map((associate) => {
-        const caTotals: { [key: string]: number } = {};
-        associate.correctiveActions.forEach((ca) => {
-          const rule = rules.find((r) => r.id === ca.ruleId);
-          if (rule) {
-            caTotals[rule.code] = (caTotals[rule.code] || 0) + 1;
-          }
-        });
-
-        const sortedCaTotals = Object.entries(caTotals)
-          .sort(([ruleA], [ruleB]) => ruleA.localeCompare(ruleB))
-          .map(([code, count]) => `${code}:${count}`)
-          .join("; ");
+        const caTotals = summarizeCorrectiveActionsByRuleCode(
+          associate.correctiveActions,
+          rules,
+          enabledRuleCodes
+        );
 
         return {
           Designation: associate.info.designation,
           Name: associate.name,
-          "Corrective Actions": sortedCaTotals || "No corrective actions",
+          Active: associate.info.isActive ? "Yes" : "No",
+          "Corrective Actions":
+            formatCaTotals(caTotals) || "No corrective actions",
         };
       });
 
       convertToCSV(
         csvData,
-        ["Designation", "Name", "Corrective Actions"],
+        ["Designation", "Name", "Active", "Corrective Actions"],
         "ca-by-type-report.csv"
       );
     } catch (err) {
@@ -325,22 +344,23 @@ const ReportsPage: React.FC = () => {
   }, [associatesData, filter, selectedDesignation]);
 
   const filteredCAByTypeData = useMemo(() => {
-    return caByTypeData.filter((associate) => {
-      const nameMatch = associate.name
-        .toLowerCase()
-        .includes(filter.toLowerCase());
-      const designationMatch =
-        selectedDesignation === "ALL" ||
-        associate.info.designation === selectedDesignation;
-      const ruleTypeMatch =
-        selectedRuleType === "ALL" ||
-        associate.correctiveActions.some((ca) => {
-          const rule = rules.find((r) => r.id === ca.ruleId);
-          return rule && rule.type === selectedRuleType;
-        });
-      return nameMatch && designationMatch && ruleTypeMatch;
+    return filterCAReportRows(caByTypeData, {
+      filter,
+      selectedDesignation,
+      selectedRuleType,
+      activeOnly: caActiveOnly,
+      enabledRuleCodes,
+      rules,
     });
-  }, [caByTypeData, filter, selectedDesignation, selectedRuleType, rules]);
+  }, [
+    caByTypeData,
+    filter,
+    selectedDesignation,
+    selectedRuleType,
+    caActiveOnly,
+    enabledRuleCodes,
+    rules,
+  ]);
 
   const sortedAndFilteredAssociatesData = useMemo(() => {
     return [...filteredAssociatesData].sort((a, b) => {
@@ -620,23 +640,11 @@ const ReportsPage: React.FC = () => {
             <div className="space-y-2">
               {sortedAndFilteredCAByTypeData.length > 0 ? (
                 sortedAndFilteredCAByTypeData.map((associate) => {
-                  const caTotals: { [key: string]: number } = {};
-                  associate.correctiveActions.forEach((ca) => {
-                    const rule = rules.find((r) => r.id === ca.ruleId);
-                    if (rule) {
-                      caTotals[rule.code] = (caTotals[rule.code] || 0) + 1;
-                    }
-                  });
-
-                  const sortedCaTotals = Object.entries(caTotals)
-                    .sort(([ruleA], [ruleB]) => ruleA.localeCompare(ruleB))
-                    .reduce(
-                      (acc, [rule, count]) => {
-                        acc[rule] = count;
-                        return acc;
-                      },
-                      {} as { [key: string]: number }
-                    );
+                  const sortedCaTotals = summarizeCorrectiveActionsByRuleCode(
+                    associate.correctiveActions,
+                    rules,
+                    enabledRuleCodes
+                  );
 
                   return (
                     <div
@@ -966,6 +974,61 @@ const ReportsPage: React.FC = () => {
               </div>
             )}
           </div>
+          {activeReport === "ca" && (
+            <div className="mb-4 space-y-3 rounded-lg border bg-muted/30 p-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="ca-active-only"
+                    checked={caActiveOnly}
+                    onCheckedChange={setCaActiveOnly}
+                  />
+                  <Label htmlFor="ca-active-only" className="text-sm">
+                    Active associates only
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setEnabledRuleCodes(new Set(rules.map((r) => r.code)))
+                    }
+                  >
+                    Enable all rules
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEnabledRuleCodes(new Set())}
+                  >
+                    Disable all rules
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {[...rules]
+                  .sort((a, b) => a.code.localeCompare(b.code))
+                  .map((rule) => (
+                    <div key={rule.id} className="flex items-center gap-2">
+                      <Switch
+                        id={`ca-rule-${rule.code}`}
+                        checked={enabledRuleCodes.has(rule.code)}
+                        onCheckedChange={() => toggleRuleCode(rule.code)}
+                      />
+                      <Label
+                        htmlFor={`ca-rule-${rule.code}`}
+                        className="text-sm font-mono"
+                      >
+                        {rule.code}
+                      </Label>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
           {error && (
             <p className="text-destructive mt-2 mb-4 text-sm">{error}</p>
           )}

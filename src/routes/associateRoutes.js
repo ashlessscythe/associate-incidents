@@ -51,12 +51,47 @@ router.get("/associates/:id", async (req, res) => {
 // Add associate
 router.post("/associates", async (req, res) => {
   try {
-    const { name, currentPoints } = req.body;
+    const { name, currentPoints, departmentId, designation, locationId } =
+      req.body;
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Name is required" });
+    }
+
+    if (locationId) {
+      const locationExists = await prisma.location.findUnique({
+        where: { id: locationId },
+      });
+      if (!locationExists) {
+        return res.status(400).json({ error: "Invalid location ID" });
+      }
+    }
+
+    if (departmentId) {
+      const departmentExists = await prisma.department.findUnique({
+        where: { id: departmentId },
+      });
+      if (!departmentExists) {
+        return res.status(400).json({ error: "Invalid department ID" });
+      }
+    }
+
     const associate = await prisma.associate.create({
-      data: { name, currentPoints },
+      data: {
+        name: name.trim(),
+        currentPoints: currentPoints ?? 0,
+        ...(departmentId ? { departmentId } : {}),
+        ...(locationId ? { locationId } : {}),
+        ...(designation ? { designation } : {}),
+      },
+      include: {
+        department: true,
+        location: true,
+      },
     });
     res.status(201).json(associate);
   } catch (error) {
+    console.error("Error creating associate:", error);
     res.status(400).json({ error: "Invalid request payload" });
   }
 });

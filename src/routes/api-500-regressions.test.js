@@ -16,6 +16,13 @@ const mockPrisma = vi.hoisted(() => ({
   },
   associate: {
     findUnique: vi.fn(),
+    create: vi.fn(),
+  },
+  location: {
+    findUnique: vi.fn(),
+  },
+  department: {
+    findUnique: vi.fn(),
   },
   file: {
     create: vi.fn(),
@@ -314,5 +321,49 @@ describe("API 500 regression coverage", () => {
       "Missing required fields or no corrective actions provided"
     );
     expect(mockExcelUtils.generateExcelCA).not.toHaveBeenCalled();
+  });
+
+  it("creates an associate with optional department, location, and designation", async () => {
+    mockPrisma.location.findUnique.mockResolvedValue({ id: "loc-1" });
+    mockPrisma.department.findUnique.mockResolvedValue({ id: "dept-1" });
+    mockPrisma.associate.create.mockResolvedValue({
+      id: "associate-2",
+      name: "Blake Builder",
+      designation: "MH",
+      departmentId: "dept-1",
+      locationId: "loc-1",
+      department: { id: "dept-1", name: "Operations" },
+      location: { id: "loc-1", name: "Denver" },
+    });
+
+    const response = await authorized(request(app).post("/zapi/associates")).send({
+      name: "Blake Builder",
+      designation: "MH",
+      departmentId: "dept-1",
+      locationId: "loc-1",
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.name).toBe("Blake Builder");
+    expect(mockPrisma.associate.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: "Blake Builder",
+          designation: "MH",
+          departmentId: "dept-1",
+          locationId: "loc-1",
+        }),
+      })
+    );
+  });
+
+  it("rejects associate creation when name is missing", async () => {
+    const response = await authorized(request(app).post("/zapi/associates")).send(
+      {}
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Name is required");
+    expect(mockPrisma.associate.create).not.toHaveBeenCalled();
   });
 });

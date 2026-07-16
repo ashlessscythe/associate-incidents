@@ -1,5 +1,4 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -12,9 +11,9 @@ import {
   sendPasswordResetSuccessEmail,
   getEmailConfigStatus,
 } from "../lib/emailService.js";
+import { prisma } from "../prisma.js";
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
