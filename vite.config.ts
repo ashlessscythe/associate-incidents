@@ -1,6 +1,21 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// Prefer 127.0.0.1 over "localhost" so the Node proxy avoids Windows IPv6 (::1) mismatches.
+// Browser access via either http://localhost:5173 or http://127.0.0.1:5173 still works
+// because the frontend calls relative "/zapi" on the same origin.
+const apiPort = process.env.PORT || "8000";
+const apiProxy = {
+  "/zapi": {
+    target: `http://127.0.0.1:${apiPort}`,
+    changeOrigin: true,
+    secure: false,
+  },
+};
 
 export default defineConfig({
   plugins: [react()],
@@ -10,14 +25,10 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      "/zapi": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path, // Don't rewrite the path, keep /zapi
-      },
-    },
+    proxy: apiProxy,
+  },
+  preview: {
+    proxy: apiProxy,
   },
   build: {
     rollupOptions: {
