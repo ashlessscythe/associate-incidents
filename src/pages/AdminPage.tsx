@@ -50,8 +50,10 @@ import {
   Building2,
   MapPin,
   LayoutGrid,
+  Bell,
 } from "lucide-react";
 import TemplateMappingConfig from "@/components/admin/TemplateMappingConfig";
+import NotificationLevelsConfig from "@/components/admin/NotificationLevelsConfig";
 // import { useAuth } from '@/contexts/AuthContext'; // Not currently used but available for future features
 
 interface User {
@@ -149,6 +151,9 @@ export default function AdminPage() {
   >({});
   const [loadingDesignations, setLoadingDesignations] = useState(false);
   const [showTemplateMappingConfig, setShowTemplateMappingConfig] = useState(false);
+  const [levelsConfigDesignation, setLevelsConfigDesignation] = useState<
+    string | null
+  >(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("users");
 
   const [departments, setDepartments] = useState<AdminDepartment[]>([]);
@@ -1138,6 +1143,21 @@ export default function AdminPage() {
                           </Button>
                         </div>
                       </div>
+                      <div className="pt-1 border-t border-border">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          disabled={loadingDesignations}
+                          onClick={() =>
+                            setLevelsConfigDesignation(item.designation)
+                          }
+                        >
+                          <Bell className="h-4 w-4 mr-1" />
+                          Edit levels
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -2065,6 +2085,12 @@ export default function AdminPage() {
       <TemplateMappingConfig
         isOpen={showTemplateMappingConfig}
         onClose={() => setShowTemplateMappingConfig(false)}
+      />
+
+      <NotificationLevelsConfig
+        isOpen={levelsConfigDesignation !== null}
+        designation={levelsConfigDesignation ?? ""}
+        onClose={() => setLevelsConfigDesignation(null)}
       />
     </div>
   );

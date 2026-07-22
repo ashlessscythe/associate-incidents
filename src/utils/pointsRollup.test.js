@@ -89,6 +89,40 @@ describe("points rollup helpers", () => {
     ).toBe(1);
   });
 
+  it("keeps total equal to occurrence subtotal plus adjustment", () => {
+    const counted = [
+      { type: { points: 2 } },
+      { type: { points: 1 } },
+    ];
+    const occurrencePoints = sumOccurrencePoints(counted);
+    const pointsAdjustment = 4;
+
+    expect(occurrencePoints).toBe(3);
+    expect(totalPointsWithAdjustment(counted, pointsAdjustment)).toBe(
+      occurrencePoints + pointsAdjustment
+    );
+  });
+
+  it("supports adjustment-only totals when there are no counted occurrences", () => {
+    expect(totalPointsWithAdjustment([], 4)).toBe(4);
+    expect(totalPointsWithAdjustment(undefined, 4)).toBe(4);
+  });
+
+  it("treats a missing adjustment as zero", () => {
+    expect(
+      totalPointsWithAdjustment([{ type: { points: 2 } }], null)
+    ).toBe(2);
+    expect(
+      totalPointsWithAdjustment([{ type: { points: 2 } }], undefined)
+    ).toBe(2);
+  });
+
+  it("allows negative adjustments that reduce the total", () => {
+    expect(
+      totalPointsWithAdjustment([{ type: { points: 5 } }], -2)
+    ).toBe(3);
+  });
+
   it("prefers associate effective dates over designation defaults", () => {
     expect(
       resolvePointTotalsEffectiveDate("2026-01-01", "2025-01-01")

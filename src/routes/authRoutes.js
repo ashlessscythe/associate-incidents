@@ -723,6 +723,141 @@ router.patch(
   }
 );
 
+// Get notification levels (optional designation filter)
+router.get(
+  "/admin/notification-levels",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { designation } = req.query;
+      const where = designation ? { designation } : {};
+
+      if (designation) {
+        const validDesignations = await prisma.$queryRaw`
+          SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
+        `;
+        const isValid = validDesignations.some(
+          (d) => d.designation === designation
+        );
+        if (!isValid) {
+          return res.status(400).json({ message: "Invalid designation" });
+        }
+      }
+
+      const levels = await prisma.notificationLevel.findMany({
+        where,
+        orderBy: [{ designation: "asc" }, { level: "asc" }],
+      });
+
+      res.json({ levels });
+    } catch (error) {
+      console.error("Get notification levels error:", error);
+      res.status(500).json({ message: "Failed to get notification levels" });
+    }
+  }
+);
+
+// Replace the full notification-level ladder for a designation
+router.put(
+  "/admin/notification-levels/:designation",
+  validateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { designation } = req.params;
+      const body = req.body;
+
+      const validDesignations = await prisma.$queryRaw`
+        SELECT unnest(enum_range(NULL::"Designation"))::text AS designation
+      `;
+      const isValid = validDesignations.some(
+        (d) => d.designation === designation
+      );
+      if (!isValid) {
+        return res.status(400).json({ message: "Invalid designation" });
+      }
+
+      if (!Array.isArray(body)) {
+        return res.status(400).json({
+          message: "Body must be an array of { level, name, pointThreshold }",
+        });
+      }
+
+      const normalized = [];
+      const seenLevels = new Set();
+
+      for (let i = 0; i < body.length; i++) {
+        const item = body[i];
+        const level = Number(item?.level);
+        const name =
+          typeof item?.name === "string" ? item.name.trim() : "";
+        const pointThreshold = Number(item?.pointThreshold);
+
+        if (!Number.isInteger(level) || level < 1) {
+          return res.status(400).json({
+            message: `Item ${i + 1}: level must be a positive integer`,
+          });
+        }
+        if (!name) {
+          return res.status(400).json({
+            message: `Item ${i + 1}: name is required`,
+          });
+        }
+        if (!Number.isFinite(pointThreshold) || pointThreshold < 0) {
+          return res.status(400).json({
+            message: `Item ${i + 1}: pointThreshold must be a number >= 0`,
+          });
+        }
+        if (seenLevels.has(level)) {
+          return res.status(400).json({
+            message: `Duplicate level number: ${level}`,
+          });
+        }
+        seenLevels.add(level);
+        normalized.push({ level, name, pointThreshold });
+      }
+
+      normalized.sort((a, b) => a.level - b.level);
+      for (let i = 1; i < normalized.length; i++) {
+        if (
+          normalized[i].pointThreshold <= normalized[i - 1].pointThreshold
+        ) {
+          return res.status(400).json({
+            message:
+              "pointThreshold must increase strictly with level number",
+          });
+        }
+      }
+
+      const levels = await prisma.$transaction(async (tx) => {
+        await tx.notificationLevel.deleteMany({ where: { designation } });
+        if (normalized.length > 0) {
+          await tx.notificationLevel.createMany({
+            data: normalized.map((row) => ({
+              designation,
+              level: row.level,
+              name: row.name,
+              pointThreshold: row.pointThreshold,
+            })),
+          });
+        }
+        return tx.notificationLevel.findMany({
+          where: { designation },
+          orderBy: { level: "asc" },
+        });
+      });
+
+      res.json({ levels });
+    } catch (error) {
+      console.error("Replace notification levels error:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to update notification levels" });
+    }
+  }
+);
+
 router.patch(
   "/admin/users/:id",
   validateToken,

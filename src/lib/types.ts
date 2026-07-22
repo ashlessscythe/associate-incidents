@@ -148,10 +148,11 @@ export interface Notification {
 }
 
 export interface NotificationLevel {
+  id?: string;
   designation: Designation;
   level: number;
   name: string;
-  pointThreshhold?: number;
+  pointThreshold?: number;
 }
 
 export interface CreateNotificationData {

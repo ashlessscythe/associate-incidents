@@ -74,3 +74,29 @@ export const getNotificationLevels = async (
     throw error;
   }
 };
+
+export type NotificationLevelInput = {
+  level: number;
+  name: string;
+  pointThreshold: number;
+};
+
+export const getAdminNotificationLevels = async (
+  designation: string
+): Promise<NotificationLevel[]> => {
+  const response = await api.get<{ levels: NotificationLevel[] }>(
+    `/admin/notification-levels?designation=${encodeURIComponent(designation)}`
+  );
+  return response.data.levels;
+};
+
+export const replaceNotificationLevels = async (
+  designation: string,
+  levels: NotificationLevelInput[]
+): Promise<NotificationLevel[]> => {
+  const response = await api.put<{ levels: NotificationLevel[] }>(
+    `/admin/notification-levels/${encodeURIComponent(designation)}`,
+    levels
+  );
+  return response.data.levels;
+};
