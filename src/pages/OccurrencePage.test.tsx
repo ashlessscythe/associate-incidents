@@ -66,6 +66,9 @@ vi.mock("@/components/AssociateSelect", () => ({
       <button type="button" onClick={() => onAssociateSelect("associate-1")}>
         Select Alex
       </button>
+      <button type="button" onClick={() => onAssociateSelect("associate-2")}>
+        Select Blake
+      </button>
     </div>
   ),
 }));
@@ -104,12 +107,22 @@ vi.mock("@/components/list/OccurrenceList", () => ({
     occurrences,
     allowEdit,
   }: {
-    associateInfo: { name: string };
+    associateInfo: {
+      name: string;
+      designation: string;
+      points: number;
+      location?: { name: string };
+      department?: { name: string };
+    };
     occurrences: unknown[];
     allowEdit?: boolean;
   }) => (
     <section>
       <h2>Occurrences for {associateInfo.name}</h2>
+      <p>Designation: {associateInfo.designation}</p>
+      <p>Points: {associateInfo.points}</p>
+      <p>Location: {associateInfo.location?.name || "Not set"}</p>
+      <p>Department: {associateInfo.department?.name || "Not set"}</p>
       <p>Occurrence count: {occurrences.length}</p>
       <p>{allowEdit ? "Can edit occurrences" : "Read only occurrences"}</p>
     </section>
@@ -189,5 +202,77 @@ describe("OccurrencePage", () => {
       associatesMock.fetchAssociatesWithDesignation
     ).toHaveBeenCalledOnce();
     expect(screen.getByText("Can edit occurrences")).toBeInTheDocument();
+  });
+
+  it("ignores a late response from a previous associate when switching", async () => {
+    let resolveAlexInfo: ((value: unknown) => void) | undefined;
+    const alexInfoPromise = new Promise((resolve) => {
+      resolveAlexInfo = resolve;
+    });
+
+    apiMock.getAssociatePointsAndNotification.mockImplementation(
+      (associateId: string) => {
+        if (associateId === "associate-1") {
+          return alexInfoPromise;
+        }
+        return Promise.resolve(
+          buildAssociateInfo({
+            id: "associate-2",
+            name: "Blake Associate",
+            designation: "CLERK",
+            points: 7,
+            location: undefined,
+            department: undefined,
+          })
+        );
+      }
+    );
+    apiMock.getOccurrences.mockResolvedValue([]);
+
+    renderWithRouter(<OccurrencePage />);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Select Alex" })
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Select Blake" }));
+
+    expect(
+      await screen.findByText("Occurrences for Blake Associate")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Designation: CLERK")).toBeInTheDocument();
+    expect(screen.getByText("Points: 7")).toBeInTheDocument();
+    expect(screen.getByText("Location: Not set")).toBeInTheDocument();
+    expect(screen.getByText("Department: Not set")).toBeInTheDocument();
+
+    resolveAlexInfo?.(
+      buildAssociateInfo({
+        id: "associate-1",
+        name: "Alex Associate",
+        designation: "MH",
+        points: 1,
+        location: { id: "loc-1", name: "Denver" },
+        department: { id: "dept-1", name: "Operations" },
+      })
+    );
+
+    await waitFor(() => {
+      expect(apiMock.getAssociatePointsAndNotification).toHaveBeenCalledWith(
+        "associate-1"
+      );
+      expect(apiMock.getAssociatePointsAndNotification).toHaveBeenCalledWith(
+        "associate-2"
+      );
+    });
+
+    expect(
+      screen.getByText("Occurrences for Blake Associate")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Designation: CLERK")).toBeInTheDocument();
+    expect(screen.getByText("Points: 7")).toBeInTheDocument();
+    expect(screen.getByText("Location: Not set")).toBeInTheDocument();
+    expect(screen.getByText("Department: Not set")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Occurrences for Alex Associate")
+    ).not.toBeInTheDocument();
   });
 });

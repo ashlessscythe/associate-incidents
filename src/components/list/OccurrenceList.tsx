@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  getAssociatePointsAndNotification,
   deleteOccurrence,
   updateOccurrence,
   AssociateInfo,
@@ -90,13 +89,6 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   allowEdit,
 }) => {
   const { user } = useAuth();
-  const [totalPoints, setTotalPoints] = useState<number>(0);
-  const [occurrenceSubtotal, setOccurrenceSubtotal] = useState<number | null>(
-    null
-  );
-  const [manualAdjustment, setManualAdjustment] = useState<number | null>(null);
-  const [notificationLevel, setNotificationLevel] = useState<string>("None");
-  const [designation, setDesignation] = useState<string>("");
   const [editingOccurrence, setEditingOccurrence] = useState<Occurrence | null>(
     null
   );
@@ -110,13 +102,22 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [associateLocation, setAssociateLocation] = useState<Location | null>(
-    null
-  );
-  const [associateDepartment, setAssociateDepartment] =
-    useState<Department | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+
+  const totalPoints = associateInfo.points;
+  const occurrenceSubtotal =
+    associateInfo.occurrencePoints !== undefined
+      ? associateInfo.occurrencePoints
+      : null;
+  const manualAdjustment =
+    associateInfo.pointsAdjustment !== undefined
+      ? associateInfo.pointsAdjustment
+      : null;
+  const notificationLevel = associateInfo.notificationLevel;
+  const designation = associateInfo.designation;
+  const associateLocation = associateInfo.location ?? null;
+  const associateDepartment = associateInfo.department ?? null;
 
   const handlePrint = useOccurrencePrint();
 
@@ -227,48 +228,33 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   }, []);
 
   useEffect(() => {
-    const fetchPointsAndNotification = async () => {
-      if (associateInfo.id) {
-        try {
-          const [
-            {
-              points,
-              occurrencePoints,
-              pointsAdjustment,
-              notificationLevel,
-              designation,
-              location,
-              department,
-            },
-            notificationsData,
-          ] = await Promise.all([
-            getAssociatePointsAndNotification(associateInfo.id),
-            getNotifications(associateInfo.id, "OCCURRENCE"),
-          ]);
-          setTotalPoints(points);
-          setOccurrenceSubtotal(
-            occurrencePoints !== undefined ? occurrencePoints : null
-          );
-          setManualAdjustment(
-            pointsAdjustment !== undefined ? pointsAdjustment : null
-          );
-          setNotificationLevel(notificationLevel);
-          setDesignation(designation);
-          if (location) {
-            setAssociateLocation(location);
-          }
-          if (department) {
-            setAssociateDepartment(department);
-          }
+    let cancelled = false;
+
+    const fetchAssociateNotifications = async () => {
+      if (!associateInfo.id) {
+        return;
+      }
+      try {
+        const notificationsData = await getNotifications(
+          associateInfo.id,
+          "OCCURRENCE"
+        );
+        if (!cancelled) {
           setNotifications(notificationsData);
-        } catch (e) {
-          console.error("Error fetching associate data:", e);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error("Error fetching associate notifications:", e);
         }
       }
     };
 
-    fetchPointsAndNotification();
-  }, [associateInfo.id, occurrences]);
+    fetchAssociateNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [associateInfo.id]);
 
   const handleSort = (column: SortColumn) => {
     if (column === sortColumn) {

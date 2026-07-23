@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import {
   OccurrenceType,
@@ -37,6 +37,7 @@ function OccurrencePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const associateFetchSeq = useRef(0);
 
   const hasEditorRole =
     (user && Array.isArray(user.roles) && user.roles.includes("att-edit")) ||
@@ -69,39 +70,55 @@ function OccurrencePage() {
     fetchOccurrenceTypes();
   }, []);
 
-  useEffect(() => {
-    if (selectedAssociateId) {
-      fetchOccurrences(selectedAssociateId);
-      fetchAssociateInfo(selectedAssociateId);
-    } else {
-      setOccurrences([]);
-      setAssociateInfo(null);
-    }
-  }, [selectedAssociateId]);
-
-  const fetchOccurrences = async (associateId: string) => {
+  const fetchOccurrences = useCallback(async (associateId: string, seq: number) => {
     try {
       const occurrencesData = await getOccurrences(associateId);
+      if (seq !== associateFetchSeq.current) {
+        return;
+      }
       setOccurrences(occurrencesData);
     } catch (err: unknown) {
+      if (seq !== associateFetchSeq.current) {
+        return;
+      }
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
       );
     }
-  };
+  }, []);
 
-  const fetchAssociateInfo = async (associateId: string) => {
+  const fetchAssociateInfo = useCallback(async (associateId: string, seq: number) => {
     try {
       const associateInfoData = await getAssociatePointsAndNotification(
         associateId
       );
+      if (seq !== associateFetchSeq.current) {
+        return;
+      }
       setAssociateInfo(associateInfoData);
     } catch (err: unknown) {
+      if (seq !== associateFetchSeq.current) {
+        return;
+      }
       setError(
         err instanceof Error ? err.message : "An unknown error occurred"
       );
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (selectedAssociateId) {
+      const seq = ++associateFetchSeq.current;
+      setAssociateInfo(null);
+      setOccurrences([]);
+      fetchOccurrences(selectedAssociateId, seq);
+      fetchAssociateInfo(selectedAssociateId, seq);
+    } else {
+      associateFetchSeq.current += 1;
+      setOccurrences([]);
+      setAssociateInfo(null);
+    }
+  }, [selectedAssociateId, fetchOccurrences, fetchAssociateInfo]);
 
   const handleAssociateSelect = (associateId: string | null) => {
     setSelectedAssociateId(associateId);
@@ -118,8 +135,9 @@ function OccurrencePage() {
           ...occurrenceData,
           associateId: selectedAssociateId,
         });
-        await fetchOccurrences(selectedAssociateId);
-        await fetchAssociateInfo(selectedAssociateId);
+        const seq = associateFetchSeq.current;
+        await fetchOccurrences(selectedAssociateId, seq);
+        await fetchAssociateInfo(selectedAssociateId, seq);
         await fetchAssociatesWithDesignation();
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "An unknown error occurred");
@@ -128,14 +146,19 @@ function OccurrencePage() {
   };
 
   const handleUpdate = async (associateId: string) => {
-    await fetchOccurrences(associateId);
-    await fetchAssociateInfo(associateId);
+    const seq = associateFetchSeq.current;
+    await fetchOccurrences(associateId, seq);
+    await fetchAssociateInfo(associateId, seq);
   };
 
-  const handleDelete = (occurrenceId: string) => {
-    setOccurrences(
-      occurrences.filter((occurrence) => occurrence.id !== occurrenceId)
+  const handleDelete = async (occurrenceId: string) => {
+    setOccurrences((prev) =>
+      prev.filter((occurrence) => occurrence.id !== occurrenceId)
     );
+    if (selectedAssociateId) {
+      const seq = associateFetchSeq.current;
+      await fetchAssociateInfo(selectedAssociateId, seq);
+    }
   };
 
   const toggleSidebar = () => {
@@ -214,6 +237,7 @@ function OccurrencePage() {
         {/* OccurrenceList rendered if associateInfo is available */}
         {associateInfo && (
           <OccurrenceList
+            key={associateInfo.id}
             associateInfo={associateInfo}
             occurrences={occurrences}
             onDelete={handleDelete}
