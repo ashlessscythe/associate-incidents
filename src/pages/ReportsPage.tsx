@@ -452,7 +452,7 @@ const ReportsPage: React.FC = () => {
       case "occurrences":
         return (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-6 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
               <div
                 className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => {
@@ -612,7 +612,7 @@ const ReportsPage: React.FC = () => {
       case "ca":
         return (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
               <div
                 className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => {
@@ -700,7 +700,7 @@ const ReportsPage: React.FC = () => {
       case "attendance":
         return (
           <div>
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-4 mb-4 font-bold text-sm border-b pb-2">
               <div
                 className="cursor-pointer p-2 rounded group hover:bg-accent hover:text-accent-foreground transition-colors duration-200 ease-in-out"
                 onClick={() => {
@@ -822,10 +822,10 @@ const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-10 bg-card text-card-foreground shadow-md">
-        <div className="container mx-auto px-4 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div className="flex flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-20 bg-card text-card-foreground shadow-md rounded-lg mb-4">
+        <div className="px-3 py-3 sm:px-4 sm:py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               <BarChart3 className="h-6 w-6" />
               Reports
@@ -1070,8 +1070,8 @@ const ReportsPage: React.FC = () => {
           )}
         </div>
       </header>
-      <main className="flex-grow overflow-y-auto p-4 sm:p-6">
-        <div className="container mx-auto">{renderActiveReport()}</div>
+      <main className="min-w-0">
+        <div className="min-w-0">{renderActiveReport()}</div>
       </main>
     </div>
   );

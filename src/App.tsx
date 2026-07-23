@@ -22,8 +22,6 @@ const PendingPage = React.lazy(() => import("./pages/PendingPage"));
 const AdminPage = React.lazy(() => import("./pages/AdminPage"));
 const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
 
-type PageType = "attendance" | "ca" | "associates" | "reports" | "admin" | null;
-
 const Profile = () => {
   const { user } = useAuth();
   if (user) {
@@ -209,7 +207,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState<PageType>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { loading, user, logout } = useAuth();
   const { theme } = useTheme();
@@ -235,14 +232,9 @@ function AppContent() {
     htmlElement.classList.add(themeClass);
   }, [theme]);
 
-  const handlePageSelect = (page: PageType) => {
-    setCurrentPage(page);
-  };
-
   const handleLogOut = async () => {
     try {
       await logout();
-      setCurrentPage(null);
       setIsLoginOpen(false);
     } catch (err) {
       console.error("Logout error:", err);
@@ -261,13 +253,11 @@ function AppContent() {
     <Router>
       <div className="flex flex-col h-screen min-h-screen transition-colors duration-300 bg-background text-foreground">
         <Header
-          currentPage={currentPage}
-          onPageSelect={handlePageSelect}
           user={user}
           onLoginClick={() => setIsLoginOpen(true)}
           onLogOut={handleLogOut}
         />
-        <main className="container flex-1 overflow-y-auto p-4">
+        <main className="container flex-1 min-h-0 overflow-y-auto p-4 pb-20">
           <Suspense
             fallback={<div className="text-foreground">Loading...</div>}
           >

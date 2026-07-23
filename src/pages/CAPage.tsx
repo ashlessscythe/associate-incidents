@@ -20,8 +20,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAssociatesWithDesignation } from "../hooks/useAssociates";
 import { uploadFile, downloadFile, deleteFile } from "../lib/api";
 import { toast } from "react-hot-toast";
-import { AlertTriangle, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { omitFiles } from "@/lib/exportPayload";
+import ModuleWorkspace from "@/components/layout/ModuleWorkspace";
 
 function CAPage() {
   const { user } = useAuth();
@@ -45,7 +46,6 @@ function CAPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const hasEditorRole =
     user && Array.isArray(user.roles) && user.roles.includes("ca-edit");
@@ -131,7 +131,7 @@ function CAPage() {
             id: associateId,
             name: associateInfoData.name,
             designation: associateInfoData.designation,
-            isActive: associateInfoData.isActive || true, // Default to true if not provided
+            isActive: associateInfoData.isActive || true,
           });
         } catch (err) {
           console.error("Error fetching associate info directly:", err);
@@ -207,7 +207,7 @@ function CAPage() {
         const errorMessage =
           e instanceof Error ? e.message : "An unknown error occurred";
         console.error("Error adding corrective action:", errorMessage);
-        setError(errorMessage);
+        throw e instanceof Error ? e : new Error(errorMessage);
       }
     }
   };
@@ -275,10 +275,6 @@ function CAPage() {
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
   if (associatesLoading || loading) return <div className="p-4">Loading...</div>;
   if (associatesError || error)
     return (
@@ -286,54 +282,34 @@ function CAPage() {
     );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full relative bg-background text-foreground">
-      {/* Sidebar */}
-      <div
-        className={`${
-          isSidebarOpen ? "w-full lg:w-1/2 xl:w-2/5 2xl:w-1/3" : "w-0"
-        } transition-all duration-300 ease-in-out overflow-hidden lg:h-full bg-card text-card-foreground shadow-md`}
-      >
-        <div className="h-full flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <AssociateSelect
-              selectedAssociateId={selectedAssociateId}
-              onAssociateSelect={handleAssociateSelect}
-            />
-            {hasEditorRole && (
-              <CAForm
-                rules={rules}
-                associateId={selectedAssociateId}
-                onAddCorrectiveAction={handleAddCorrectiveAction}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Toggle button - positioned at the top of the main content area */}
-      <div className="relative">
-        <button
-          onClick={toggleSidebar}
-          className={`absolute top-4 z-20 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-md shadow-md transition-all duration-300 ease-in-out ${
-            isSidebarOpen 
-              ? "left-4 lg:left-0 lg:-translate-x-1/2" 
-              : "left-4"
-          }`}
-          title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
-        >
-          {isSidebarOpen ? (
-            <PanelLeftClose className="h-4 w-4" />
-          ) : (
-            <PanelLeftOpen className="h-4 w-4" />
-          )}
-        </button>
-      </div>
-
-      {/* Main content area */}
-      <div
-        className={`flex-grow p-4 lg:h-full overflow-y-auto transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? "lg:ml-4" : "lg:ml-0"
-        }`}
+    <>
+      <ModuleWorkspace
+        select={
+          <AssociateSelect
+            selectedAssociateId={selectedAssociateId}
+            onAssociateSelect={handleAssociateSelect}
+          />
+        }
+        canAdd={Boolean(hasEditorRole)}
+        addLabel="Add corrective action"
+        formTitle="Add corrective action"
+        formDescription="Create a new corrective action for the selected associate."
+        hasSelection={Boolean(selectedAssociateId)}
+        emptyMessage="Select an associate to view corrective actions."
+        form={
+          hasEditorRole
+            ? ({ closeForm }) => (
+                <CAForm
+                  rules={rules}
+                  associateId={selectedAssociateId}
+                  onAddCorrectiveAction={async (data) => {
+                    await handleAddCorrectiveAction(data);
+                    closeForm();
+                  }}
+                />
+              )
+            : undefined
+        }
       >
         {!hasEditorRole && (
           <div
@@ -344,7 +320,9 @@ function CAPage() {
               <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-bold text-sm sm:text-base">View Only Mode</p>
-                <p className="text-sm">You do not have permission to add or edit corrective actions.</p>
+                <p className="text-sm">
+                  You do not have permission to add or edit corrective actions.
+                </p>
               </div>
             </div>
           </div>
@@ -362,7 +340,7 @@ function CAPage() {
             onDeleteFile={handleDeleteFile}
           />
         )}
-      </div>
+      </ModuleWorkspace>
       {editingCA && (
         <CAEditModal
           ca={editingCA}
@@ -371,7 +349,7 @@ function CAPage() {
           onClose={() => setEditingCA(null)}
         />
       )}
-    </div>
+    </>
   );
 }
 

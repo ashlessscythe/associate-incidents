@@ -39,8 +39,8 @@ const ThemeSelector: React.FC = () => {
           setTheme(value);
         }}
       >
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Select theme" />
+        <SelectTrigger className="w-[110px] md:w-[150px]">
+          <SelectValue placeholder="Theme" />
         </SelectTrigger>
         <SelectContent>
           {themes.map((t) => (

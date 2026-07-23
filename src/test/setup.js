@@ -12,9 +12,11 @@ afterEach(() => {
 });
 
 if (typeof window !== "undefined") {
-  window.matchMedia ||= () => ({
-    matches: false,
-    media: "",
+  window.matchMedia ||= (query) => ({
+    matches:
+      typeof query === "string" &&
+      (query.includes("min-width: 1024px") || query.includes("min-width: 640px")),
+    media: typeof query === "string" ? query : "",
     onchange: null,
     addListener: () => {},
     removeListener: () => {},

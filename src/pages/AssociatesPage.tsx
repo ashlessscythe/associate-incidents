@@ -253,9 +253,9 @@ const AssociatesPage: React.FC = () => {
   if (error) return <div className="text-foreground p-4">Error: {error}</div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div className="flex flex-col bg-background text-foreground">
+      <div className="mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
             <Users className="h-6 w-6" />
             Associates
@@ -263,7 +263,7 @@ const AssociatesPage: React.FC = () => {
         </div>
         
         {/* Action Buttons */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-2 sm:space-y-3 mb-4">
           {/* Primary Actions */}
           <div className="flex flex-col sm:flex-row gap-2">
             <NewAssociateModal
@@ -305,7 +305,7 @@ const AssociatesPage: React.FC = () => {
         </div>
       </div>
       
-      <div className="flex-grow overflow-y-auto p-4 sm:p-6">
+      <div className="min-w-0 overflow-x-auto">
         <AssociatesTable
           associates={associatesWithDesignation}
           departments={departments}

@@ -96,7 +96,12 @@ const OccurrenceList: React.FC<OccurrenceListProps> = ({
   const [exportLocation, setExportLocation] = useState("");
   const [exportDepartment, setExportDepartment] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [viewMode, setViewMode] = useState<"table" | "cards">(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches
+      ? "cards"
+      : "table"
+  );
 
   const [hideZeroPoints, setHideZeroPoints] = useState<boolean>(false);
   const [hideOldOccurrences, setHideOldOccurrences] = useState<boolean>(false);

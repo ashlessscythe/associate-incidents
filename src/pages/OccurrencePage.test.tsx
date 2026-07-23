@@ -151,6 +151,17 @@ describe("OccurrencePage", () => {
     apiMock.addOccurrence.mockResolvedValue({});
   });
 
+  it("shows an empty state until an associate is selected", async () => {
+    authMock.user = buildUser({ roles: ["att-edit"] });
+    renderWithRouter(<OccurrencePage />);
+
+    expect(
+      await screen.findByText(
+        "Select an associate to view attendance occurrences."
+      )
+    ).toBeInTheDocument();
+  });
+
   it("shows view-only mode when the user cannot edit attendance", async () => {
     renderWithRouter(<OccurrencePage />);
 
