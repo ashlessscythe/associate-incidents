@@ -42,6 +42,12 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Node 25+ ships a stub localStorage that shadows jsdom's implementation.
+    // Disable it so AuthContext and other jsdom tests can use real Storage APIs.
+    execArgv:
+      Number(process.versions.node.split(".")[0]) >= 25
+        ? ["--no-webstorage"]
+        : [],
     setupFiles: ["./src/test/setup.js"],
     coverage: {
       provider: "v8",
