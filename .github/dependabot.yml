@@ -51,8 +51,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@react-pdf/renderer"
         update-types: ["version-update:semver-major"]
+      # 0.x minors rename icons (AlertCircle → CircleAlert, etc.) and break imports.
       - dependency-name: lucide-react
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: react-datepicker
         update-types: ["version-update:semver-major"]
       - dependency-name: resend
