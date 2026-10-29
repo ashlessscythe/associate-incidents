@@ -3,21 +3,13 @@
  * Fail CI on high/critical npm advisories, with an allowlist for findings that
  * do not apply to this app's runtime or have no patched release yet.
  *
- * GHSA-qwww-vcr4-c8h2 only affects unstable React Router RSC APIs. This project
- * is a Vite SPA using BrowserRouter and does not use those APIs. The patched
- * react-router@8.3.0 also requires React 19, which is out of scope here.
- *
- * GHSA-vfj7-8cjw-p6xm (braces <=3.0.3): no patched npm release exists. The
- * package is pulled in only via Tailwind CSS 3's micromatch/fast-glob/chokidar
- * build-time watch path. Clearing it requires a Tailwind v4 migration, which
- * is held back as a product/design-system decision.
+ * Allowlist is currently empty: previous entries (GHSA-qwww-vcr4-c8h2 react-router
+ * RSC; GHSA-vfj7-8cjw-p6xm braces) no longer appear in npm audit after dependency
+ * updates. Re-add a GHSA only when there is truly no viable non-breaking fix.
  */
 import { execFileSync } from "node:child_process";
 
-const ALLOWED_HIGH_ADVISORIES = new Set([
-  "GHSA-qwww-vcr4-c8h2",
-  "GHSA-vfj7-8cjw-p6xm",
-]);
+const ALLOWED_HIGH_ADVISORIES = new Set([]);
 
 const LEVEL_RANK = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
 const FAIL_AT_OR_ABOVE = LEVEL_RANK.high;
