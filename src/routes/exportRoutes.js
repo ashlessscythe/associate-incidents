@@ -63,7 +63,7 @@ router.post("/export-excel-occurrence", async (req, res) => {
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${associateName}_occurrences.xlsx`
+      `attachment; filename="${String(associateName).replace(/[^a-zA-Z0-9._-]/g, "_")}_occurrences.xlsx"`
     );
 
     res.send(Buffer.from(excelBuffer));
@@ -113,7 +113,7 @@ router.post("/export-excel-ca", async (req, res) => {
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${associateName}_corrective_action.xlsx`
+      `attachment; filename="${String(associateName).replace(/[^a-zA-Z0-9._-]/g, "_")}_corrective_action.xlsx"`
     );
 
     res.send(Buffer.from(excelBuffer));

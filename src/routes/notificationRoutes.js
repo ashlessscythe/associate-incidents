@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAnyRole } from "../middleware/auth.js";
+const requireEditRole = requireAnyRole("user-edit", "ca-edit", "att-edit");
 import { prisma } from "../prisma.js";
 
 const router = express.Router();
@@ -44,7 +46,7 @@ router.get("/notification-levels", async (req, res) => {
 });
 
 // Create a new notification
-router.post("/notifications", async (req, res) => {
+router.post("/notifications", requireEditRole, async (req, res) => {
   try {
     const { associateId, date, type, level, totalPoints, description } =
       req.body;
@@ -68,7 +70,7 @@ router.post("/notifications", async (req, res) => {
 });
 
 // Update a notification
-router.put("/notifications/:id", async (req, res) => {
+router.put("/notifications/:id", requireEditRole, async (req, res) => {
   try {
     const { id } = req.params;
     const { date, type, level, totalPoints, description } = req.body;
@@ -92,7 +94,7 @@ router.put("/notifications/:id", async (req, res) => {
 });
 
 // Delete a notification
-router.delete("/notifications/:id", async (req, res) => {
+router.delete("/notifications/:id", requireEditRole, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.notification.delete({

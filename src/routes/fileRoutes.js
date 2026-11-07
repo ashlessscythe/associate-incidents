@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAnyRole } from "../middleware/auth.js";
+const requireEditRole = requireAnyRole("user-edit", "ca-edit", "att-edit");
 import { prisma } from "../prisma.js";
 import multer from "multer";
 
@@ -6,6 +8,7 @@ const router = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     if (validateFileType(file.mimetype, file.originalname)) {
       cb(null, true);
@@ -74,7 +77,7 @@ function validateFileType(mimetype, filename) {
 }
 
 // Upload a file
-router.post("/upload", handleUpload, async (req, res) => {
+router.post("/upload", requireEditRole, handleUpload, async (req, res) => {
   // Handle multer errors
   if (req.fileValidationError) {
     return res.status(400).json({ error: req.fileValidationError.message });
@@ -131,7 +134,7 @@ router.post("/upload", handleUpload, async (req, res) => {
     console.error("Error uploading file:", error);
     res
       .status(500)
-      .json({ error: "Failed to upload file", details: error.message });
+      .json({ error: "Failed to upload file" });
   }
 });
 
@@ -183,7 +186,7 @@ router.get("/files/download/:fileId", async (req, res) => {
 });
 
 // Delete a file
-router.delete("/files/:fileId", async (req, res) => {
+router.delete("/files/:fileId", requireEditRole, async (req, res) => {
   try {
     const { fileId } = req.params;
     await prisma.file.delete({

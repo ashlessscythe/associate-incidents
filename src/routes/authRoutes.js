@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import process from "process";
 import { validateToken, requireAdmin } from "../middleware/auth.js";
-import { passwordResetRateLimit, loginRateLimit } from "../middleware/rateLimit.js";
+import { passwordResetRateLimit, loginRateLimit, registerRateLimit } from "../middleware/rateLimit.js";
 import {
   sendWelcomeEmail,
   sendPasswordResetEmail,
@@ -36,7 +36,7 @@ function sanitizeRoleAssignmentNames(roleNames) {
 }
 
 // Register new user
-router.post("/auth/register", async (req, res) => {
+router.post("/auth/register", registerRateLimit, async (req, res) => {
   try {
     const { email, password, name } = req.body;
 

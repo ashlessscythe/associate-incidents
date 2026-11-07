@@ -5,6 +5,11 @@ import { createApp } from "../app.js";
 
 const mockPrisma = vi.hoisted(() => ({
   user: {
+    findFirst: vi.fn(async ({ where }) =>
+      where.id === "admin-1"
+        ? { isActive: true, isAdmin: true, roles: [{ role: { name: "user-edit" } }] }
+        : { isActive: true, isAdmin: false, roles: [{ role: { name: "att-view" } }] }
+    ),
     findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),

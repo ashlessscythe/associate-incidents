@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAnyRole } from "../middleware/auth.js";
+const requireEditRole = requireAnyRole("user-edit", "ca-edit", "att-edit");
 import { prisma } from "../prisma.js";
 import {
   partitionCountedOccurrences,
@@ -37,12 +39,12 @@ router.get("/corrective-actions/:associateId", async (req, res) => {
     console.error("Error fetching corrective actions:", error);
     res
       .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+      .json({ error: "Internal Server Error" });
   }
 });
 
 // Add a new corrective action
-router.post("/corrective-actions", async (req, res) => {
+router.post("/corrective-actions", requireEditRole, async (req, res) => {
   const { associateId, ruleId, description, level, date } = req.body;
 
   // Check if required fields are present
@@ -79,7 +81,7 @@ router.post("/corrective-actions", async (req, res) => {
 });
 
 // Update a corrective action
-router.put("/corrective-actions/:id", async (req, res) => {
+router.put("/corrective-actions/:id", requireEditRole, async (req, res) => {
   try {
     const { id } = req.params;
     const { ruleId, description, level, date } = req.body;
@@ -117,7 +119,7 @@ router.put("/corrective-actions/:id", async (req, res) => {
 });
 
 // Delete a corrective action
-router.delete("/corrective-actions/:id", async (req, res) => {
+router.delete("/corrective-actions/:id", requireEditRole, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.correctiveAction.delete({

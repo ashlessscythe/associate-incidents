@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
 
+const escapeHtml = (v) =>
+  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // Check if Resend is configured
 const isResendConfigured = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 'rekeygoeshere';
 const resend = isResendConfigured ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -31,7 +34,7 @@ export const sendWelcomeEmail = async (userEmail, userName) => {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #333; text-align: center;">Welcome to Associate Incidents!</h1>
           
-          <p>Hello ${userName},</p>
+          <p>Hello ${escapeHtml(userName)},</p>
           
           <p>Thank you for registering with Associate Incidents. Your account has been created successfully!</p>
           
@@ -91,14 +94,14 @@ export const sendPasswordResetEmail = async (userEmail, resetToken) => {
           <p>You recently requested to reset your password for your Associate Incidents account.</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
+            <a href="${escapeHtml(resetUrl)}" 
                style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
               Reset Password
             </a>
           </div>
           
           <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
-          <p style="word-break: break-all; color: #007bff;">${resetUrl}</p>
+          <p style="word-break: break-all; color: #007bff;">${escapeHtml(resetUrl)}</p>
           
           <div style="background-color: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffc107;">
             <p style="margin: 0; color: #856404;">
@@ -147,7 +150,7 @@ export const sendPasswordResetSuccessEmail = async (userEmail, userName) => {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #333; text-align: center;">Password Successfully Reset</h1>
           
-          <p>Hello ${userName},</p>
+          <p>Hello ${escapeHtml(userName)},</p>
           
           <p>Your password has been successfully reset for your Associate Incidents account.</p>
           

@@ -16,16 +16,18 @@ if (!ENCRYPTION_KEY) {
   throw new Error("BACKUP_ENCRYPTION_KEY environment variable is required");
 }
 
-if (ENCRYPTION_KEY.length !== 64) {
-  throw new Error("BACKUP_ENCRYPTION_KEY must be exactly 64 characters long");
+if (!/^[0-9a-fA-F]{64}$/.test(ENCRYPTION_KEY)) {
+  throw new Error(
+    "BACKUP_ENCRYPTION_KEY must be exactly 64 hexadecimal characters (32 bytes)"
+  );
 }
-const ALGORITHM = "aes-256-cbc";
+const LEGACY_ALGORITHM = "aes-256-cbc";
 
-// Helper function to encrypt data
+// Helper function to encrypt data (AES-256-GCM: authenticated, tamper-evident)
 function encrypt(text) {
-  const iv = crypto.randomBytes(16);
+  const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv(
-    ALGORITHM,
+    "aes-256-gcm",
     Buffer.from(ENCRYPTION_KEY, "hex"),
     iv
   );
@@ -36,18 +38,19 @@ function encrypt(text) {
   return {
     encrypted,
     iv: iv.toString("hex"),
+    tag: cipher.getAuthTag().toString("hex"),
+    alg: "aes-256-gcm",
   };
 }
 
-// Helper function to decrypt data
+// Helper function to decrypt data. Backups made before GCM (no tag) use CBC.
 function decrypt(encryptedData) {
-  const { encrypted, iv } = encryptedData;
-
-  const decipher = crypto.createDecipheriv(
-    ALGORITHM,
-    Buffer.from(ENCRYPTION_KEY, "hex"),
-    Buffer.from(iv, "hex")
-  );
+  const { encrypted, iv, tag } = encryptedData;
+  const key = Buffer.from(ENCRYPTION_KEY, "hex");
+  const decipher = tag
+    ? crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "hex"))
+    : crypto.createDecipheriv(LEGACY_ALGORITHM, key, Buffer.from(iv, "hex"));
+  if (tag) decipher.setAuthTag(Buffer.from(tag, "hex"));
 
   let decrypted = decipher.update(encrypted, "hex", "utf8");
   decrypted += decipher.final("utf8");
@@ -208,7 +211,6 @@ router.post("/admin/backup", validateToken, requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create backup",
-      error: error.message,
     });
   }
 });
@@ -570,7 +572,6 @@ router.post("/admin/restore", validateToken, requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to restore data",
-      error: error.message,
     });
   }
 });
@@ -619,7 +620,6 @@ router.post(
       res.status(500).json({
         success: false,
         message: "Failed to read backup information",
-        error: error.message,
       });
     }
   }

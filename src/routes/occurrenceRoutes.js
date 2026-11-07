@@ -1,4 +1,6 @@
 import express from "express";
+import { requireAnyRole } from "../middleware/auth.js";
+const requireEditRole = requireAnyRole("user-edit", "ca-edit", "att-edit");
 import { prisma } from "../prisma.js";
 
 const router = express.Router();
@@ -43,7 +45,7 @@ router.get("/attendance-occurrences/:associateId", async (req, res) => {
 });
 
 // Add a new attendance occurrence
-router.post("/attendance-occurrences", async (req, res) => {
+router.post("/attendance-occurrences", requireEditRole, async (req, res) => {
   try {
     const { associateId, typeId, date, notes } = req.body;
     if (!associateId || !typeId || !date) {
@@ -84,7 +86,7 @@ router.post("/attendance-occurrences", async (req, res) => {
 });
 
 // Edit an attendance occurrence
-router.put("/attendance-occurrences/:id", async (req, res) => {
+router.put("/attendance-occurrences/:id", requireEditRole, async (req, res) => {
   const { id } = req.params;
   const { typeId, date, notes } = req.body;
 
@@ -118,7 +120,7 @@ router.put("/attendance-occurrences/:id", async (req, res) => {
 });
 
 // Delete an attendance occurrence
-router.delete("/attendance-occurrences/:id", async (req, res) => {
+router.delete("/attendance-occurrences/:id", requireEditRole, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.attendanceOccurrence.delete({ where: { id } });

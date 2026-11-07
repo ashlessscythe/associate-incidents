@@ -56,7 +56,7 @@ BACKUP_ENCRYPTION_KEY="your64-character-encryption-key-here-must-be-exactly-64-c
 
 - Application will fail to start if required environment variables are missing
 - JWT_SECRET must be set (no fallback)
-- BACKUP_ENCRYPTION_KEY must be exactly 64 characters
+- BACKUP_ENCRYPTION_KEY must be exactly 64 hex characters (`openssl rand -hex 32`)
 
 ## Authentication Security
 
@@ -144,7 +144,7 @@ If you discover a security vulnerability, please:
 ## Security Checklist
 
 - [ ] JWT_SECRET environment variable set
-- [ ] BACKUP_ENCRYPTION_KEY environment variable set (64 characters)
+- [ ] BACKUP_ENCRYPTION_KEY environment variable set (64 hex characters)
 - [ ] Strong passwords enforced
 - [ ] File upload validation enabled
 - [ ] HTTPS enabled in production
