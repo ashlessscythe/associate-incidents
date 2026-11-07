@@ -43,7 +43,7 @@ export const validateToken = async (req, res, next) => {
 
   let decoded;
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    decoded = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
   } catch (error) {
     console.error("Token verification failed:", error.message);
     return res.status(401).json({ error: "Invalid token" });

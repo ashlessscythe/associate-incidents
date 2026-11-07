@@ -1,5 +1,6 @@
 import express from "express";
 import { prisma } from "../prisma.js";
+import { requireAnyRole } from "../middleware/auth.js";
 import {
   getTemplate,
   generateExcelOccurrence,
@@ -125,9 +126,10 @@ router.post("/export-excel-ca", async (req, res) => {
   }
 });
 
-router.post("/record-occ-export", async (req, res) => {
-  const { associateId, exportedBy, exportedAt, location, department } =
-    req.body;
+router.post("/record-occ-export", requireAnyRole("user-edit", "ca-edit", "att-edit"), async (req, res) => {
+  const { associateId, exportedAt, location, department } = req.body;
+  // Never trust a client-supplied author; use the authenticated user.
+  const exportedBy = req.user?.name || req.user?.email || "unknown";
 
   try {
     const exportRecord = await prisma.exportRecord.create({

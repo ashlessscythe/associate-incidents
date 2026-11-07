@@ -91,3 +91,17 @@ export const loginRateLimit = (req, res, next) => {
   next();
 };
 
+
+// Periodically drop stale entries so the maps can't grow without bound.
+setInterval(() => {
+  const now = Date.now();
+  for (const [map, windowMs] of [
+    [resetAttempts, 15 * 60 * 1000],
+    [registerAttempts, 60 * 60 * 1000],
+    [loginAttempts, 15 * 60 * 1000],
+  ]) {
+    for (const [ip, times] of map) {
+      if (!times.some((t) => now - t < windowMs)) map.delete(ip);
+    }
+  }
+}, 10 * 60 * 1000).unref();

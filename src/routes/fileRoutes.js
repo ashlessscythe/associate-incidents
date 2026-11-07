@@ -99,6 +99,11 @@ router.post("/upload", requireEditRole, handleUpload, async (req, res) => {
       return res.status(400).json({ error: "Invalid file type" });
     }
 
+    // Templates are fed to the Excel exporter, so only admins may replace them.
+    if (fileType === "TEMPLATE" && !req.user?.isAdmin) {
+      return res.status(403).json({ error: "Admin access required to upload templates" });
+    }
+
     const { originalname, buffer, mimetype, size } = req.file;
 
     // Check file size based on type

@@ -24,6 +24,13 @@ if (!JWT_SECRET) {
 /** Legacy DB role name. Access to the admin app is controlled only by `User.isAdmin`. */
 const LEGACY_ADMIN_ROLE_NAME = "admin";
 
+/** Reset tokens are stored hashed so a DB/backup leak can't be replayed. */
+const hashResetToken = (token) =>
+  crypto.createHash("sha256").update(String(token)).digest("hex");
+
+const isNonEmptyString = (v, max = 254) =>
+  typeof v === "string" && v.length > 0 && v.length <= max;
+
 function roleNamesForClient(userRoles) {
   return userRoles
     .map((ur) => ur.role.name)
@@ -40,8 +47,8 @@ router.post("/auth/register", registerRateLimit, async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // Input validation
-    if (!email || !password || !name) {
+    // Input validation (reject non-strings so objects can't reach Prisma/bcrypt)
+    if (!isNonEmptyString(email) || !isNonEmptyString(password, 128) || !isNonEmptyString(name, 200)) {
       return res
         .status(400)
         .json({ message: "Email, password, and name are required" });
@@ -149,6 +156,10 @@ router.post("/auth/login", loginRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!isNonEmptyString(email) || !isNonEmptyString(password, 128)) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -161,18 +172,20 @@ router.post("/auth/login", loginRateLimit, async (req, res) => {
       },
     });
 
-    if (!user) {
+    // Always run a bcrypt compare so response time doesn't reveal whether the
+    // account exists.
+    const DUMMY_HASH = "$2b$12$gLmjuQ5H0eHNaT4KSxUTMOzhCv74j9IuZQA50GxsJrUybqoD3bs16";
+    const isValidPassword = await bcrypt.compare(
+      password,
+      user ? user.password : DUMMY_HASH
+    );
+    if (!user || !isValidPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Only reveal deactivation to someone who proved they know the password.
     if (!user.isActive) {
       return res.status(401).json({ message: "Account is deactivated" });
-    }
-
-    // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Generate JWT token
@@ -185,7 +198,7 @@ router.post("/auth/login", loginRateLimit, async (req, res) => {
         roles: roleNamesForClient(user.roles),
       },
       JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "24h", algorithm: "HS256" }
     );
 
     res.json({
@@ -1041,7 +1054,7 @@ router.post("/auth/forgot-password", passwordResetRateLimit, async (req, res) =>
   try {
     const { email } = req.body;
 
-    if (!email) {
+    if (!isNonEmptyString(email)) {
       return res.status(400).json({ message: "Email is required" });
     }
 
@@ -1075,7 +1088,7 @@ router.post("/auth/forgot-password", passwordResetRateLimit, async (req, res) =>
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        resetToken,
+        resetToken: hashResetToken(resetToken),
         resetTokenExpiry,
       },
     });
@@ -1107,7 +1120,7 @@ router.post("/auth/reset-password", passwordResetRateLimit, async (req, res) => 
   try {
     const { token, password } = req.body;
 
-    if (!token || !password) {
+    if (!isNonEmptyString(token, 256) || !isNonEmptyString(password, 128)) {
       return res
         .status(400)
         .json({ message: "Token and password are required" });
@@ -1133,7 +1146,7 @@ router.post("/auth/reset-password", passwordResetRateLimit, async (req, res) => 
     // Find user with valid reset token
     const user = await prisma.user.findFirst({
       where: {
-        resetToken: token,
+        resetToken: hashResetToken(token),
         resetTokenExpiry: {
           gt: new Date(),
         },

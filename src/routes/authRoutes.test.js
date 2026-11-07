@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -132,7 +133,7 @@ describe("auth and admin route coverage", () => {
     mockPrisma.user.findUnique.mockResolvedValue({
       id: "user-1",
       email: "user@example.com",
-      password: "$2a$12$invalidhash",
+      password: bcrypt.hashSync("Str0ng!Pass", 4),
       isActive: false,
       isAdmin: false,
       roles: [],
