@@ -37,6 +37,23 @@ export const passwordResetRateLimit = (req, res, next) => {
   next();
 };
 
+// Rate limiter for registration (prevents account/email spam)
+const registerAttempts = new Map();
+
+export const registerRateLimit = (req, res, next) => {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000;
+  const maxAttempts = 10;
+  const recent = (registerAttempts.get(ip) || []).filter(t => now - t < windowMs);
+  if (recent.length >= maxAttempts) {
+    return res.status(429).json({ message: "Too many registration attempts. Please try again later." });
+  }
+  recent.push(now);
+  registerAttempts.set(ip, recent);
+  next();
+};
+
 // Rate limiter for login attempts
 const loginAttempts = new Map();
 

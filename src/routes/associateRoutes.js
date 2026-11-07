@@ -4,7 +4,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { parse } from "csv-parse";
-import { requireEditor } from "../middleware/auth.js";
+import { requireEditor, requireAnyRole } from "../middleware/auth.js";
 import {
   sumOccurrencePoints,
   partitionCountedOccurrences,
@@ -18,7 +18,7 @@ const router = express.Router();
 
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage, limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
 
 // Get all associates
 router.get("/associates", async (req, res) => {
@@ -49,7 +49,7 @@ router.get("/associates/:id", async (req, res) => {
 });
 
 // Add associate
-router.post("/associates", async (req, res) => {
+router.post("/associates", requireAnyRole("user-edit"), async (req, res) => {
   try {
     const { name, currentPoints, departmentId, designation, locationId } =
       req.body;
@@ -97,7 +97,7 @@ router.post("/associates", async (req, res) => {
 });
 
 // Modify associate
-router.put("/associates/:id", async (req, res) => {
+router.put("/associates/:id", requireAnyRole("user-edit"), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, departmentId, designation, locationId } = req.body;
@@ -140,7 +140,7 @@ router.put("/associates/:id", async (req, res) => {
 });
 
 // Delete associate
-router.delete("/associates/:id", async (req, res) => {
+router.delete("/associates/:id", requireAnyRole("user-edit"), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -637,7 +637,7 @@ router.get("/download-associates-template", (req, res) => {
 });
 
 // Import associates from CSV
-router.post("/associates-import", upload.single("file"), async (req, res) => {
+router.post("/associates-import", requireAnyRole("user-edit"), upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
@@ -787,7 +787,6 @@ router.post("/associates-import", upload.single("file"), async (req, res) => {
     console.error("Error importing associates:", error);
     res.status(500).json({
       error: "Error importing associates",
-      details: error.message,
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
@@ -1007,7 +1006,7 @@ router.get("/attendance-occurrences-report/download", async (req, res) => {
 });
 
 // Toggle associate active status
-router.put("/associates/:id/toggle-active", async (req, res) => {
+router.put("/associates/:id/toggle-active", requireAnyRole("user-edit"), async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive } = req.body;

@@ -4,6 +4,13 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
 
 const mockPrisma = vi.hoisted(() => ({
+  user: {
+    findFirst: vi.fn(async () => ({
+      isActive: true,
+      isAdmin: false,
+      roles: [{ role: { name: "user-edit" } }],
+    })),
+  },
   associate: {
     findUnique: vi.fn(),
     findMany: vi.fn(),
